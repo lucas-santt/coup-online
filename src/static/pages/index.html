@@ -3,93 +3,71 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Coup - Play Online</title>
-	<meta name="description" content="Enter the medieval court of Coup. Claim your influence, execute your deceit, and challenge your rivals in this online multiplayer implementation of the classic card game.">
-	
-	<!-- Typography: Cinzel for elegant headers, MedievalSharp for theme accents, Cormorant Garamond for serif text -->
+	<title>Coup - Lobby</title>
+	<meta name="description" content="Create a new court or join a rival's. The Coup lobby.">
+
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=MedievalSharp&display=swap" rel="stylesheet">
-	
-	<!-- Favicon -->
-	<link rel="icon" href="/static/assets/favicon.ico">
 
-	<!-- Stylesheet -->
-	<link rel="stylesheet" href="/static/styles/landing.css">
+	<link rel="icon" href="/static/assets/favicon.ico">
+	<link rel="stylesheet" href="/static/styles/lobby.css">
 </head>
 <body>
-	<!-- Background overlay for depth and texture -->
 	<div class="ambient-overlay"></div>
 	<div class="background-vignette"></div>
 
-	<!-- Main Container -->
-	<main class="page-container">
-		<div class="scroll-container">
-
-			<!-- Ornate SVG Corners for the medieval scroll look -->
+	<!-- ============================================================
+	     Auth Overlay — reusable gate (first load) / convert (guest ->
+	     account) modal. See auth-overlay.js for the two contexts.
+	     ============================================================ -->
+	<div class="overlay-backdrop" id="auth-overlay" aria-hidden="true">
+		<div class="overlay-scroll scroll-container">
 			<div class="ornate-corner top-left">
 				<svg viewBox="0 0 100 100" width="100%" height="100%">
 					<path d="M10,10 L90,10 M10,10 L10,90 M20,20 L80,20 M20,20 L20,80 M10,50 C10,30 30,10 50,10 M50,10 C40,25 25,40 20,60" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
 					<circle cx="20" cy="20" r="4" fill="var(--color-gold)"/>
-					<circle cx="50" cy="10" r="3" fill="var(--color-gold-light)"/>
-					<circle cx="10" cy="50" r="3" fill="var(--color-gold-light)"/>
 				</svg>
 			</div>
 			<div class="ornate-corner top-right">
 				<svg viewBox="0 0 100 100" width="100%" height="100%">
 					<path d="M90,10 L10,10 M90,10 L90,90 M80,20 L20,20 M80,20 L80,80 M90,50 C90,30 70,10 50,10 M50,10 C60,25 75,40 80,60" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
 					<circle cx="80" cy="20" r="4" fill="var(--color-gold)"/>
-					<circle cx="50" cy="10" r="3" fill="var(--color-gold-light)"/>
-					<circle cx="90" cy="50" r="3" fill="var(--color-gold-light)"/>
 				</svg>
 			</div>
 			<div class="ornate-corner bottom-left">
 				<svg viewBox="0 0 100 100" width="100%" height="100%">
 					<path d="M10,90 L90,90 M10,90 L10,10 M20,80 L80,80 M20,80 L20,20 M10,50 C10,70 30,90 50,90 M50,90 C40,75 25,60 20,40" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
 					<circle cx="20" cy="80" r="4" fill="var(--color-gold)"/>
-					<circle cx="50" cy="90" r="3" fill="var(--color-gold-light)"/>
-					<circle cx="10" cy="50" r="3" fill="var(--color-gold-light)"/>
 				</svg>
 			</div>
 			<div class="ornate-corner bottom-right">
 				<svg viewBox="0 0 100 100" width="100%" height="100%">
 					<path d="M90,90 L10,90 M90,90 L90,10 M80,80 L20,80 M80,80 L80,20 M90,50 C90,70 70,90 50,90 M50,90 C60,75 75,60 80,40" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
 					<circle cx="80" cy="80" r="4" fill="var(--color-gold)"/>
-					<circle cx="50" cy="90" r="3" fill="var(--color-gold-light)"/>
-					<circle cx="90" cy="50" r="3" fill="var(--color-gold-light)"/>
 				</svg>
 			</div>
 
-			<!-- Header Title -->
+			<button type="button" class="overlay-close hidden" id="btn-overlay-close" aria-label="Close">&times;</button>
+
 			<header class="scroll-header">
-				<h1 class="game-title">COUP</h1>
-				<p class="game-subtitle">A Game of Influence and Deceit</p>
-				
-				<!-- Ornate Gold Divider -->
-				<div class="gold-divider">
-					<svg viewBox="0 0 300 20" width="100%" height="100%">
-						<line x1="0" y1="10" x2="120" y2="10" stroke="var(--color-gold)" stroke-width="1.5"/>
-						<line x1="180" y1="10" x2="300" y2="10" stroke="var(--color-gold)" stroke-width="1.5"/>
-						<polygon points="150,2 162,10 150,18 138,10" fill="var(--color-gold)"/>
-						<circle cx="127" cy="10" r="3" fill="var(--color-gold-light)"/>
-						<circle cx="173" cy="10" r="3" fill="var(--color-gold-light)"/>
+				<h2 class="overlay-title" id="overlay-title">Enter the Court</h2>
+				<p class="overlay-subtitle" id="overlay-subtitle">Log in, sign up, or slip in as a guest.</p>
+				<div class="gold-divider mini">
+					<svg viewBox="0 0 200 20" width="100%" height="100%">
+						<line x1="0" y1="10" x2="80" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
+						<line x1="120" y1="10" x2="200" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
+						<circle cx="100" cy="10" r="4" fill="var(--color-gold)"/>
 					</svg>
 				</div>
 			</header>
 
-			<!-- Authentication Sections -->
 			<section class="auth-section">
-				<!-- Navigation Tabs -->
 				<div class="auth-tabs" role="tablist">
-					<button class="tab-btn active" id="tab-login" role="tab" aria-selected="true" aria-controls="auth-form">
-						Log In
-					</button>
-					<button class="tab-btn" id="tab-signup" role="tab" aria-selected="false" aria-controls="auth-form">
-						Sign Up
-					</button>
+					<button class="tab-btn active" id="tab-login" role="tab" aria-selected="true" aria-controls="auth-form">Log In</button>
+					<button class="tab-btn" id="tab-signup" role="tab" aria-selected="false" aria-controls="auth-form">Sign Up</button>
 				</div>
 
-				<!-- Unified Form Container -->
 				<div class="panels-container">
 					<form id="auth-form" class="auth-form" autocomplete="on">
 						<div class="input-group">
@@ -100,35 +78,25 @@
 							<label for="auth-password" class="input-label">Passphrase</label>
 							<input type="password" id="auth-password" name="password" placeholder="Thy secret passphrase..." required autocomplete="current-password">
 						</div>
-						
-						<!-- Confirm Password Wrapper (Animated Height/Opacity) -->
 						<div class="input-group confirm-password-wrapper" id="confirm-password-group">
 							<label for="auth-confirm-password" class="input-label">Confirm Passphrase</label>
 							<input type="password" id="auth-confirm-password" name="confirm_password" placeholder="Repeat thy passphrase..." autocomplete="new-password">
 						</div>
-						
-						<!-- Submit Button with Crossfading Text -->
 						<button type="submit" class="medieval-btn primary-btn" id="btn-submit">
 							<span class="btn-text-wrapper">
 								<span class="btn-text-login active">Enter the Court</span>
 								<span class="btn-text-signup">Pledge Allegiance</span>
 							</span>
-							<span class="btn-border"></span>
 						</button>
 					</form>
 				</div>
 
-				<!-- Form Toggle Link -->
 				<div class="auth-toggle-link-container">
-					<p class="toggle-text" id="toggle-hint-text">
-						Don't have an account? <a href="#" id="link-toggle-auth" class="renaissance-link">Sign up</a>
-					</p>
+					<p class="toggle-text" id="toggle-hint-text">Don't have an account? <a href="#" id="link-toggle-auth" class="renaissance-link">Sign up</a></p>
 				</div>
 			</section>
 
-			<!-- Play as Guest Section -->
-			<section class="guest-section">
-				<!-- Golden Divider -->
+			<section class="guest-section" id="overlay-guest-section">
 				<div class="gold-divider mini">
 					<svg viewBox="0 0 200 20" width="100%" height="100%">
 						<line x1="0" y1="10" x2="80" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
@@ -136,34 +104,181 @@
 						<circle cx="100" cy="10" r="4" fill="var(--color-gold)"/>
 					</svg>
 				</div>
-				
 				<p class="guest-desc">Or enter the realm incognito, without a ledger.</p>
 				<button type="button" id="btn-guest" class="medieval-btn secondary-btn">
 					<span class="btn-text">Play as Guest</span>
-					<span class="btn-border"></span>
 				</button>
+			</section>
+		</div>
+	</div>
+
+	<!-- ============================================================
+	     Music controls — outside lobby-container on purpose, so it's
+	     visible during the auth overlay too, not just once logged in.
+	     Kept in sync with the Settings tab slider in main.js.
+	     ============================================================ -->
+	<div class="music-controls">
+		<button class="music-btn" id="btn-music-toggle-float" aria-label="Mute music"><span id="music-icon-float" class="music-icon">♫</span></button>
+		<input type="range" id="volume-slider-float" class="volume-slider" min="0" max="100" value="20" aria-label="Volume">
+	</div>
+
+	<!-- ============================================================
+	     Lobby — hidden until the overlay above resolves
+	     ============================================================ -->
+	<main class="lobby-container hidden" id="lobby-container">
+		<header class="lobby-topbar">
+			<div class="profile-block">
+				<button class="avatar-btn" id="btn-avatar" title="Change portrait">
+					<!-- NOTE: /static/assets/default-avatar.png doesn't exist yet,
+					     add a placeholder asset; CSS falls back to a plain square. -->
+					<img id="avatar-img" src="/static/assets/default-avatar.png" alt="Profile picture">
+				</button>
+				<input type="file" id="avatar-input" accept="image/*" hidden>
+
+				<div class="name-block">
+					<span class="display-name" id="display-name" title="Click to edit">Traveller</span>
+					<input type="text" class="display-name-input hidden" id="display-name-input">
+					<button class="edit-name-btn" id="btn-edit-name" title="Edit name">✎</button>
+				</div>
+			</div>
+
+			<button type="button" class="medieval-btn secondary-btn small-btn" id="btn-auth-action">Login / Sign Up</button>
+		</header>
+
+		<div class="lobby-body">
+			<nav class="lobby-tabs" role="tablist">
+				<button class="lobby-tab active" data-tab="play" role="tab" aria-selected="true">Play</button>
+				<button class="lobby-tab" data-tab="rules" role="tab" aria-selected="false">Rules</button>
+				<button class="lobby-tab" data-tab="customization" role="tab" aria-selected="false">Customization</button>
+				<button class="lobby-tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+				<button class="lobby-tab" data-tab="friends" id="tab-friends" role="tab" aria-selected="false" disabled>Friends</button>
+			</nav>
+
+			<!-- Play -->
+			<section class="lobby-panel active" id="panel-play" role="tabpanel">
+				<div class="primary-actions">
+					<button class="medieval-btn primary-btn" id="btn-open-create">Create Match</button>
+					<button class="medieval-btn primary-btn" id="btn-open-join">Join Match</button>
+				</div>
+
+				<div class="config-panel hidden" id="create-match-panel">
+					<h3 class="panel-heading">Create a New Match</h3>
+
+					<div class="config-row">
+						<label class="switch-label" for="toggle-reformation">Reformation DLC</label>
+						<label class="toggle-switch">
+							<input type="checkbox" id="toggle-reformation">
+							<span class="toggle-track"></span>
+						</label>
+					</div>
+
+					<div class="config-row">
+						<label for="select-max-players">Max Players</label>
+						<select id="select-max-players"></select>
+					</div>
+
+					<div class="config-row">
+						<label>Visibility</label>
+						<div class="radio-group">
+							<label><input type="radio" name="visibility" value="public" checked> Public</label>
+							<label><input type="radio" name="visibility" value="private"> Private</label>
+						</div>
+					</div>
+
+					<div class="config-row">
+						<label for="select-bot-fill">Add Bots</label>
+						<select id="select-bot-fill">
+							<option value="none">None</option>
+							<option value="fill">Fill Empty Seats</option>
+							<option value="solo">Solo Practice (Full Bots)</option>
+						</select>
+					</div>
+
+					<button class="medieval-btn primary-btn" id="btn-create-match">Create the Match</button>
+				</div>
+
+				<div class="config-panel hidden" id="join-match-panel">
+					<h3 class="panel-heading">Join a Match</h3>
+
+					<div class="join-tabs">
+						<button class="join-tab active" data-jointab="code">Enter Code</button>
+						<button class="join-tab" data-jointab="browse">Browse Matches</button>
+					</div>
+
+					<div class="join-view active" id="join-view-code">
+						<div class="input-group">
+							<label for="input-match-code" class="input-label">Match Code</label>
+							<input type="text" id="input-match-code" placeholder="e.g. 7F2K9">
+						</div>
+						<button class="medieval-btn primary-btn" id="btn-join-code">Enter Match</button>
+					</div>
+
+					<div class="join-view" id="join-view-browse">
+						<div class="browse-filters">
+							<select id="filter-players">
+								<option value="any">Any player count</option>
+								<option value="2">2 players</option>
+								<option value="3">3 players</option>
+								<option value="4">4 players</option>
+							</select>
+							<select id="filter-visibility">
+								<option value="public">Public only</option>
+								<option value="all">Public &amp; Private</option>
+							</select>
+						</div>
+						<ul class="match-list" id="match-list"></ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- Rules -->
+			<section class="lobby-panel" id="panel-rules" role="tabpanel">
+				<h3 class="panel-heading">Rules</h3>
+				<p>Coup is a game of influence, deceit, and quiet ruin among rival courts.</p>
+				<ul class="rules-links">
+					<li><a href="#" class="renaissance-link">Base Rules</a></li>
+					<li><a href="#" class="renaissance-link">Turn Summary</a></li>
+					<li><a href="#" class="renaissance-link">Reformation DLC</a></li>
+				</ul>
+				<p class="panel-note">Full rules live on the project wiki. (TODO: point these links at the real wiki URLs.)</p>
+			</section>
+
+			<!-- Customization -->
+			<section class="lobby-panel" id="panel-customization" role="tabpanel">
+				<h3 class="panel-heading">Customization</h3>
+				<div class="locked-placeholder">
+					<span class="lock-icon">🔒</span>
+					<p>Skins and nameplates are coming soon.</p>
+				</div>
+			</section>
+
+			<!-- Settings -->
+			<section class="lobby-panel" id="panel-settings" role="tabpanel">
+				<h3 class="panel-heading">Settings</h3>
+				<div class="settings-row">
+					<label for="volume-slider">Music Volume</label>
+					<div class="volume-slider-wrapper">
+						<button class="music-btn" id="btn-music-toggle" aria-label="Mute music"><span id="music-icon" class="music-icon">♫</span></button>
+						<input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="20" aria-label="Volume">
+					</div>
+				</div>
+			</section>
+
+			<!-- Friends -->
+			<section class="lobby-panel" id="panel-friends" role="tabpanel">
+				<h3 class="panel-heading">Friends</h3>
+				<p class="guest-lock-message hidden" id="friends-guest-message">Log in to add and see friends.</p>
+				<ul class="friends-list hidden" id="friends-list"></ul>
 			</section>
 		</div>
 	</main>
 
-	<!-- Background Music -->
 	<audio id="bg-music" src="/static/assets/theme.mp3" loop preload="auto"></audio>
-
-	<!-- Floating Music Controls -->
-	<div class="music-controls" id="music-controls">
-		<button class="music-btn" id="btn-music-toggle" title="Toggle music" aria-label="Mute music">
-			<span id="music-icon">♫</span>
-		</button>
-		<div class="volume-slider-wrapper" id="volume-wrapper">
-			<input type="range" id="volume-slider" min="0" max="100" value="15" aria-label="Volume">
-		</div>
-	</div>
-
-	<!-- Custom Medieval Toast Notification System -->
 	<div class="toast-container" id="toast-container"></div>
 
-	<!-- Script loading -->
-	<script src="/static/scripts/landing/settings.js"></script>
-	<script src="/static/scripts/landing/main.js"></script>
+	<script src="/static/scripts/lobby/settings.js"></script>
+	<script src="/static/scripts/lobby/toast.js"></script>
+	<script src="/static/scripts/lobby/auth-overlay.js"></script>
+	<script src="/static/scripts/lobby/main.js"></script>
 </body>
 </html>

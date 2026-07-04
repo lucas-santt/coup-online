@@ -1,4 +1,9 @@
 
+# General
+
+# Ignore files starting with a double underscore
+__*
+
 # VSCode
 .vscode/
 
