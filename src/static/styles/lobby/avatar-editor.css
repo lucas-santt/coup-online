@@ -1,0 +1,46 @@
+/* avatar-editor.css
+   The avatar crop popup: reuses .overlay-backdrop/.scroll-container
+   from scroll.css for its shell. */
+
+.avatar-edit-scroll {
+	max-width: 400px;
+	text-align: center;
+	align-items: center;
+}
+
+.avatar-edit-stage {
+	display: flex;
+	justify-content: center;
+}
+
+#avatar-edit-canvas {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border-radius: 4px;
+	border: 2px solid var(--color-gold);
+	background-color: var(--color-leather);
+	touch-action: none;
+}
+
+.avatar-edit-controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.7rem;
+}
+
+.avatar-edit-controls .volume-slider {
+	width: 160px;
+}
+
+.avatar-edit-actions {
+	display: flex;
+	justify-content: center;
+	gap: 0.8rem;
+}
+
+.avatar-edit-actions .medieval-btn {
+	margin-top: 0;
+	flex: 1;
+}

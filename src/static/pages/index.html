@@ -11,7 +11,18 @@
 	<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=MedievalSharp&display=swap" rel="stylesheet">
 
 	<link rel="icon" href="/static/assets/favicon.ico">
-	<link rel="stylesheet" href="/static/styles/lobby.css">
+	<!-- Split from a single lobby.css into per-component stylesheets. -->
+	<link rel="stylesheet" href="/static/styles/lobby/tokens.css">
+	<link rel="stylesheet" href="/static/styles/lobby/scroll.css">
+	<link rel="stylesheet" href="/static/styles/lobby/forms.css">
+	<link rel="stylesheet" href="/static/styles/lobby/buttons.css">
+	<link rel="stylesheet" href="/static/styles/lobby/toast.css">
+	<link rel="stylesheet" href="/static/styles/lobby/music-controls.css">
+	<link rel="stylesheet" href="/static/styles/lobby/auth-overlay.css">
+	<link rel="stylesheet" href="/static/styles/lobby/avatar-editor.css">
+	<link rel="stylesheet" href="/static/styles/lobby/lobby-shell.css">
+	<link rel="stylesheet" href="/static/styles/lobby/match-panels.css">
+	<link rel="stylesheet" href="/static/styles/lobby/misc-panels.css">
 </head>
 <body>
 	<div class="ambient-overlay"></div>
@@ -189,6 +200,11 @@
 				<div class="config-panel hidden" id="create-match-panel">
 					<h3 class="panel-heading">Create a New Match</h3>
 
+					<div class="input-group" id="group-lobby-name">
+						<label for="input-lobby-name" class="input-label">Lobby Name</label>
+						<input type="text" id="input-lobby-name" placeholder="Name thy court..." required>
+					</div>
+
 					<div class="config-row">
 						<label class="switch-label" for="toggle-reformation">Reformation DLC</label>
 						<label class="toggle-switch">
@@ -208,6 +224,11 @@
 							<label><input type="radio" name="visibility" value="public" checked> Public</label>
 							<label><input type="radio" name="visibility" value="private"> Private</label>
 						</div>
+					</div>
+
+					<div class="input-group hidden" id="group-lobby-password">
+						<label for="input-lobby-password" class="input-label">Password</label>
+						<input type="password" id="input-lobby-password" placeholder="Guard thy court with a passphrase...">
 					</div>
 
 					<div class="config-row">
@@ -304,6 +325,13 @@
 	<script src="/static/scripts/lobby/settings.js"></script>
 	<script src="/static/scripts/lobby/toast.js"></script>
 	<script src="/static/scripts/lobby/auth-overlay.js"></script>
+	<!-- Split from a single main.js. session.js/friends.js must load
+	     before main.js: it calls LobbySession and Friends.load(). -->
+	<script src="/static/scripts/lobby/session.js"></script>
+	<script src="/static/scripts/lobby/profile.js"></script>
+	<script src="/static/scripts/lobby/matches.js"></script>
+	<script src="/static/scripts/lobby/friends.js"></script>
+	<script src="/static/scripts/lobby/music.js"></script>
 	<script src="/static/scripts/lobby/main.js"></script>
 </body>
 </html>

@@ -182,6 +182,6 @@ const AuthOverlay = (() => {
 			}, 1200);
 		}
 	});
-	
+
 	return { open };
 })();

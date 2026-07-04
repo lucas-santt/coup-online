@@ -19,6 +19,8 @@ const LOBBY_SETTINGS = {
 		minPlayers: 2,
 		maxPlayers: 6,
 		defaultMaxPlayers: 4,
+		nameMaxLength: 30,
+		passwordMaxLength: 50,
 	},
 	displayName: {
 		maxLength: 20,

@@ -1,0 +1,97 @@
+/* misc-panels.css
+   The smaller lobby tabs: Rules, Customization (locked placeholder),
+   Settings, and Friends. */
+
+/* ============================================================
+   Rules panel
+   ============================================================ */
+.rules-links {
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin: 0.9rem 0;
+}
+
+/* ============================================================
+   Customization panel (locked placeholder)
+   ============================================================ */
+.locked-placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 2.4rem 1rem;
+	text-align: center;
+	color: var(--color-leather-light);
+	opacity: 0.8;
+}
+
+.lock-icon {
+	font-size: 2rem;
+}
+
+/* ============================================================
+   Settings panel
+   ============================================================ */
+.settings-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	font-family: var(--font-sub);
+	letter-spacing: 0.5px;
+}
+
+.settings-row .volume-slider-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+}
+
+/* ============================================================
+   Friends panel
+   ============================================================ */
+.guest-lock-message {
+	font-style: italic;
+	color: var(--color-leather-light);
+}
+
+.friends-list {
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.friend-item {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.5rem 0.7rem;
+	background: var(--color-cream-light);
+	border: 1px solid #c5b48c;
+	border-radius: 3px;
+}
+
+.friend-status {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.friend-status-online {
+	background-color: #3f8f4f;
+	box-shadow: 0 0 4px #3f8f4f;
+}
+
+.friend-status-offline {
+	background-color: #8a8478;
+}
+
+.friend-name {
+	font-family: var(--font-body);
+	font-size: 1rem;
+	color: var(--color-leather);
+}

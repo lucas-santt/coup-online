@@ -1,0 +1,120 @@
+/* buttons.css
+   The medieval-btn family (primary/secondary, shine sweep, the
+   login/signup text-crossfade used on the auth submit button) and the
+   renaissance-link text link style. */
+
+.medieval-btn {
+	font-family: var(--font-accent);
+	font-weight: 700;
+	font-size: 0.95rem;
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	padding: 0.65rem 1.5rem;
+	border-radius: 3px;
+	cursor: pointer;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 0.8rem;
+}
+
+.btn-text-wrapper {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: 1.3rem;
+}
+
+.btn-text-login,
+.btn-text-signup {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	opacity: 0;
+	transform: translateY(4px);
+	transition: opacity 0.3s ease, transform 0.3s ease;
+	pointer-events: none;
+}
+
+.btn-text-login.active,
+.btn-text-signup.active {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.primary-btn {
+	background: linear-gradient(135deg, var(--color-crimson) 0%, var(--color-crimson-dark) 100%);
+	border: 2px solid var(--color-gold);
+	color: var(--color-gold-light);
+	box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.primary-btn:hover {
+	background: linear-gradient(135deg, var(--color-crimson-light) 0%, var(--color-crimson) 100%);
+	border-color: var(--color-gold-light);
+	box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3);
+	transform: translateY(-1px);
+}
+
+.primary-btn:active {
+	transform: translateY(1px);
+	box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.secondary-btn {
+	background: rgba(43, 29, 12, 0.05);
+	border: 1px solid var(--color-gold-dark);
+	color: var(--color-leather-light);
+}
+
+.secondary-btn:hover {
+	background: rgba(212, 175, 55, 0.15);
+	color: var(--color-leather);
+	border-color: var(--color-gold);
+}
+
+.secondary-btn:active {
+	background: rgba(212, 175, 55, 0.25);
+}
+
+/* Button shine sweep animation */
+.medieval-btn::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -150%;
+	width: 50%;
+	height: 100%;
+	background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+	transform: skewX(-25deg);
+	transition: 0.75s;
+}
+
+.medieval-btn:hover::before {
+	left: 150%;
+}
+
+.small-btn {
+	margin-top: 0;
+	padding: 0.5rem 1.1rem;
+	font-size: 0.8rem;
+	flex-shrink: 0;
+}
+
+.renaissance-link {
+	color: var(--color-crimson);
+	text-decoration: none;
+	font-weight: 700;
+	border-bottom: 1px dashed var(--color-crimson);
+	transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.renaissance-link:hover {
+	color: var(--color-crimson-light);
+	border-bottom-style: solid;
+}
