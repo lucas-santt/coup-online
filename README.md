@@ -39,31 +39,22 @@ Then open `http://localhost:8000`.
 
 ## Flow
 
-- **Out of match**: single page (`index.html`) with the auth overlay (login/signup/guest) shown modally on load, dismissing it reveals the lobby (create/join room, max 4 players for now) underneath, no page reload
-- **In match**: WebGL game view, turn-based action selection, challenge/counter screens, turn timeout with decay (30s -> 20s -> 10s -> 5s) and poker-style time bank tokens
+- **Out of match**: single page (`index.html`). On first load, an auth overlay (login/signup/guest) sits modally on top; dismissing it reveals the lobby underneath, no page reload. The lobby has Play, Rules, Customization, Settings, and Friends tabs, plus a profile block (avatar with crop/zoom editor, editable display name) and a persistent music control. Play covers creating a match (Reformation toggle, max players, public/private, bot fill options) and joining one (by code or by browsing open rooms), capped at 4 players for now.
+- **In match**: WebGL game view, turn-based action selection, challenge/counter screens, turn timeout with decay (30s -> 20s -> 10s -> 5s) and poker-style time bank tokens.
 
 ## Current status
 
-The lobby and auth overlay UI is built and working end to end on the frontend, but every network call (auth, profile, matches, friends) is currently mocked with `console.log` + a toast. The intended request/response shapes are documented as comments in `src/static/scripts/lobby/settings.js` under `LOBBY_SETTINGS.endpoints`, so the FastAPI side can be built against that contract. The Three.js game view (`game.html`) hasn't been started.
+The lobby and auth overlay UI is built and working end to end on the frontend, but every network call (auth, profile, matches, friends) is currently mocked with `console.log` + a toast. The intended request/response shapes are documented as comments in `src/static/scripts/lobby/settings.js` under `LOBBY_SETTINGS.endpoints`, so the FastAPI side can be built against that contract. The WebGL game view (`game.html`) hasn't been started.
 
 ## Key docs (GitHub wiki)
 
 - `Game-Rules`, `Turn-Summary`, `Game-Rules-Reformation-DLC` — base rules
 - `Screens-and-UI-Flow` — every screen/dialog/animation per action (Income, Foreign Aid, Tax, Extort, Exchange, Assassinate, Coup), turn timeout system, challenge resolution
 
-## Conventions
-
-- Keep HTML/CSS/JS separated by page, no inline styles/scripts
-- Python: type hints, 3.10+ style (`list[int]`, not `List[int]`)
-- Tabs over spaces
-- Keep things simple, avoid over-engineering (academic timeline, small team)
-- No Windows-specific solutions, team uses macOS/Linux + zsh
-- `uv` for Python dependency management, not `pip` directly
-
 ## Roadmap
 
 - Wire the mocked frontend calls to real FastAPI routes (auth, profile, matches, friends)
 - SQLite/SQLAlchemy models for users, sessions, matches
 - Bot players (fill empty seats / replace disconnects), with difficulty levels (honest, bluff-heavy, balanced)
-- Three.js game view and turn/action flow
+- WebGL game view and turn/action flow
 - Open rules questions live inline in the wiki (e.g. whether Contessa claims can be challenged by non-assassin players)
