@@ -48,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	function pinPageContainerTop() {
 		const loginHeight = getLoginHeight();
-		const viewportMargin = 20; // never pin closer than this to the top edge
-		const top = Math.max(viewportMargin, (window.innerHeight - loginHeight) / 3);
+		const { viewportMargin, centerDivisor } = LANDING_SETTINGS.pin;
+		const top = Math.max(viewportMargin, (window.innerHeight - loginHeight) / centerDivisor);
 
 		pageContainer.style.top = `${top}px`;
 		pageContainer.style.transform = 'translateX(-50%)';
@@ -61,12 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
 	// =============================================
 	//  Music Setup & Smooth Focus/Blur Fading
 	// =============================================
-	const DEFAULT_VOLUME = 0.15;
 	let isMuted = false;
-	let currentSliderVal = DEFAULT_VOLUME;
+	let currentSliderVal = LANDING_SETTINGS.audio.defaultVolume;
 	let fadeInterval = null;
 
-	bgMusic.volume = DEFAULT_VOLUME;
+	bgMusic.volume = LANDING_SETTINGS.audio.defaultVolume;
 
 	// Browsers require a user interaction before autoplay
 	function tryStartMusic() {
@@ -116,16 +115,16 @@ document.addEventListener('DOMContentLoaded', () => {
 			}
 		}
 	}
-	volumeSlider.style.setProperty('--fill', DEFAULT_VOLUME * 100 + '%');
+	volumeSlider.style.setProperty('--fill', LANDING_SETTINGS.audio.defaultVolume * 100 + '%');
 	volumeSlider.addEventListener('input', updateVolume);
 
 	// Smooth focus/blur volume transitions
-	function fadeVolumeTo(targetVolume, duration = 400) {
+	function fadeVolumeTo(targetVolume, duration = LANDING_SETTINGS.audio.fadeDefaultDurationMs) {
 		if (isMuted || bgMusic.paused) return;
 
 		clearInterval(fadeInterval);
 		const startVolume = bgMusic.volume;
-		const steps = 20;
+		const steps = LANDING_SETTINGS.audio.fadeSteps;
 		const stepTime = duration / steps;
 		const volumeDelta = (targetVolume - startVolume) / steps;
 		let currentStep = 0;
@@ -142,12 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	window.addEventListener('blur', () => {
 		// Lower volume significantly when tab loses focus
-		fadeVolumeTo(currentSliderVal * 0.2, 200);
+		fadeVolumeTo(currentSliderVal * LANDING_SETTINGS.audio.blurVolumeMultiplier, LANDING_SETTINGS.audio.fadeFocusDurationMs);
 	});
 
 	window.addEventListener('focus', () => {
 		// Restore volume when focus returns
-		fadeVolumeTo(currentSliderVal, 200);
+		fadeVolumeTo(currentSliderVal, LANDING_SETTINGS.audio.fadeFocusDurationMs);
 	});
 
 	// =============================================
@@ -217,8 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		const toast = document.createElement('div');
 		toast.className = `medieval-toast toast-${type}`;
 
-		const icons = { info: '📜', success: '👑', warning: '⚔️', error: '🛡️' };
-		const icon = icons[type] || icons.info;
+		const icon = LANDING_SETTINGS.toast.icons[type] || LANDING_SETTINGS.toast.icons.info;
 
 		toast.innerHTML = `
 			<span class="toast-icon">${icon}</span>
@@ -228,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		toast.addEventListener('click', () => dismissToast(toast));
 		toastContainer.appendChild(toast);
 
-		setTimeout(() => dismissToast(toast), 4500);
+		setTimeout(() => dismissToast(toast), LANDING_SETTINGS.toast.autoDismissMs);
 	}
 
 	function dismissToast(toast) {
@@ -244,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Guest
 	btnGuest.addEventListener('click', () => {
-		console.log('Guest Auth Requested: POST /api/auth/guest');
+		console.log(`Guest Auth Requested: POST ${LANDING_SETTINGS.auth.endpoints.guest}`);
 		showToast('Welcome, Traveller! Entering the court as Guest...', 'success');
 	});
 
@@ -261,11 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 
 		if (currentMode === 'login') {
-			console.log(`Log In Requested: POST /api/auth/login | Username: "${username}"`);
+			console.log(`Log In Requested: POST ${LANDING_SETTINGS.auth.endpoints.login} | Username: "${username}"`);
 			showToast(`Verifying credentials for "${username}"...`, 'info');
 
 			// Placeholder — replace with real API call
-			setTimeout(() => showToast('Access granted! Entering the realm...', 'success'), 1500);
+			setTimeout(() => showToast('Access granted! Entering the realm...', 'success'), LANDING_SETTINGS.auth.loginVerifyDelayMs);
 		} else {
 			const confirmPassword = confirmPasswordInput.value;
 			if (password !== confirmPassword) {
@@ -274,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				return;
 			}
 
-			console.log(`Sign Up Requested: POST /api/auth/signup | Username: "${username}"`);
+			console.log(`Sign Up Requested: POST ${LANDING_SETTINGS.auth.endpoints.signup} | Username: "${username}"`);
 			showToast(`Pledging allegiance for "${username}"...`, 'info');
 
 			// Placeholder — on success, auto-login by switching mode, pre-filling, and submitting
@@ -289,9 +287,9 @@ document.addEventListener('DOMContentLoaded', () => {
 					// Slight delay for visibility, then auto-submit the login
 					setTimeout(() => {
 						authForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-					}, 600);
-				}, 1000);
-			}, 1500);
+					}, LANDING_SETTINGS.auth.autoSubmitDelayMs);
+				}, LANDING_SETTINGS.auth.signupToLoginDelayMs);
+			}, LANDING_SETTINGS.auth.signupPledgeDelayMs);
 		}
 	});
 });
