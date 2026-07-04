@@ -2,13 +2,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const tabLogin = document.getElementById('tab-login');
     const tabSignup = document.getElementById('tab-signup');
-    const panelLogin = document.getElementById('panel-login');
-    const panelSignup = document.getElementById('panel-signup');
+    const authForm = document.getElementById('auth-form');
+    const confirmPasswordGroup = document.getElementById('confirm-password-group');
+    const confirmPasswordInput = document.getElementById('auth-confirm-password');
+    const btnSubmit = document.getElementById('btn-submit');
+    
+    const btnTextLogin = btnSubmit.querySelector('.btn-text-login');
+    const btnTextSignup = btnSubmit.querySelector('.btn-text-signup');
+    
     const linkToggleAuth = document.getElementById('link-toggle-auth');
     const toggleHintText = document.getElementById('toggle-hint-text');
     const btnGuest = document.getElementById('btn-guest');
     const toastContainer = document.getElementById('toast-container');
-    const sealLogo = document.getElementById('seal-logo');
 
     // Music controls
     const bgMusic = document.getElementById('bg-music');
@@ -17,17 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const volumeSlider = document.getElementById('volume-slider');
 
     // =============================================
-    //  Music Setup
+    //  Music Setup & Smooth Focus/Blur Fading
     // =============================================
     const DEFAULT_VOLUME = 0.15;
     let isMuted = false;
+    let currentSliderVal = DEFAULT_VOLUME;
+    let fadeInterval = null;
 
     bgMusic.volume = DEFAULT_VOLUME;
 
-    // Browsers require a user interaction before autoplay; start on first click/keydown
+    // Browsers require a user interaction before autoplay
     function tryStartMusic() {
-        if (bgMusic.paused) {
-            bgMusic.play().catch(() => { /* autoplay blocked, user will use the button */ });
+        if (bgMusic.paused && !isMuted) {
+            bgMusic.play().catch(() => {});
         }
         document.removeEventListener('click', tryStartMusic);
         document.removeEventListener('keydown', tryStartMusic);
@@ -36,18 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', tryStartMusic);
 
     btnMusicToggle.addEventListener('click', (e) => {
-        e.stopPropagation(); // Don't re-trigger tryStartMusic
+        e.stopPropagation();
         if (isMuted || bgMusic.paused) {
             bgMusic.play();
             isMuted = false;
-            musicIcon.innerHTML = '&#9835;';
-            btnMusicToggle.classList.remove('muted');
+            musicIcon.classList.remove('muted');
             btnMusicToggle.setAttribute('aria-label', 'Mute music');
+            bgMusic.volume = currentSliderVal;
         } else {
             bgMusic.pause();
             isMuted = true;
-            musicIcon.innerHTML = '&#128263;';
-            btnMusicToggle.classList.add('muted');
+            musicIcon.classList.add('muted');
             btnMusicToggle.setAttribute('aria-label', 'Play music');
         }
     });
@@ -55,76 +61,115 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update volume slider fill and audio volume
     function updateVolume() {
         const val = volumeSlider.value;
-        bgMusic.volume = val / 100;
+        currentSliderVal = val / 100;
         volumeSlider.style.setProperty('--fill', val + '%');
+        
+        if (!isMuted && !bgMusic.paused) {
+            bgMusic.volume = currentSliderVal;
+        }
+        
         if (val == 0) {
-            musicIcon.innerHTML = '&#128263;';
             isMuted = true;
+            musicIcon.classList.add('muted');
         } else {
-            musicIcon.innerHTML = '&#9835;';
-            isMuted = false;
-            btnMusicToggle.classList.remove('muted');
+            if (isMuted) {
+                isMuted = false;
+                musicIcon.classList.remove('muted');
+                if (bgMusic.paused) bgMusic.play().catch(() => {});
+            }
         }
     }
-    // Set initial fill
     volumeSlider.style.setProperty('--fill', DEFAULT_VOLUME * 100 + '%');
     volumeSlider.addEventListener('input', updateVolume);
 
+    // Smooth focus/blur volume transitions
+    function fadeVolumeTo(targetVolume, duration = 400) {
+        if (isMuted || bgMusic.paused) return;
+        
+        clearInterval(fadeInterval);
+        const startVolume = bgMusic.volume;
+        const steps = 20;
+        const stepTime = duration / steps;
+        const volumeDelta = (targetVolume - startVolume) / steps;
+        let currentStep = 0;
+        
+        fadeInterval = setInterval(() => {
+            currentStep++;
+            bgMusic.volume = Math.max(0, Math.min(currentSliderVal, startVolume + volumeDelta * currentStep));
+            if (currentStep >= steps) {
+                clearInterval(fadeInterval);
+                bgMusic.volume = targetVolume;
+            }
+        }, stepTime);
+    }
+
+    window.addEventListener('blur', () => {
+        // Lower volume significantly when tab loses focus
+        fadeVolumeTo(currentSliderVal * 0.2, 200);
+    });
+
+    window.addEventListener('focus', () => {
+        // Restore volume when focus returns
+        fadeVolumeTo(currentSliderVal, 200);
+    });
+
     // =============================================
-    //  Tab Switching
+    //  Tab Switching / Form Transitions
     // =============================================
-    function switchTab(target) {
-        if (target === 'login') {
+    let currentMode = 'login'; // 'login' or 'signup'
+
+    function setMode(mode) {
+        if (currentMode === mode) return;
+        currentMode = mode;
+
+        if (mode === 'login') {
             tabLogin.classList.add('active');
             tabLogin.setAttribute('aria-selected', 'true');
             tabSignup.classList.remove('active');
             tabSignup.setAttribute('aria-selected', 'false');
 
-            panelLogin.style.display = 'flex';
-            panelLogin.classList.add('active');
-            panelSignup.style.display = 'none';
-            panelSignup.classList.remove('active');
+            // Hide confirm password wrapper and disable required attribute
+            confirmPasswordGroup.classList.remove('visible');
+            confirmPasswordInput.removeAttribute('required');
+
+            // Crossfade Button Text
+            btnTextSignup.classList.remove('active');
+            btnTextLogin.classList.add('active');
 
             toggleHintText.innerHTML = `Don't have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Sign up</a>`;
             document.getElementById('link-toggle-auth-inner').addEventListener('click', (e) => {
                 e.preventDefault();
-                switchTab('signup');
+                setMode('signup');
             });
-        } else if (target === 'signup') {
+        } else {
             tabSignup.classList.add('active');
             tabSignup.setAttribute('aria-selected', 'true');
             tabLogin.classList.remove('active');
             tabLogin.setAttribute('aria-selected', 'false');
 
-            panelSignup.style.display = 'flex';
-            panelSignup.classList.add('active');
-            panelLogin.style.display = 'none';
-            panelLogin.classList.remove('active');
+            // Show confirm password wrapper and enable required attribute
+            confirmPasswordGroup.classList.add('visible');
+            confirmPasswordInput.setAttribute('required', 'required');
+
+            // Crossfade Button Text
+            btnTextLogin.classList.remove('active');
+            btnTextSignup.classList.add('active');
 
             toggleHintText.innerHTML = `Already have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Log in</a>`;
             document.getElementById('link-toggle-auth-inner').addEventListener('click', (e) => {
                 e.preventDefault();
-                switchTab('login');
+                setMode('login');
             });
         }
     }
 
-    tabLogin.addEventListener('click', () => switchTab('login'));
-    tabSignup.addEventListener('click', () => switchTab('signup'));
+    tabLogin.addEventListener('click', () => setMode('login'));
+    tabSignup.addEventListener('click', () => setMode('signup'));
 
     if (linkToggleAuth) {
         linkToggleAuth.addEventListener('click', (e) => {
             e.preventDefault();
-            switchTab('signup');
-        });
-    }
-
-    // =============================================
-    //  Wax Seal Easter Egg
-    // =============================================
-    if (sealLogo) {
-        sealLogo.addEventListener('click', () => {
-            showToast('⚜️ By decree of the Duke, thy presence is welcomed in the court!', 'info');
+            setMode('signup');
         });
     }
 
@@ -166,62 +211,50 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Welcome, Traveller! Entering the court as Guest...', 'success');
     });
 
-    // Log In
-    panelLogin.addEventListener('submit', (e) => {
+    // Unified Form Submit Handler
+    authForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const username = document.getElementById('login-username').value.trim();
-        const password = document.getElementById('login-password').value;
+        
+        const username = document.getElementById('auth-username').value.trim();
+        const password = document.getElementById('auth-password').value;
 
         if (!username || !password) {
             showToast('Moniker and passphrase must not be blank!', 'warning');
             return;
         }
 
-        console.log(`Log In Requested: POST /api/auth/login | Username: "${username}"`);
-        showToast(`Verifying credentials for "${username}"...`, 'info');
+        if (currentMode === 'login') {
+            console.log(`Log In Requested: POST /api/auth/login | Username: "${username}"`);
+            showToast(`Verifying credentials for "${username}"...`, 'info');
 
-        // Placeholder — replace with real API call
-        setTimeout(() => showToast('Access granted! Entering the realm...', 'success'), 1500);
-    });
+            // Placeholder — replace with real API call
+            setTimeout(() => showToast('Access granted! Entering the realm...', 'success'), 1500);
+        } else {
+            const confirmPassword = confirmPasswordInput.value;
+            if (password !== confirmPassword) {
+                showToast('Verily, thy passphrases do not match!', 'warning');
+                confirmPasswordInput.focus();
+                return;
+            }
 
-    // Sign Up — auto-login after success
-    panelSignup.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const usernameInput = document.getElementById('signup-username');
-        const passwordInput = document.getElementById('signup-password');
-        const confirmPasswordInput = document.getElementById('signup-confirm-password');
+            console.log(`Sign Up Requested: POST /api/auth/signup | Username: "${username}"`);
+            showToast(`Pledging allegiance for "${username}"...`, 'info');
 
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
-
-        if (!username || !password) {
-            showToast('Moniker and passphrase must not be blank!', 'warning');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            showToast('Verily, thy passphrases do not match!', 'warning');
-            confirmPasswordInput.focus();
-            return;
-        }
-
-        console.log(`Sign Up Requested: POST /api/auth/signup | Username: "${username}"`);
-        showToast(`Pledging allegiance for "${username}"...`, 'info');
-
-        // Placeholder — on success, auto-login by switching tab and submitting
-        setTimeout(() => {
-            showToast('Allegiance sworn! Logging you in...', 'success');
-
-            // Switch to login, pre-fill, and auto-submit
-            switchTab('login');
-            document.getElementById('login-username').value = username;
-            document.getElementById('login-password').value = password;
-
-            // Slight delay so the user sees the transition, then auto-submit
+            // Placeholder — on success, auto-login by switching mode, pre-filling, and submitting
             setTimeout(() => {
-                panelLogin.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-            }, 600);
-        }, 1500);
+                showToast('Allegiance sworn! Logging you in...', 'success');
+
+                setTimeout(() => {
+                    setMode('login');
+                    document.getElementById('auth-username').value = username;
+                    document.getElementById('auth-password').value = password;
+
+                    // Slight delay for visibility, then auto-submit the login
+                    setTimeout(() => {
+                        authForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    }, 600);
+                }, 1000);
+            }, 1500);
+        }
     });
 });

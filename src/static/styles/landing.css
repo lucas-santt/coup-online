@@ -114,33 +114,6 @@ body {
 .bottom-left { bottom: 12px; left: 12px; }
 .bottom-right { bottom: 12px; right: 12px; }
 
-/* Red Wax Seal image at top center */
-.wax-seal-wrapper {
-    position: absolute;
-    top: -50px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    width: 100px;
-    height: 100px;
-    pointer-events: auto;
-}
-
-.wax-seal-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    mix-blend-mode: multiply;
-    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
-    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    cursor: pointer;
-}
-
-.wax-seal-img:hover {
-    transform: scale(1.08) rotate(5deg);
-    filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.6));
-}
-
 /* Scroll Header */
 .scroll-header {
     text-align: center;
@@ -233,14 +206,41 @@ body {
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 1.1rem;
     animation: fade-in 0.4s ease-out;
+}
+
+.confirm-password-wrapper {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-8px);
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.3s ease, 
+                transform 0.3s ease, 
+                margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.confirm-password-wrapper.visible {
+    max-height: 100px;
+    opacity: 1;
+    transform: translateY(0);
+    margin-top: 1.1rem;
 }
 
 .input-group {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    margin-top: 1.1rem;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-group:first-child {
+    margin-top: 0;
 }
 
 .input-label {
@@ -294,6 +294,33 @@ input::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: 1.3rem;
+}
+
+.btn-text-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 1.4rem;
+}
+
+.btn-text-login,
+.btn-text-signup {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+.btn-text-login.active,
+.btn-text-signup.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 .primary-btn {
@@ -556,8 +583,26 @@ input::placeholder {
     transform: scale(1.15);
 }
 
-.music-btn.muted {
-    color: #aaa;
+#music-icon {
+    position: relative;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+}
+
+#music-icon.muted::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 135%;
+    height: 2px;
+    background-color: var(--color-crimson);
+    transform: translate(-50%, -50%) rotate(-45deg);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    display: block;
 }
 
 .volume-slider-wrapper {

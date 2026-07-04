@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=MedievalSharp&display=swap" rel="stylesheet">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+    <link rel="icon" href="/static/assets/favicon.ico">
 
     <!-- Stylesheet -->
     <link rel="stylesheet" href="/static/styles/landing.css">
@@ -25,10 +25,6 @@
     <!-- Main Container -->
     <main class="page-container">
         <div class="scroll-container">
-            <!-- Red Wax Seal at the top center -->
-            <div class="wax-seal-wrapper">
-                <img src="/static/assets/wax_seal.png" alt="Royal Wax Seal" class="wax-seal-img" id="seal-logo" style="mix-blend-mode: normal;">
-            </div>
 
             <!-- Ornate SVG Corners for the medieval scroll look -->
             <div class="ornate-corner top-left">
@@ -85,48 +81,38 @@
             <section class="auth-section">
                 <!-- Navigation Tabs -->
                 <div class="auth-tabs" role="tablist">
-                    <button class="tab-btn active" id="tab-login" role="tab" aria-selected="true" aria-controls="panel-login">
+                    <button class="tab-btn active" id="tab-login" role="tab" aria-selected="true" aria-controls="auth-form">
                         Log In
                     </button>
-                    <button class="tab-btn" id="tab-signup" role="tab" aria-selected="false" aria-controls="panel-signup">
+                    <button class="tab-btn" id="tab-signup" role="tab" aria-selected="false" aria-controls="auth-form">
                         Sign Up
                     </button>
                 </div>
 
-                <!-- Form Panels Container -->
+                <!-- Unified Form Container -->
                 <div class="panels-container">
-                    <!-- Log In Form -->
-                    <form id="panel-login" class="auth-form active" role="tabpanel" aria-labelledby="tab-login">
+                    <form id="auth-form" class="auth-form" autocomplete="on">
                         <div class="input-group">
-                            <label for="login-username" class="input-label">Moniker</label>
-                            <input type="text" id="login-username" name="username" placeholder="Thy moniker..." required autocomplete="username">
+                            <label for="auth-username" class="input-label">Moniker</label>
+                            <input type="text" id="auth-username" name="username" placeholder="Thy moniker..." required autocomplete="username">
                         </div>
                         <div class="input-group">
-                            <label for="login-password" class="input-label">Passphrase</label>
-                            <input type="password" id="login-password" name="password" placeholder="Thy secret passphrase..." required autocomplete="current-password">
+                            <label for="auth-password" class="input-label">Passphrase</label>
+                            <input type="password" id="auth-password" name="password" placeholder="Thy secret passphrase..." required autocomplete="current-password">
                         </div>
-                        <button type="submit" class="medieval-btn primary-btn">
-                            <span class="btn-text">Enter the Court</span>
-                            <span class="btn-border"></span>
-                        </button>
-                    </form>
-
-                    <!-- Sign Up Form -->
-                    <form id="panel-signup" class="auth-form" role="tabpanel" aria-labelledby="tab-signup" style="display: none;">
-                        <div class="input-group">
-                            <label for="signup-username" class="input-label">Moniker</label>
-                            <input type="text" id="signup-username" name="username" placeholder="Choose thy moniker..." required autocomplete="username">
+                        
+                        <!-- Confirm Password Wrapper (Animated Height/Opacity) -->
+                        <div class="input-group confirm-password-wrapper" id="confirm-password-group">
+                            <label for="auth-confirm-password" class="input-label">Confirm Passphrase</label>
+                            <input type="password" id="auth-confirm-password" name="confirm_password" placeholder="Repeat thy passphrase..." autocomplete="new-password">
                         </div>
-                        <div class="input-group">
-                            <label for="signup-password" class="input-label">Passphrase</label>
-                            <input type="password" id="signup-password" name="password" placeholder="Create a strong passphrase..." required autocomplete="new-password">
-                        </div>
-                        <div class="input-group">
-                            <label for="signup-confirm-password" class="input-label">Confirm Passphrase</label>
-                            <input type="password" id="signup-confirm-password" name="confirm_password" placeholder="Repeat thy passphrase..." required autocomplete="new-password">
-                        </div>
-                        <button type="submit" class="medieval-btn primary-btn">
-                            <span class="btn-text">Pledge Allegiance</span>
+                        
+                        <!-- Submit Button with Crossfading Text -->
+                        <button type="submit" class="medieval-btn primary-btn" id="btn-submit">
+                            <span class="btn-text-wrapper">
+                                <span class="btn-text-login active">Enter the Court</span>
+                                <span class="btn-text-signup">Pledge Allegiance</span>
+                            </span>
                             <span class="btn-border"></span>
                         </button>
                     </form>
@@ -166,7 +152,7 @@
     <!-- Floating Music Controls -->
     <div class="music-controls" id="music-controls">
         <button class="music-btn" id="btn-music-toggle" title="Toggle music" aria-label="Mute music">
-            <span id="music-icon">&#9835;</span>
+            <span id="music-icon">♫</span>
         </button>
         <div class="volume-slider-wrapper" id="volume-wrapper">
             <input type="range" id="volume-slider" min="0" max="100" value="15" aria-label="Volume">
