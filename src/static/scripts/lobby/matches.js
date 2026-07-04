@@ -33,6 +33,7 @@
 
 	inputLobbyName.maxLength = LOBBY_SETTINGS.match.nameMaxLength;
 	inputLobbyPassword.maxLength = LOBBY_SETTINGS.match.passwordMaxLength;
+	document.getElementById('input-match-code').maxLength = LOBBY_SETTINGS.match.codeMaxLength;
 
 	// The password field only makes sense for a private lobby, so it
 	// stays hidden (and its value cleared) whenever Public is selected.
@@ -137,14 +138,42 @@
 	const matchListEl = document.getElementById('match-list');
 	const filterPlayers = document.getElementById('filter-players');
 	const filterVisibility = document.getElementById('filter-visibility');
+	const filterSearch = document.getElementById('filter-search');
+	const filterReformation = document.getElementById('filter-reformation');
+
+	filterSearch.maxLength = LOBBY_SETTINGS.match.searchMaxLength;
+
+	// Player-count filter options depend on the configured max, so build
+	// them the same way the create-match select does instead of hardcoding.
+	(function populatePlayerFilter() {
+		const { minPlayers, maxPlayers } = LOBBY_SETTINGS.match;
+		for (let n = minPlayers; n <= maxPlayers; n++) {
+			const opt = document.createElement('option');
+			opt.value = String(n);
+			opt.textContent = `${n} players`;
+			filterPlayers.appendChild(opt);
+		}
+	})();
+
+	// Debounced so we're not re-filtering/re-rendering on every keystroke.
+	let searchDebounceTimer = null;
+	filterSearch.addEventListener('input', () => {
+		clearTimeout(searchDebounceTimer);
+		searchDebounceTimer = setTimeout(renderMatchList, 200);
+	});
 
 	function renderMatchList() {
 		const playerFilter = filterPlayers.value;
 		const visibilityFilter = filterVisibility.value;
+		const reformationFilter = filterReformation.value; // 'any' | 'yes' | 'no'
+		const searchTerm = filterSearch.value.trim().toLowerCase();
 
 		const filtered = MOCK_MATCHES.filter((m) => {
 			if (visibilityFilter === 'public' && m.visibility !== 'public') return false;
 			if (playerFilter !== 'any' && m.max_players !== Number(playerFilter)) return false;
+			if (reformationFilter === 'yes' && !m.reformation) return false;
+			if (reformationFilter === 'no' && m.reformation) return false;
+			if (searchTerm && !m.name.toLowerCase().includes(searchTerm)) return false;
 			return true;
 		});
 
@@ -229,4 +258,5 @@
 
 	filterPlayers.addEventListener('change', renderMatchList);
 	filterVisibility.addEventListener('change', renderMatchList);
+	filterReformation.addEventListener('change', renderMatchList);
 })();

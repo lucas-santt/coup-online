@@ -17,13 +17,22 @@ const LOBBY_SETTINGS = {
 	},
 	match: {
 		minPlayers: 2,
-		maxPlayers: 6,
+		maxPlayers: 10,
 		defaultMaxPlayers: 4,
 		nameMaxLength: 30,
 		passwordMaxLength: 50,
+		codeMaxLength: 8,
+		searchMaxLength: 30,
 	},
 	displayName: {
 		maxLength: 20,
+	},
+	auth: {
+		// bcrypt silently ignores input past 72 bytes, so capping here isn't
+		// just "avoid a huge request" — it keeps the password the user thinks
+		// they set from becoming a different, shorter one to the hasher.
+		usernameMaxLength: 24,
+		passwordMaxLength: 72,
 	},
 
 	// ============================================================
@@ -72,8 +81,10 @@ const LOBBY_SETTINGS = {
 			// -> { match_id, join_code }
 
 			list: '/api/matches',
-			// GET /api/matches?visibility=public&max_players=4
-			// -> [{ match_id, host_name, player_count, max_players,
+			// GET /api/matches?visibility=public&max_players=4&search=brutus&reformation=yes
+			// search: matched against match name, case-insensitive, substring
+			// reformation: "yes" | "no" | omitted (any)
+			// -> [{ match_id, name, host_name, player_count, max_players,
 			//        visibility, reformation }]
 
 			joinByCode: '/api/matches/join',

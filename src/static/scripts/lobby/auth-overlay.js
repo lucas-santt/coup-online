@@ -33,20 +33,32 @@ const AuthOverlay = (() => {
 	const linkToggleAuth = document.getElementById('link-toggle-auth');
 	const toggleHintText = document.getElementById('toggle-hint-text');
 	const btnGuest = document.getElementById('btn-guest');
+	const usernameInput = document.getElementById('auth-username');
+	const passwordInput = document.getElementById('auth-password');
 
-	const overlayHeight = overlayScroll.offsetHeight;
-	const screenHeight = window.innerHeight;
+	usernameInput.maxLength = LOBBY_SETTINGS.auth.usernameMaxLength;
+	passwordInput.maxLength = LOBBY_SETTINGS.auth.passwordMaxLength;
+	confirmPasswordInput.maxLength = LOBBY_SETTINGS.auth.passwordMaxLength;
 
 	let currentMode = 'login'; // 'login' | 'signup'
 	let context = 'gate';
 	let onDone = null;
 
-	// Pins the box's current top edge in place
+	// Pins the box's current top edge in place. Reads sizes fresh each call
+	// so it stays correct after the window (or the box itself) changes size.
 	function pinTop() {
+		const overlayHeight = overlayScroll.offsetHeight;
+		const screenHeight = window.innerHeight;
 		const marginTop = (screenHeight - overlayHeight) * 0.5 - overlayHeight * 0.07;
 		overlayScroll.style.marginTop = `${marginTop}px`;
 		overlay.classList.add('pinned-top');
 	}
+
+	// Re-pin on resize, but only while the overlay is actually showing —
+	// no point recalculating a hidden element's layout.
+	window.addEventListener('resize', () => {
+		if (overlay.classList.contains('visible')) pinTop();
+	});
 
 	function setAuthMode(mode) {
 		if (currentMode === mode) return;

@@ -13,6 +13,96 @@
 	margin: 0.9rem 0;
 }
 
+.rules-links .rules-open-btn {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+
+/* ============================================================
+   Rules overlay
+   ============================================================ */
+.rules-overlay-scroll {
+	max-width: 640px;
+	max-height: 85vh;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+}
+
+.rules-close-btn {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.7rem;
+	background: none;
+	border: none;
+	font-size: 1.6rem;
+	line-height: 1;
+	color: var(--color-leather-light);
+	cursor: pointer;
+}
+
+.rules-tabs {
+	flex-shrink: 0;
+	margin-bottom: 0.8rem;
+}
+
+.rules-content {
+	overflow-y: auto;
+	padding-right: 0.4rem;
+	color: var(--color-leather);
+}
+
+.rules-content h4 {
+	margin: 1.1rem 0 0.4rem;
+	color: var(--color-leather);
+}
+
+.rules-content h4:first-child {
+	margin-top: 0;
+}
+
+.rules-content p,
+.rules-content li {
+	line-height: 1.5;
+}
+
+.rules-note {
+	font-style: italic;
+	color: var(--color-leather-light);
+}
+
+.rules-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0.4rem 0 0.8rem;
+	font-size: 0.92rem;
+}
+
+.rules-table th,
+.rules-table td {
+	text-align: left;
+	padding: 0.4rem 0.5rem;
+	border: 1px solid #c5b48c;
+	background: var(--color-cream-light);
+}
+
+.rules-table th {
+	font-family: var(--font-sub);
+	letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   Browse-matches filters (name search + reformation filter)
+   ============================================================ */
+.filter-search-input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
 /* ============================================================
    Customization panel (locked placeholder)
    ============================================================ */
