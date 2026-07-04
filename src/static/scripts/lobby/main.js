@@ -153,20 +153,31 @@ document.addEventListener('DOMContentLoaded', () => {
 		avatarCtx.strokeRect(squareX + 1, squareY + 1, squareSize - 2, squareSize - 2);
 		avatarCtx.restore();
 
-		// Resize handle, bottom-right corner.
+		// Resize handles, one per corner.
 		const handleSize = 12;
 		avatarCtx.fillStyle = '#d4af37';
-		avatarCtx.fillRect(
-			squareX + squareSize - handleSize / 2,
-			squareY + squareSize - handleSize / 2,
-			handleSize,
-			handleSize,
-		);
+		for (const [hx, hy] of cornerPoints()) {
+			avatarCtx.fillRect(hx - handleSize / 2, hy - handleSize / 2, handleSize, handleSize);
+		}
+	}
+
+	// Corner order matches the 'resize-*' mode names: tl, tr, bl, br.
+	function cornerPoints() {
+		return [
+			[squareX, squareY],
+			[squareX + squareSize, squareY],
+			[squareX, squareY + squareSize],
+			[squareX + squareSize, squareY + squareSize],
+		];
 	}
 
 	function hitTest(x, y) {
-		const nearHandle = Math.hypot(x - (squareX + squareSize), y - (squareY + squareSize)) <= HANDLE_HIT;
-		if (nearHandle) return 'resize';
+		const names = ['resize-tl', 'resize-tr', 'resize-bl', 'resize-br'];
+		const corners = cornerPoints();
+		for (let i = 0; i < corners.length; i++) {
+			const [cx, cy] = corners[i];
+			if (Math.hypot(x - cx, y - cy) <= HANDLE_HIT) return names[i];
+		}
 		if (x >= squareX && x <= squareX + squareSize && y >= squareY && y <= squareY + squareSize) return 'move';
 		return null;
 	}
@@ -223,7 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (!dragMode) {
 			// Just hovering: hint at what a click would do.
 			const hit = hitTest(x, y);
-			avatarEditCanvas.style.cursor = hit === 'resize' ? 'nwse-resize' : hit === 'move' ? 'move' : 'default';
+			const cursors = { 'resize-tl': 'nwse-resize', 'resize-br': 'nwse-resize', 'resize-tr': 'nesw-resize', 'resize-bl': 'nesw-resize', move: 'move' };
+			avatarEditCanvas.style.cursor = cursors[hit] || 'default';
 			return;
 		}
 
@@ -234,7 +246,34 @@ document.addEventListener('DOMContentLoaded', () => {
 			squareX = dragStart.squareX + dx;
 			squareY = dragStart.squareY + dy;
 		} else {
-			squareSize = dragStart.squareSize + Math.max(dx, dy);
+			// Grow/shrink from the dragged corner while keeping the
+			// opposite corner fixed as the anchor.
+			const left = dragStart.squareX;
+			const top = dragStart.squareY;
+			const right = dragStart.squareX + dragStart.squareSize;
+			const bottom = dragStart.squareY + dragStart.squareSize;
+
+			let delta;
+			if (dragMode === 'resize-br') delta = Math.max(dx, dy);
+			else if (dragMode === 'resize-tl') delta = Math.max(-dx, -dy);
+			else if (dragMode === 'resize-tr') delta = Math.max(dx, -dy);
+			else delta = Math.max(-dx, dy); // resize-bl
+
+			squareSize = dragStart.squareSize + delta;
+
+			if (dragMode === 'resize-br') {
+				squareX = left;
+				squareY = top;
+			} else if (dragMode === 'resize-tl') {
+				squareX = right - squareSize;
+				squareY = bottom - squareSize;
+			} else if (dragMode === 'resize-tr') {
+				squareX = left;
+				squareY = bottom - squareSize;
+			} else {
+				squareX = right - squareSize;
+				squareY = top;
+			}
 		}
 
 		clampSquare();
