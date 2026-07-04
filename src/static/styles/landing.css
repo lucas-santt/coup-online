@@ -1,0 +1,621 @@
+/* Design Tokens & Variables */
+:root {
+    --color-gold: #d4af37;
+    --color-gold-light: #f3e5ab;
+    --color-gold-dark: #aa7c11;
+    --color-crimson: #800000;
+    --color-crimson-light: #b30000;
+    --color-crimson-dark: #4a0000;
+    --color-cream: #f4ead4;
+    --color-cream-light: #fffcf4;
+    --color-leather: #2b1d0c;
+    --color-leather-light: #4a3518;
+    
+    --font-header: 'Cinzel Decorative', serif;
+    --font-sub: 'MedievalSharp', cursive;
+    --font-body: 'Cormorant Garamond', serif;
+    --font-accent: 'Cinzel', serif;
+}
+
+/* Reset and Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: 18px;
+    color: var(--color-leather);
+    background-image: url('/static/assets/parchment.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    position: relative;
+    padding: 70px 20px 30px;
+}
+
+/* Ambient Overlay to simulate candlelit atmosphere */
+.ambient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 230, 150, 0.08) 0%, rgba(20, 10, 0, 0.4) 100%);
+    pointer-events: none;
+    z-index: 1;
+    animation: candle-flicker 8s infinite alternate ease-in-out;
+}
+
+.background-vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.75) 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Page Wrapper */
+.page-container {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+/* Medieval Scroll Container */
+.scroll-container {
+    background-color: rgba(244, 234, 212, 0.95);
+    background-image: radial-gradient(rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-gold-dark);
+    outline: 4px double var(--color-gold);
+    outline-offset: -8px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 
+                inset 0 0 50px rgba(43, 29, 12, 0.15);
+    padding: 3.5rem 2.2rem 2.5rem 2.2rem;
+    border-radius: 4px;
+    width: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.scroll-container:hover {
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 
+                inset 0 0 50px rgba(43, 29, 12, 0.1);
+}
+
+/* Ornate Corner SVGs */
+.ornate-corner {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    pointer-events: none;
+    opacity: 0.85;
+}
+.top-left { top: 12px; left: 12px; }
+.top-right { top: 12px; right: 12px; }
+.bottom-left { bottom: 12px; left: 12px; }
+.bottom-right { bottom: 12px; right: 12px; }
+
+/* Red Wax Seal image at top center */
+.wax-seal-wrapper {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: 100px;
+    height: 100px;
+    pointer-events: auto;
+}
+
+.wax-seal-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+}
+
+.wax-seal-img:hover {
+    transform: scale(1.08) rotate(5deg);
+    filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.6));
+}
+
+/* Scroll Header */
+.scroll-header {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.game-title {
+    font-family: var(--font-header);
+    font-size: 3.2rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin-bottom: 0.2rem;
+    background: linear-gradient(to bottom, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.game-subtitle {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--color-leather-light);
+    letter-spacing: 1px;
+    margin-bottom: 0.8rem;
+}
+
+.gold-divider {
+    height: 20px;
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+.gold-divider.mini {
+    max-width: 180px;
+    margin: 0.5rem auto;
+}
+
+/* Auth Navigation Tabs */
+.auth-tabs {
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    margin-bottom: 1.2rem;
+}
+
+.tab-btn {
+    font-family: var(--font-accent);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: none;
+    border: none;
+    color: var(--color-leather-light);
+    padding: 0.6rem 1.8rem;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+    opacity: 0.6;
+}
+
+.tab-btn:hover {
+    opacity: 0.9;
+    color: var(--color-gold-dark);
+}
+
+.tab-btn.active {
+    opacity: 1;
+    color: var(--color-crimson);
+    text-shadow: 0 0 1px rgba(128, 0, 0, 0.2);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 15%;
+    width: 70%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--color-gold), transparent);
+}
+
+/* Authentication Forms */
+.panels-container {
+    min-height: 180px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    animation: fade-in 0.4s ease-out;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.input-label {
+    font-family: var(--font-sub);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    color: var(--color-leather-light);
+    text-transform: uppercase;
+}
+
+input[type="text"],
+input[type="password"] {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    padding: 0.65rem 0.8rem;
+    background-color: var(--color-cream-light);
+    border: 1px solid #c5b48c;
+    border-radius: 3px;
+    color: var(--color-leather);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: var(--color-gold-dark);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.4), inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+input::placeholder {
+    font-family: var(--font-body);
+    font-style: italic;
+    color: #a49673;
+    opacity: 0.7;
+}
+
+/* Medieval Buttons */
+.medieval-btn {
+    font-family: var(--font-accent);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 0.8rem 1.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--color-crimson) 0%, var(--color-crimson-dark) 100%);
+    border: 2px solid var(--color-gold);
+    color: var(--color-gold-light);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.primary-btn:hover {
+    background: linear-gradient(135deg, var(--color-crimson-light) 0%, var(--color-crimson) 100%);
+    border-color: var(--color-gold-light);
+    box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3);
+    transform: translateY(-1px);
+}
+
+.primary-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.secondary-btn {
+    background: rgba(43, 29, 12, 0.05);
+    border: 1px solid var(--color-gold-dark);
+    color: var(--color-leather-light);
+}
+
+.secondary-btn:hover {
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--color-leather);
+    border-color: var(--color-gold);
+}
+
+.secondary-btn:active {
+    background: rgba(212, 175, 55, 0.25);
+}
+
+/* Button shine sweep animation */
+.medieval-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+    transform: skewX(-25deg);
+    transition: 0.75s;
+}
+
+.medieval-btn:hover::before {
+    left: 150%;
+}
+
+/* Form toggle link section */
+.auth-toggle-link-container {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.toggle-text {
+    font-size: 0.95rem;
+    color: var(--color-leather-light);
+}
+
+.renaissance-link {
+    color: var(--color-crimson);
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 1px dashed var(--color-crimson);
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.renaissance-link:hover {
+    color: var(--color-crimson-light);
+    border-bottom-style: solid;
+}
+
+/* Guest section */
+.guest-section {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.guest-desc {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--color-leather-light);
+}
+
+/* Custom Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 320px;
+    width: calc(100vw - 50px);
+}
+
+.medieval-toast {
+    background-color: #f7ebd3;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--color-gold-dark);
+    outline: 2px double var(--color-gold);
+    outline-offset: -4px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+    padding: 1rem 1.2rem;
+    border-radius: 4px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateX(120%);
+    animation: toast-slide-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.medieval-toast::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--color-crimson);
+    width: 100%;
+    transform-origin: left;
+    animation: toast-progress 4.5s linear forwards;
+}
+
+.medieval-toast.toast-exit {
+    animation: toast-slide-out 0.4s ease-in forwards;
+}
+
+.toast-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.toast-message {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-leather);
+}
+
+/* Animations */
+@keyframes candle-flicker {
+    0% {
+        opacity: 0.95;
+    }
+    30% {
+        opacity: 0.98;
+    }
+    35% {
+        opacity: 0.93;
+    }
+    45% {
+        opacity: 0.96;
+    }
+    50% {
+        opacity: 0.94;
+    }
+    65% {
+        opacity: 0.97;
+    }
+    70% {
+        opacity: 0.93;
+    }
+    85% {
+        opacity: 0.98;
+    }
+    100% {
+        opacity: 0.95;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toast-slide-in {
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes toast-slide-out {
+    to {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+}
+
+@keyframes toast-progress {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+/* ===== Music Controls ===== */
+.music-controls {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: rgba(244, 234, 212, 0.92);
+    border: 1px solid var(--color-gold-dark);
+    outline: 2px double var(--color-gold);
+    outline-offset: -3px;
+    border-radius: 30px;
+    padding: 6px 12px 6px 8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    transition: box-shadow 0.3s ease;
+}
+
+.music-controls:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.music-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: var(--color-leather-light);
+    line-height: 1;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, transform 0.2s ease;
+    padding: 0;
+}
+
+.music-btn:hover {
+    color: var(--color-crimson);
+    transform: scale(1.15);
+}
+
+.music-btn.muted {
+    color: #aaa;
+}
+
+.volume-slider-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+#volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(to right, var(--color-gold-dark) 0%, var(--color-gold-dark) var(--fill, 15%), #ccc var(--fill, 15%), #ccc 100%);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-crimson);
+    border: 2px solid var(--color-gold);
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* Responsiveness */
+@media (max-height: 650px) {
+    body {
+        padding: 80px 20px 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .scroll-container {
+        padding: 3rem 1.5rem 2rem 1.5rem;
+    }
+    
+    .game-title {
+        font-size: 2.6rem;
+    }
+    
+    .tab-btn {
+        padding: 0.6rem 1.2rem;
+    }
+    
+    .toast-container {
+        top: 15px;
+        right: 15px;
+        left: 15px;
+        width: auto;
+    }
+
+    .music-controls {
+        bottom: 12px;
+        right: 12px;
+    }
+}

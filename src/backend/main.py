@@ -23,3 +23,8 @@ async def read_root():
     
     # Retorna o arquivo HTML diretamente para o navegador
     return FileResponse(index_path)
+
+# 5. Serve o favicon na raiz para compatibilidade com os browsers
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(STATIC_DIR / "assets" / "favicon.ico")
