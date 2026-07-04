@@ -210,7 +210,11 @@ body {
 	animation: fade-in 0.4s ease-out;
 }
 
-.confirm-password-wrapper {
+/* Targeted by id, not just .confirm-password-wrapper, so it can't lose
+   a specificity tie against the later .input-group rule (both are
+   single-class selectors otherwise, and .input-group also matches
+   this element, which is how it was leaking through on login). */
+#confirm-password-group {
 	max-height: 0;
 	opacity: 0;
 	transform: translateY(-8px);
@@ -220,12 +224,9 @@ body {
 				transform 0.3s ease,
 				margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	margin-top: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.3rem;
 }
 
-.confirm-password-wrapper.visible {
+#confirm-password-group.visible {
 	max-height: 100px;
 	opacity: 1;
 	transform: translateY(0);
@@ -237,7 +238,6 @@ body {
 	flex-direction: column;
 	gap: 0.3rem;
 	margin-top: 0.65rem;
-	transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-group:first-child {
@@ -717,23 +717,58 @@ input::placeholder {
 	overflow-y: auto;
 }
 
-.overlay-close {
-	position: absolute;
-	top: 10px;
-	right: 14px;
-	background: none;
-	border: none;
-	font-family: var(--font-accent);
-	font-size: 1.6rem;
-	line-height: 1;
-	color: var(--color-leather-light);
-	cursor: pointer;
-	transition: color 0.2s ease;
-	z-index: 1;
+/* Set by JS right before the confirm-passphrase field grows the form,
+   so the box's top edge stays put and only the bottom moves down —
+   the default flex centering below would otherwise re-center the box
+   and shift the top upward too. See auth-overlay.js pinTop(). */
+.overlay-backdrop.pinned-top {
+	align-items: flex-start;
 }
 
-.overlay-close:hover {
-	color: var(--color-crimson);
+/* ============================================================
+   Avatar Editor (reuses .overlay-backdrop/.scroll-container)
+   ============================================================ */
+.avatar-edit-scroll {
+	max-width: 400px;
+	text-align: center;
+	align-items: center;
+}
+
+.avatar-edit-stage {
+	display: flex;
+	justify-content: center;
+}
+
+#avatar-edit-canvas {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	border-radius: 4px;
+	border: 2px solid var(--color-gold);
+	background-color: var(--color-leather);
+	touch-action: none;
+}
+
+.avatar-edit-controls {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.7rem;
+}
+
+.avatar-edit-controls .volume-slider {
+	width: 160px;
+}
+
+.avatar-edit-actions {
+	display: flex;
+	justify-content: center;
+	gap: 0.8rem;
+}
+
+.avatar-edit-actions .medieval-btn {
+	margin-top: 0;
+	flex: 1;
 }
 
 /* ============================================================
@@ -1263,5 +1298,17 @@ input::placeholder {
 	.lobby-tab {
 		padding: 0.7rem 0.9rem;
 		font-size: 0.75rem;
+	}
+
+	/* On small screens the lobby content is routinely taller than the
+	   viewport. background-size: cover only sizes the parchment to the
+	   viewport, so once the page scrolls past that, the leftover
+	   canvas below shows through as flat grey. Scaling the image to
+	   the viewport width and repeating it vertically means the
+	   texture keeps wrapping down the page no matter how tall the
+	   content ends up being. */
+	html {
+		background-size: 100% auto;
+		background-repeat: repeat-y;
 	}
 }

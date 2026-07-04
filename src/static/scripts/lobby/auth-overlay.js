@@ -6,18 +6,18 @@
 //               something.
 //   'convert' - a guest asking to secure their progress with a real
 //               account. Guest option is hidden (they're already a
-//               guest), and a close (X) button lets them cancel back
-//               into the lobby.
+//               guest); clicking outside the box cancels back into
+//               the lobby.
 //
 // Usage: AuthOverlay.open({ context: 'gate', onDone: (result) => {...} })
 // result is one of:
 //   { authenticated: true,  isGuest: false, username }
 //   { authenticated: true,  isGuest: true,  username }
-//   { authenticated: false }   // only possible from 'convert', via close
+//   { authenticated: false }   // only possible from 'convert', via outside click
 
 const AuthOverlay = (() => {
 	const overlay = document.getElementById('auth-overlay');
-	const btnClose = document.getElementById('btn-overlay-close');
+	const overlayScroll = document.getElementById('auth-overlay-scroll');
 	const overlayTitle = document.getElementById('overlay-title');
 	const overlaySubtitle = document.getElementById('overlay-subtitle');
 	const guestSection = document.getElementById('overlay-guest-section');
@@ -34,9 +34,19 @@ const AuthOverlay = (() => {
 	const toggleHintText = document.getElementById('toggle-hint-text');
 	const btnGuest = document.getElementById('btn-guest');
 
+	const overlayHeight = overlayScroll.offsetHeight;
+	const screenHeight = window.innerHeight;
+
 	let currentMode = 'login'; // 'login' | 'signup'
 	let context = 'gate';
 	let onDone = null;
+
+	// Pins the box's current top edge in place
+	function pinTop() {
+		const marginTop = (screenHeight - overlayHeight) * 0.5 - overlayHeight * 0.07;
+		overlayScroll.style.marginTop = `${marginTop}px`;
+		overlay.classList.add('pinned-top');
+	}
 
 	function setAuthMode(mode) {
 		if (currentMode === mode) return;
@@ -61,6 +71,9 @@ const AuthOverlay = (() => {
 			tabLogin.classList.remove('active');
 			tabLogin.setAttribute('aria-selected', 'false');
 
+			// Pin the top edge before the box grows taller, so it just
+			// extends downward instead of re-centering.
+			pinTop();
 			confirmPasswordGroup.classList.add('visible');
 			confirmPasswordInput.setAttribute('required', 'required');
 
@@ -80,10 +93,10 @@ const AuthOverlay = (() => {
 		overlay.classList.remove('visible');
 		overlay.setAttribute('aria-hidden', 'true');
 		authForm.reset();
-		confirmPasswordGroup.classList.remove('visible');
 		const callback = onDone;
 		onDone = null;
 		if (callback) callback(result);
+		setAuthMode('login');
 	}
 
 	function open({ context: ctx = 'gate', onDone: callback = null } = {}) {
@@ -94,15 +107,14 @@ const AuthOverlay = (() => {
 			overlayTitle.textContent = 'Secure Your Progress';
 			overlaySubtitle.textContent = 'Create an account to keep this character between sessions.';
 			guestSection.classList.add('hidden');
-			btnClose.classList.remove('hidden');
 		} else {
 			overlayTitle.textContent = 'Enter the Court';
 			overlaySubtitle.textContent = 'Log in, sign up, or slip in as a guest.';
 			guestSection.classList.remove('hidden');
-			btnClose.classList.add('hidden');
 		}
 
-		setAuthMode('login');
+		pinTop();
+
 		overlay.classList.add('visible');
 		overlay.setAttribute('aria-hidden', 'false');
 	}
@@ -117,8 +129,14 @@ const AuthOverlay = (() => {
 		});
 	}
 
-	// Close (only reachable in 'convert' context, see .hidden toggling above)
-	btnClose.addEventListener('click', () => resolve({ authenticated: false }));
+	// Click outside the scroll box dismisses it, but only in 'convert'
+	// context — the first-load gate has no session yet, so it must
+	// stay modal until the person picks login/signup/guest.
+	overlay.addEventListener('click', (e) => {
+		if (e.target === overlay && context === 'convert') {
+			resolve({ authenticated: false });
+		}
+	});
 
 	// Guest
 	btnGuest.addEventListener('click', () => {
@@ -164,6 +182,6 @@ const AuthOverlay = (() => {
 			}, 1200);
 		}
 	});
-
+	
 	return { open };
 })();
