@@ -1,0 +1,103 @@
+/* music-controls.css
+   The floating music widget and the matching volume slider used both
+   there and in the Settings tab. */
+
+.music-controls {
+	position: fixed;
+	bottom: 22px;
+	right: 22px;
+	z-index: 100;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background-color: rgba(244, 234, 212, 0.92);
+	border: 1px solid var(--color-gold-dark);
+	outline: 2px double var(--color-gold);
+	outline-offset: -3px;
+	border-radius: 30px;
+	padding: 6px 12px 6px 8px;
+	box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+	transition: box-shadow 0.3s ease;
+}
+
+.music-controls:hover {
+	box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.music-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 1.3rem;
+	color: var(--color-leather-light);
+	line-height: 1;
+	width: 28px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease, transform 0.2s ease;
+	padding: 0;
+}
+
+.music-btn:hover {
+	color: var(--color-crimson);
+	transform: scale(1.15);
+}
+
+.music-icon {
+	position: relative;
+	display: inline-block;
+	width: 24px;
+	height: 24px;
+	line-height: 24px;
+	text-align: center;
+}
+
+.music-icon.muted::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 135%;
+	height: 2px;
+	background-color: var(--color-crimson);
+	transform: translate(-50%, -50%) rotate(-45deg);
+	box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+	display: block;
+}
+
+.volume-slider-wrapper {
+	display: flex;
+	align-items: center;
+}
+
+.volume-slider {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 80px;
+	height: 4px;
+	background: linear-gradient(to right, var(--color-gold-dark) 0%, var(--color-gold-dark) var(--fill, 15%), #ccc var(--fill, 15%), #ccc 100%);
+	border-radius: 2px;
+	outline: none;
+	cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: var(--color-crimson);
+	border: 2px solid var(--color-gold);
+	cursor: pointer;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* Responsiveness */
+@media (max-width: 480px) {
+	.music-controls {
+		bottom: 12px;
+		right: 12px;
+	}
+}

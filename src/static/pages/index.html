@@ -1,27 +1,418 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL 3D Engine</title>
-    <style>
-        body, html { 
-            margin: 0; 
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; 
-            background-color: #000; 
-        }
-        canvas { 
-            display: block; 
-            width: 100%;
-            height: 100%;
-        }
-    </style>
-    <script type="module" src="../static/scripts/game/main.js"></script>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Coup - Lobby</title>
+	<meta name="description" content="Create a new court or join a rival's. The Coup lobby.">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=MedievalSharp&display=swap" rel="stylesheet">
+
+	<link rel="icon" href="/static/assets/favicon.ico">
+	<!-- Split from a single lobby.css into per-component stylesheets. -->
+	<link rel="stylesheet" href="/static/styles/lobby/tokens.css">
+	<link rel="stylesheet" href="/static/styles/lobby/scroll.css">
+	<link rel="stylesheet" href="/static/styles/lobby/forms.css">
+	<link rel="stylesheet" href="/static/styles/lobby/buttons.css">
+	<link rel="stylesheet" href="/static/styles/lobby/toast.css">
+	<link rel="stylesheet" href="/static/styles/lobby/music-controls.css">
+	<link rel="stylesheet" href="/static/styles/lobby/auth-overlay.css">
+	<link rel="stylesheet" href="/static/styles/lobby/avatar-editor.css">
+	<link rel="stylesheet" href="/static/styles/lobby/lobby-shell.css">
+	<link rel="stylesheet" href="/static/styles/lobby/match-panels.css">
+	<link rel="stylesheet" href="/static/styles/lobby/misc-panels.css">
 </head>
 <body>
-    <canvas id="webgl-canvas"></canvas>
+	<div class="ambient-overlay"></div>
+	<div class="background-vignette"></div>
+
+	<!-- ============================================================
+	     Auth Overlay — reusable gate (first load) / convert (guest ->
+	     account) modal. See auth-overlay.js for the two contexts.
+	     ============================================================ -->
+	<div class="overlay-backdrop" id="auth-overlay" aria-hidden="true">
+		<div class="overlay-scroll scroll-container" id="auth-overlay-scroll">
+			<div class="ornate-corner top-left">
+				<svg viewBox="0 0 100 100" width="100%" height="100%">
+					<path d="M10,10 L90,10 M10,10 L10,90 M20,20 L80,20 M20,20 L20,80 M10,50 C10,30 30,10 50,10 M50,10 C40,25 25,40 20,60" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
+					<circle cx="20" cy="20" r="4" fill="var(--color-gold)"/>
+				</svg>
+			</div>
+			<div class="ornate-corner top-right">
+				<svg viewBox="0 0 100 100" width="100%" height="100%">
+					<path d="M90,10 L10,10 M90,10 L90,90 M80,20 L20,20 M80,20 L80,80 M90,50 C90,30 70,10 50,10 M50,10 C60,25 75,40 80,60" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
+					<circle cx="80" cy="20" r="4" fill="var(--color-gold)"/>
+				</svg>
+			</div>
+			<div class="ornate-corner bottom-left">
+				<svg viewBox="0 0 100 100" width="100%" height="100%">
+					<path d="M10,90 L90,90 M10,90 L10,10 M20,80 L80,80 M20,80 L20,20 M10,50 C10,70 30,90 50,90 M50,90 C40,75 25,60 20,40" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
+					<circle cx="20" cy="80" r="4" fill="var(--color-gold)"/>
+				</svg>
+			</div>
+			<div class="ornate-corner bottom-right">
+				<svg viewBox="0 0 100 100" width="100%" height="100%">
+					<path d="M90,90 L10,90 M90,90 L90,10 M80,80 L20,80 M80,80 L80,20 M90,50 C90,70 70,90 50,90 M50,90 C60,75 75,60 80,40" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
+					<circle cx="80" cy="80" r="4" fill="var(--color-gold)"/>
+				</svg>
+			</div>
+
+			<header class="scroll-header">
+				<h2 class="overlay-title" id="overlay-title">Enter the Court</h2>
+				<p class="overlay-subtitle" id="overlay-subtitle">Log in, sign up, or slip in as a guest.</p>
+				<div class="gold-divider mini">
+					<svg viewBox="0 0 200 20" width="100%" height="100%">
+						<line x1="0" y1="10" x2="80" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
+						<line x1="120" y1="10" x2="200" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
+						<circle cx="100" cy="10" r="4" fill="var(--color-gold)"/>
+					</svg>
+				</div>
+			</header>
+
+			<section class="auth-section">
+				<div class="auth-tabs" role="tablist">
+					<button class="tab-btn active" id="tab-login" role="tab" aria-selected="true" aria-controls="auth-form">Log In</button>
+					<button class="tab-btn" id="tab-signup" role="tab" aria-selected="false" aria-controls="auth-form">Sign Up</button>
+				</div>
+
+				<div class="panels-container">
+					<form id="auth-form" class="auth-form" autocomplete="on">
+						<div class="input-group" id="group-username">
+							<label for="auth-username" class="input-label">Moniker</label>
+							<input type="text" id="auth-username" name="username" placeholder="Thy moniker..." required autocomplete="username" maxlength="24">
+						</div>
+						<div class="input-group" id="group-password">
+							<label for="auth-password" class="input-label">Passphrase</label>
+							<input type="password" id="auth-password" name="password" placeholder="Thy secret passphrase..." required autocomplete="current-password" maxlength="72">
+						</div>
+						<div class="input-group confirm-password-wrapper" id="confirm-password-group">
+							<label for="auth-confirm-password" class="input-label">Confirm Passphrase</label>
+							<input type="password" id="auth-confirm-password" name="confirm_password" placeholder="Repeat thy passphrase..." autocomplete="new-password" maxlength="72">
+						</div>
+						<button type="submit" class="medieval-btn primary-btn" id="btn-submit">
+							<span class="btn-text-wrapper">
+								<span class="btn-text-login active">Enter the Court</span>
+								<span class="btn-text-signup">Pledge Allegiance</span>
+							</span>
+						</button>
+					</form>
+				</div>
+
+				<div class="auth-toggle-link-container">
+					<p class="toggle-text" id="toggle-hint-text">Don't have an account? <a href="#" id="link-toggle-auth" class="renaissance-link">Sign up</a></p>
+				</div>
+			</section>
+
+			<section class="guest-section" id="overlay-guest-section">
+				<div class="gold-divider mini">
+					<svg viewBox="0 0 200 20" width="100%" height="100%">
+						<line x1="0" y1="10" x2="80" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
+						<line x1="120" y1="10" x2="200" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
+						<circle cx="100" cy="10" r="4" fill="var(--color-gold)"/>
+					</svg>
+				</div>
+				<p class="guest-desc">Or enter the realm incognito, without a ledger.</p>
+				<button type="button" id="btn-guest" class="medieval-btn secondary-btn">
+					<span class="btn-text">Play as Guest</span>
+				</button>
+			</section>
+		</div>
+	</div>
+
+	<!-- ============================================================
+	     Avatar Editor — opens on avatar file selection, lets the
+	     player reposition/zoom before committing the portrait.
+	     ============================================================ -->
+	<div class="overlay-backdrop" id="avatar-edit-overlay" aria-hidden="true">
+		<div class="overlay-scroll scroll-container avatar-edit-scroll">
+			<header class="scroll-header">
+				<h2 class="overlay-title">Choose Thy Portrait</h2>
+				<p class="overlay-subtitle">Drag the square to reposition it, or use its corner (or the slider) to resize.</p>
+			</header>
+
+			<div class="avatar-edit-stage">
+				<canvas id="avatar-edit-canvas" width="320" height="320"></canvas>
+			</div>
+
+			<div class="avatar-edit-controls">
+				<label for="avatar-zoom-slider" class="input-label">Crop Size</label>
+				<input type="range" id="avatar-zoom-slider" class="volume-slider" min="40" max="320" value="320" aria-label="Crop size">
+			</div>
+
+			<div class="avatar-edit-actions">
+				<button type="button" class="medieval-btn secondary-btn" id="btn-avatar-cancel">Cancel</button>
+				<button type="button" class="medieval-btn primary-btn" id="btn-avatar-confirm">Set Portrait</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- ============================================================
+	     Rules Overlay — reference content, opened from the Rules tab.
+	     Rewritten from the physical rulebook for the online version:
+	     no shuffling/dealing/component language, since the server
+	     handles all of that. See rules-overlay.js for tab switching.
+	     ============================================================ -->
+	<div class="overlay-backdrop" id="rules-overlay" aria-hidden="true">
+		<div class="overlay-scroll scroll-container rules-overlay-scroll" id="rules-overlay-scroll">
+			<header class="scroll-header">
+				<h2 class="overlay-title">The Rules of the Court</h2>
+				<button type="button" class="rules-close-btn" id="btn-rules-close" aria-label="Close rules">&times;</button>
+			</header>
+
+			<div class="auth-tabs rules-tabs" role="tablist">
+				<button class="tab-btn active" id="rules-tab-base" role="tab" aria-selected="true" data-rules-tab="base">Base Rules</button>
+				<button class="tab-btn" id="rules-tab-reformation" role="tab" aria-selected="false" data-rules-tab="reformation">Reformation</button>
+			</div>
+
+			<div class="rules-content" id="rules-content-base">
+				<p>You are the head of a family in an Italian city-state run by a weak, corrupt, and treacherous court. Manipulate, bluff, and bribe your way to power. Eliminate the influence of every other player: the last family standing wins.</p>
+
+				<h4>Influence</h4>
+				<p>Your two face-down cards are your influence. Only you can see them. When you lose an influence, you choose which card to reveal, and it stays face up and visible to everyone from then on. Lose both, and you're exiled from the game.</p>
+
+				<h4>Taking a Turn</h4>
+				<p>On your turn you must choose exactly one action, you cannot pass. If you begin your turn with 10 or more coins, that action must be a Coup. Once you declare an action, other players get a chance to block or challenge it before it resolves. If nobody does, it succeeds automatically.</p>
+
+				<h4>General Actions</h4>
+				<table class="rules-table">
+					<tr><th>Action</th><th>Effect</th></tr>
+					<tr><td>Income</td><td>Take 1 coin from the Treasury.</td></tr>
+					<tr><td>Foreign Aid</td><td>Take 2 coins. Can be blocked by a claimed Duke.</td></tr>
+					<tr><td>Coup</td><td>Pay 7 coins to force another player to lose one influence. Cannot be blocked or challenged. Mandatory once you hold 10+ coins.</td></tr>
+				</table>
+
+				<h4>Character Actions</h4>
+				<p>Claiming a character action means claiming to hold that card. You never have to reveal it unless challenged.</p>
+				<table class="rules-table">
+					<tr><th>Character</th><th>Action</th><th>Effect</th></tr>
+					<tr><td>Duke</td><td>Tax</td><td>Take 3 coins from the Treasury.</td></tr>
+					<tr><td>Assassin</td><td>Assassinate</td><td>Pay 3 coins; target loses one influence unless blocked by a claimed Contessa.</td></tr>
+					<tr><td>Captain</td><td>Extort</td><td>Take 2 coins from another player (or their last coin, if they only have 1). Can be blocked by a claimed Ambassador or Captain.</td></tr>
+					<tr><td>Ambassador</td><td>Exchange</td><td>Draw 2 random cards, then return 2 to the deck, keeping the same number of influences.</td></tr>
+				</table>
+
+				<h4>Challenges</h4>
+				<p>Any character action or block can be challenged by any player, whether or not they're the target. The challenged player must then reveal the claimed character:</p>
+				<ul>
+					<li>If they have it: the challenger loses one influence. The revealed card is shuffled back into the deck and its owner draws a fresh one, so their hand isn't exposed.</li>
+					<li>If they don't: they lose one influence, and the action or block fails (any coins spent on it are still lost).</li>
+				</ul>
+				<p class="rules-note">Watch out for the double-loss trap: failing a challenge against an Assassin (or a bluffed Contessa block) costs you one influence for the failed challenge, then another for the assassination itself.</p>
+			</div>
+
+			<div class="rules-content hidden" id="rules-content-reformation">
+				<p>Reformation adds religion to the court. Every player is either Catholic or Protestant, shown on a Religion card in front of them, alternating around the table at the start of a match. A Reformation match also swaps the <strong>Ambassador</strong> out for the <strong>Inquisitor</strong>.</p>
+
+				<h4>Religion Restriction</h4>
+				<p>You cannot Coup, Assassinate, Extort, or block another player's Foreign Aid if they share your religion, unless every remaining player shares the same religion.</p>
+
+				<h4>Additional Actions</h4>
+				<table class="rules-table">
+					<tr><th>Action</th><th>Effect</th></tr>
+					<tr><td>Conversion</td><td>Pay 1 coin to switch your own religion, or 2 coins to switch another player's. No character claim needed, cannot be blocked or challenged.</td></tr>
+					<tr><td>Corruption</td><td>Claim not to hold the Duke and take everything from the Asylum pool. Anyone may challenge: if you actually hold the Duke, admit it, return the coins, and lose an influence; if you don't, reveal a card as normal for a lost challenge.</td></tr>
+				</table>
+
+				<h4>The Inquisitor</h4>
+				<p>In a Reformation match, the Inquisitor replaces the Ambassador entirely. Its owner picks one of two actions per turn (never both):</p>
+				<table class="rules-table">
+					<tr><th>Action</th><th>Effect</th></tr>
+					<tr><td>Exchange</td><td>Draw 1 random card, then return 1, keeping the same number of influences.</td></tr>
+					<tr><td>Investigate</td><td>Privately view one of an opponent's face-down cards. You may force them to swap it for a fresh random card, or let them keep it.</td></tr>
+				</table>
+				<p>As a counteraction, a claimed Inquisitor can also block Extortion, just like the Ambassador.</p>
+			</div>
+		</div>
+	</div>
+
+	<!-- ============================================================
+	     Music controls — outside lobby-container on purpose, so it's
+	     visible during the auth overlay too, not just once logged in.
+	     Kept in sync with the Settings tab slider in main.js.
+	     ============================================================ -->
+	<div class="music-controls">
+		<button class="music-btn" id="btn-music-toggle-float" aria-label="Mute music"><span id="music-icon-float" class="music-icon">♫</span></button>
+		<input type="range" id="volume-slider-float" class="volume-slider" min="0" max="100" value="20" aria-label="Volume">
+	</div>
+
+	<!-- ============================================================
+	     Lobby — hidden until the overlay above resolves
+	     ============================================================ -->
+	<main class="lobby-container hidden" id="lobby-container">
+		<header class="lobby-topbar">
+			<div class="profile-block">
+				<button class="avatar-btn" id="btn-avatar" title="Change portrait">
+					<!-- NOTE: /static/assets/default-avatar.png doesn't exist yet,
+					     add a placeholder asset; CSS falls back to a plain square. -->
+					<img id="avatar-img" src="/static/assets/default-avatar.png" alt="Profile picture">
+				</button>
+				<input type="file" id="avatar-input" accept="image/*" hidden>
+
+				<div class="name-block">
+					<span class="display-name" id="display-name" title="Click to edit">Traveller</span>
+					<input type="text" class="display-name-input hidden" id="display-name-input">
+					<button class="edit-name-btn" id="btn-edit-name" title="Edit name">✎</button>
+				</div>
+			</div>
+
+			<button type="button" class="medieval-btn secondary-btn small-btn" id="btn-auth-action">Login / Sign Up</button>
+		</header>
+
+		<div class="lobby-body">
+			<nav class="lobby-tabs" role="tablist">
+				<button class="lobby-tab active" data-tab="play" role="tab" aria-selected="true">Play</button>
+				<button class="lobby-tab" data-tab="rules" role="tab" aria-selected="false">Rules</button>
+				<button class="lobby-tab" data-tab="customization" role="tab" aria-selected="false">Customization</button>
+				<button class="lobby-tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+				<button class="lobby-tab" data-tab="friends" id="tab-friends" role="tab" aria-selected="false" disabled>Friends</button>
+			</nav>
+
+			<!-- Play -->
+			<section class="lobby-panel active" id="panel-play" role="tabpanel">
+				<div class="primary-actions">
+					<button class="medieval-btn primary-btn" id="btn-open-create">Create Match</button>
+					<button class="medieval-btn primary-btn" id="btn-open-join">Join Match</button>
+				</div>
+
+				<div class="config-panel hidden" id="create-match-panel">
+					<h3 class="panel-heading">Create a New Match</h3>
+
+					<div class="input-group" id="group-lobby-name">
+						<label for="input-lobby-name" class="input-label">Lobby Name</label>
+						<input type="text" id="input-lobby-name" placeholder="Name thy court..." required>
+					</div>
+
+					<div class="config-row">
+						<label class="switch-label" for="toggle-reformation">Reformation DLC</label>
+						<label class="toggle-switch">
+							<input type="checkbox" id="toggle-reformation">
+							<span class="toggle-track"></span>
+						</label>
+					</div>
+
+					<div class="config-row">
+						<label for="select-max-players">Max Players</label>
+						<select id="select-max-players"></select>
+					</div>
+
+					<div class="config-row">
+						<label>Visibility</label>
+						<div class="radio-group">
+							<label><input type="radio" name="visibility" value="public" checked> Public</label>
+							<label><input type="radio" name="visibility" value="private"> Private</label>
+						</div>
+					</div>
+
+					<div class="input-group hidden" id="group-lobby-password">
+						<label for="input-lobby-password" class="input-label">Password</label>
+						<input type="password" id="input-lobby-password" placeholder="Guard thy court with a passphrase...">
+					</div>
+
+					<div class="config-row">
+						<label for="select-bot-fill">Add Bots</label>
+						<select id="select-bot-fill">
+							<option value="none">None</option>
+							<option value="fill">Fill Empty Seats</option>
+							<option value="solo">Solo Practice (Full Bots)</option>
+						</select>
+					</div>
+
+					<button class="medieval-btn primary-btn" id="btn-create-match">Create the Match</button>
+				</div>
+
+				<div class="config-panel hidden" id="join-match-panel">
+					<h3 class="panel-heading">Join a Match</h3>
+
+					<div class="join-tabs">
+						<button class="join-tab active" data-jointab="code">Enter Code</button>
+						<button class="join-tab" data-jointab="browse">Browse Matches</button>
+					</div>
+
+					<div class="join-view active" id="join-view-code">
+						<div class="input-group">
+							<label for="input-match-code" class="input-label">Match Code</label>
+							<input type="text" id="input-match-code" placeholder="e.g. 7F2K9" maxlength="8">
+						</div>
+						<button class="medieval-btn primary-btn" id="btn-join-code">Enter Match</button>
+					</div>
+
+					<div class="join-view" id="join-view-browse">
+						<div class="browse-filters">
+							<input type="text" id="filter-search" class="filter-search-input" placeholder="Search by court name..." maxlength="30">
+							<select id="filter-players">
+								<option value="any">Any player count</option>
+							</select>
+							<select id="filter-visibility">
+								<option value="public">Public only</option>
+								<option value="all">Public &amp; Private</option>
+							</select>
+							<select id="filter-reformation">
+								<option value="any">Base &amp; Reformation</option>
+								<option value="no">Base game only</option>
+								<option value="yes">Reformation only</option>
+							</select>
+						</div>
+						<ul class="match-list" id="match-list"></ul>
+					</div>
+				</div>
+			</section>
+
+			<!-- Rules -->
+			<section class="lobby-panel" id="panel-rules" role="tabpanel">
+				<h3 class="panel-heading">Rules</h3>
+				<p>Coup is a game of influence, deceit, and quiet ruin among rival courts.</p>
+				<ul class="rules-links">
+					<li><button type="button" class="renaissance-link rules-open-btn" data-rules-tab="base">Base Rules</button></li>
+					<li><button type="button" class="renaissance-link rules-open-btn" data-rules-tab="reformation">Reformation DLC</button></li>
+				</ul>
+			</section>
+
+			<!-- Customization -->
+			<section class="lobby-panel" id="panel-customization" role="tabpanel">
+				<h3 class="panel-heading">Customization</h3>
+				<div class="locked-placeholder">
+					<span class="lock-icon">🔒</span>
+					<p>Skins and nameplates are coming soon.</p>
+				</div>
+			</section>
+
+			<!-- Settings -->
+			<section class="lobby-panel" id="panel-settings" role="tabpanel">
+				<h3 class="panel-heading">Settings</h3>
+				<div class="settings-row">
+					<label for="volume-slider">Music Volume</label>
+					<div class="volume-slider-wrapper">
+						<button class="music-btn" id="btn-music-toggle" aria-label="Mute music"><span id="music-icon" class="music-icon">♫</span></button>
+						<input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="20" aria-label="Volume">
+					</div>
+				</div>
+			</section>
+
+			<!-- Friends -->
+			<section class="lobby-panel" id="panel-friends" role="tabpanel">
+				<h3 class="panel-heading">Friends</h3>
+				<p class="guest-lock-message hidden" id="friends-guest-message">Log in to add and see friends.</p>
+				<ul class="friends-list hidden" id="friends-list"></ul>
+			</section>
+		</div>
+	</main>
+
+	<audio id="bg-music" src="/static/assets/theme.mp3" loop preload="auto"></audio>
+	<div class="toast-container" id="toast-container"></div>
+
+	<script src="/static/scripts/lobby/settings.js"></script>
+	<script src="/static/scripts/lobby/toast.js"></script>
+	<script src="/static/scripts/lobby/auth-overlay.js"></script>
+	<script src="/static/scripts/lobby/rules-overlay.js"></script>
+	<!-- Split from a single main.js. session.js/friends.js must load
+	     before main.js: it calls LobbySession and Friends.load(). -->
+	<script src="/static/scripts/lobby/session.js"></script>
+	<script src="/static/scripts/lobby/profile.js"></script>
+	<script src="/static/scripts/lobby/matches.js"></script>
+	<script src="/static/scripts/lobby/friends.js"></script>
+	<script src="/static/scripts/lobby/music.js"></script>
+	<script src="/static/scripts/lobby/main.js"></script>
 </body>
 </html>
