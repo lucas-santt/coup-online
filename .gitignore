@@ -7,6 +7,9 @@ __*
 # VSCode
 .vscode/
 
+# Pycharm
+*.idea
+
 # Git
 *.git
 
@@ -14,6 +17,9 @@ __*
 *.pyc
 __pycache__
 .venv/
+
+# Setuptools
+*.egg-info
 
 # MacOS
 .DS_Store
