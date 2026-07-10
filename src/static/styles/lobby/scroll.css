@@ -1,0 +1,150 @@
+/* scroll.css
+   The shared "scroll" card component (parchment box + ornate corners +
+   header) used by both the auth overlay and the avatar editor, plus the
+   overlay-backdrop wrapper that centers them on screen. */
+
+/* Medieval Scroll Container */
+.scroll-container {
+	background-color: rgba(244, 234, 212, 0.95);
+	background-image: radial-gradient(rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.05));
+	border: 1px solid var(--color-gold-dark);
+	outline: 4px double var(--color-gold);
+	outline-offset: -8px;
+	box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6),
+				inset 0 0 50px rgba(43, 29, 12, 0.15);
+	padding: 2rem 2.2rem 1.6rem 2.2rem;
+	border-radius: 4px;
+	width: 100%;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.scroll-container:hover {
+	box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7),
+				inset 0 0 50px rgba(43, 29, 12, 0.1);
+}
+
+/* Ornate Corner SVGs */
+.ornate-corner {
+	position: absolute;
+	width: 60px;
+	height: 60px;
+	pointer-events: none;
+	opacity: 0.85;
+}
+.top-left { top: 12px; left: 12px; }
+.top-right { top: 12px; right: 12px; }
+.bottom-left { bottom: 12px; left: 12px; }
+.bottom-right { bottom: 12px; right: 12px; }
+
+/* Scroll Header */
+.scroll-header {
+	text-align: center;
+	margin-top: 0.2rem;
+}
+
+.game-title {
+	font-family: var(--font-header);
+	font-size: 2.6rem;
+	font-weight: 700;
+	letter-spacing: 4px;
+	margin-bottom: 0.15rem;
+	background: linear-gradient(to bottom, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.game-subtitle {
+	font-family: var(--font-body);
+	font-style: italic;
+	font-size: 1.05rem;
+	color: var(--color-leather-light);
+	letter-spacing: 1px;
+	margin-bottom: 0.4rem;
+}
+
+.gold-divider {
+	height: 18px;
+	width: 100%;
+	max-width: 280px;
+	margin: 0 auto;
+}
+
+.gold-divider.mini {
+	max-width: 180px;
+	margin: 0.3rem auto;
+}
+
+/* ============================================================
+   Overlay backdrop (wraps a .scroll-container: auth overlay,
+   avatar editor)
+   ============================================================ */
+.overlay-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px 20px;
+	background: rgba(10, 6, 2, 0.72);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.25s ease;
+}
+
+.overlay-backdrop.visible {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.overlay-backdrop .overlay-scroll {
+	max-width: 460px;
+	max-height: calc(100vh - 48px);
+	overflow-y: auto;
+}
+
+/* Set by JS right before the confirm-passphrase field grows the form,
+   so the box's top edge stays put and only the bottom moves down —
+   the default flex centering below would otherwise re-center the box
+   and shift the top upward too. See auth-overlay.js pinTop(). */
+.overlay-backdrop.pinned-top {
+	align-items: flex-start;
+}
+
+/* Responsiveness */
+@media (max-width: 480px) {
+	.scroll-container {
+		padding: 1.6rem 1.5rem 1.4rem 1.5rem;
+	}
+
+	.game-title {
+		font-size: 2.2rem;
+	}
+}
+
+/* On short viewports (small laptop windows, browser chrome eating
+   vertical space) shrink the header further so signup still fits
+   without scrolling. */
+@media (max-height: 700px) {
+	.game-title {
+		font-size: 2.1rem;
+	}
+
+	.game-subtitle {
+		font-size: 0.95rem;
+		margin-bottom: 0.25rem;
+	}
+
+	.scroll-header {
+		margin-top: 0;
+	}
+
+	.gold-divider {
+		height: 14px;
+	}
+}

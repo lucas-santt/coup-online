@@ -17,14 +17,25 @@ STATIC_DIR = BASE_DIR.parent / "static"
 # Agora, um arquivo em static/scripts/app.js poderá ser acessado via /static/scripts/app.js
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# 4. Cria a rota principal para servir o index.html
+# 4. Cria a rota principal para servir o index.html (landing)
 @app.get("/")
 async def read_root():
     # Caminho exato para o index.html
     index_path = STATIC_DIR / "pages" / "index.html"
-    
+
     # Retorna o arquivo HTML diretamente para o navegador
     return FileResponse(index_path)
+
+# 4b. Rota para a lobby (após login/guest na landing)
+@app.get("/lobby")
+async def read_lobby():
+    lobby_path = STATIC_DIR / "pages" / "lobby.html"
+    return FileResponse(lobby_path)
+
+# 5. Serve o favicon na raiz para compatibilidade com os browsers
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(STATIC_DIR / "assets" / "favicon.ico")
 
 active_matches = {}
 
@@ -115,7 +126,7 @@ async def start_match(match_id: str):
         await manager.broadcast({
             "event": "match_started",
             "order": match.order,
-            "current_turn": match.order[match.id_turn]
+            "current_turn": match.order[match.turn_id]
         }, match_id)
         # It shows each player their cards and how many coins they have
         for player_id in match.order:

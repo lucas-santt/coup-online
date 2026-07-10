@@ -1,0 +1,72 @@
+/* toast.css
+   Toast notification container and card, driven by toast.js. */
+
+.toast-container {
+	position: fixed;
+	top: 25px;
+	right: 25px;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-width: 320px;
+	width: calc(100vw - 50px);
+}
+
+.medieval-toast {
+	background-color: #f7ebd3;
+	background-image: radial-gradient(rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.05));
+	border: 1px solid var(--color-gold-dark);
+	outline: 2px double var(--color-gold);
+	outline-offset: -4px;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+	padding: 1rem 1.2rem;
+	border-radius: 4px;
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	transform: translateX(120%);
+	animation: toast-slide-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.medieval-toast::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	height: 3px;
+	background: var(--color-crimson);
+	width: 100%;
+	transform-origin: left;
+	animation: toast-progress 4.5s linear forwards;
+}
+
+.medieval-toast.toast-exit {
+	animation: toast-slide-out 0.4s ease-in forwards;
+}
+
+.toast-icon {
+	font-size: 1.5rem;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+.toast-message {
+	font-family: var(--font-body);
+	font-size: 1rem;
+	font-weight: 700;
+	color: var(--color-leather);
+}
+
+/* Responsiveness */
+@media (max-width: 480px) {
+	.toast-container {
+		top: 15px;
+		right: 15px;
+		left: 15px;
+		width: auto;
+	}
+}
