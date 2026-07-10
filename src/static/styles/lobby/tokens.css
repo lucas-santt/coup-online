@@ -35,7 +35,7 @@
    keeps scrolling past it. */
 html {
 	height: 100%;
-	background-image: url('/static/assets/parchment.png');
+	background-image: url('/static/img/parchment.png');
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;

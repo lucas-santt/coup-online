@@ -76,7 +76,8 @@ export default class Renderer {
         this.#quadMaterial = new Material(
             this.gl,
             QUAD_VERTEX_SHADER,
-            QUAD_FRAGMENT_SHADER
+            QUAD_FRAGMENT_SHADER,
+            '/static/img/Template_Card.png'
         )
 
         this.#circleMesh = new Mesh(this.gl, CIRCLE_VERTICES);

@@ -19,12 +19,14 @@ export default class Mesh {
         if(this.#has_indices) 
             this.gl.drawElements(this.gl.TRIANGLES, this.#element_count, this.gl.UNSIGNED_SHORT, 0)
         else
-            this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+            this.gl.drawArrays(this.gl.TRIANGLES, 0, this.#element_count);
         
         this.gl.bindVertexArray(null);
     }
 
     #generateVAO(vertices, indices = null) {
+        const FLOAT_SIZE = Float32Array.BYTES_PER_ELEMENT;
+
         const vao = this.gl.createVertexArray();
         this.gl.bindVertexArray(vao);
 
@@ -33,7 +35,10 @@ export default class Mesh {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
 
         this.gl.enableVertexAttribArray(0);
-        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 5 * FLOAT_SIZE, 0);
+
+        this.gl.enableVertexAttribArray(1);
+        this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 5 * FLOAT_SIZE, 3 * FLOAT_SIZE);
 
         // EBO 
         if(this.#has_indices) {

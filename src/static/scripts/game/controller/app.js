@@ -6,6 +6,8 @@ export default class App {
     #deltaTime = 0; #lastFrame = 0;
 
     constructor(canvas, gl) {
+        this.#initGL(gl);
+
         this.#scene = new Scene();
         this.#renderer = new Renderer(canvas, gl);
     }
@@ -22,5 +24,10 @@ export default class App {
         this.#renderer.render(this.#scene);
 
         requestAnimationFrame(this.run.bind(this));
+    }
+
+    #initGL(gl) {
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     }
 }
