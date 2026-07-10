@@ -15,7 +15,11 @@ export default class Scene {
     
     constructor() {
         this.camera = new Camera(CAMERA_POSITION, new Vector3(0, 1, 0), CAMERA_YAW, CAMERA_PITCH);
-        this.cards.push(new Card(new Vector3(0, 0, -3), new Vector3(1.4, 1.5, 1)));
+        this.cards.push(new Card(
+            new Vector3(0, 0, -3), 
+            new Vector3(1.4, 1.5, 1),
+            new Vector3(-10, 0, 0)
+        ));
     }
 
     update(dt) {

@@ -5,8 +5,8 @@ import SceneObject from './sceneObject.js';
 export default class Card extends SceneObject {
     movIdx = 0; timer = 0; perc = 0;
 
-    constructor(initPos, initScale) {
-        super(initPos, initScale);
+    constructor(initPos, initScale, initRotation) {
+        super(initPos, initScale, initRotation);
     }
 
     update(dt) {
