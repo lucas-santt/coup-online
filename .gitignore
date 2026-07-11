@@ -18,6 +18,9 @@ __*
 __pycache__
 .venv/
 
+# Pytest
+.coverage
+
 # Setuptools
 *.egg-info
 
