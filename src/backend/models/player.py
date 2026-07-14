@@ -28,13 +28,13 @@ class PlayerBase(SQLModel):
     username: str = Field(
         min_length=constants.USERNAME_MIN_LENGTH,
         max_length=constants.USERNAME_MAX_LENGTH,
-        schema_extra={"pattern": r"^[a-zA-Z0-9_]$"},
-        unique=True
+        schema_extra={"pattern": r"^[a-zA-Z0-9_]+$"},
+        unique=True,
     )
     password: str = Field(
         min_length=constants.PASSWORD_MIN_LENGTH,
         max_length=constants.PASSWORD_MAX_LENGTH,
-        schema_extra={"pattern": r"^[^\s]$"}
+        schema_extra={"pattern": r"^[^\s]+$"},
     )
 
     displayname: str | None = None

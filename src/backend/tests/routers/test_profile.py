@@ -1,4 +1,5 @@
 from pathlib import Path
+
 test_image = Path(__file__).parent / "test_image.png"
 
 
