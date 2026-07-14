@@ -5,6 +5,8 @@ from typing import Self
 from pydantic import model_validator
 from sqlmodel import Field, Relationship, SQLModel
 
+from backend import constants
+
 
 class PlayerType(StrEnum):
     GUEST = "guest"
@@ -24,9 +26,16 @@ class PlayerFriendLink(SQLModel, table=True):
 
 class PlayerBase(SQLModel):
     username: str = Field(
-        schema_extra={"pattern": r"^[a-zA-Z0-9_]{3,20}$"}, unique=True
+        min_length=constants.USERNAME_MIN_LENGTH,
+        max_length=constants.USERNAME_MAX_LENGTH,
+        schema_extra={"pattern": r"^[a-zA-Z0-9_]$"},
+        unique=True
     )
-    password: str = Field(schema_extra={"pattern": r"^[^\s]{3,}$"})
+    password: str = Field(
+        min_length=constants.PASSWORD_MIN_LENGTH,
+        max_length=constants.PASSWORD_MAX_LENGTH,
+        schema_extra={"pattern": r"^[^\s]$"}
+    )
 
     displayname: str | None = None
 
@@ -56,7 +65,7 @@ class Player(PlayerBase, table=True):
 
     is_guest: bool = False  ## type: PlayerType = PlayerType.REGISTERED ?
     status: PlayerStatus = PlayerStatus.ONLINE
-    avatar_url: str = "static/assets/default-avatar.png"
+    avatar_url: str = str(constants.DEFAULT_AVATAR_PATH)
 
     wins: int = 0
     losses: int = 0

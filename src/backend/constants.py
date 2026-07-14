@@ -1,0 +1,15 @@
+from pathlib import Path
+
+
+SRC_DIR = Path(__file__).resolve().parent.parent
+STATIC_DIR: Path = SRC_DIR / "static"
+ASSETS_DIR: Path = STATIC_DIR / "assets"
+PROFILE_PICTURES_DIR: Path = ASSETS_DIR / "profile_pictures"
+
+DEFAULT_AVATAR_PATH: Path = STATIC_DIR / "default-avatar.png"
+
+USERNAME_MIN_LENGTH: int = 3
+USERNAME_MAX_LENGTH: int = 32
+
+PASSWORD_MIN_LENGTH: int = 8
+PASSWORD_MAX_LENGTH: int = 256
