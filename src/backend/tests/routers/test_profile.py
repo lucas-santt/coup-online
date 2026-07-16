@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from backend.settings import settings
+
 test_image = Path(__file__).parent / "test_image.png"
 
 
@@ -35,6 +37,7 @@ def test_set_display_name(session, client, test_player):
 
 
 def test_set_avatar(session, client, test_player, tmp_path):
+    settings.avatar_upload_dir = tmp_path
 
     client.cookies = {"session_token": str(test_player.id)}
 

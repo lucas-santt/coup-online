@@ -4,7 +4,7 @@ import shutil
 from fastapi import APIRouter, Body, File, UploadFile
 
 from backend.auth.required import RequiredRegisteredOrGuestDep
-from backend.constants import PROFILE_PICTURES_DIR
+from backend.settings import settings
 from backend.database import SessionDep, add_to_db
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
@@ -41,10 +41,7 @@ async def set_avatar(
 ) -> dict[str, str]:
     # TODO: Validate/Process file
 
-    # TODO: Make this use settings.upload_dir instead of a constant so that
-    #  pytest can override it and use tmp_dir instead
-
-    avatar_url = PROFILE_PICTURES_DIR / f"{player.id.hex}.png"
+    avatar_url = settings.avatar_upload_dir / f"{player.id.hex}.png"
 
     with open(avatar_url.resolve(), "wb+") as file:
         shutil.copyfileobj(avatar.file, file)
