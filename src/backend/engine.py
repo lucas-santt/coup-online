@@ -8,6 +8,9 @@ class Player:
         self.alive = True
         self.cards = []
 
+    def __repr__(self):
+        return f"ID: {self.id} | Name: {self.name} | Coins: {self.coins} \n| Alive: {self.alive} | Cards: {self.cards}"
+
 class Deck:
     def __init__(self, copies_by_card: int, base_cards: list[str]):
         self.copies_by_card = copies_by_card
@@ -23,7 +26,7 @@ class Deck:
             random.shuffle(self.deck)
     
     # Select a card from the deck
-    def pop_deck(self):
+    def pop_card(self):
         if self.copies_by_card <= 0:
             return random.choice(self.base_cards)
         elif len(self.deck) < 1:
@@ -67,8 +70,10 @@ class Match:
     
     # Removes a player from the match
     def remove_player(self, id: str):
-        self.players.pop(id)
-        self.order.remove(id)
+        if id in self.players:
+            self.players.pop(id)
+        if id in self.order:
+            self.order.remove(id)
     
     # Adjusts match states and distributes resources (cards and coins) to the players
     def start_match(self, copies_by_card=None, starting_coins=2):
@@ -102,7 +107,7 @@ class Match:
         # Deals two initial cards to the players
         for player_id in self.order:
             for _ in range(2):
-                card = self.deck.pop_deck()
+                card = self.deck.pop_card()
                 self.players[player_id].cards.append(card) 
 
     # Distribute an equal number of coins to each player
@@ -145,6 +150,7 @@ class Match:
         winner = self.check_winner()
         if winner is not None:
             self.status["finished"] = True
+            self.status["current_match_state"] = "end_of_match"
             return{"event": "end_of_match",
                    "winner": winner.id}
         else:
@@ -158,9 +164,11 @@ class Match:
     def process_event(self, player_id: str, data: dict):
         event = data.get("event")
         if self.status["current_match_state"] == "waiting_action":
+            action = data.get("action")
             if player_id != self.order[self.turn_id]:
                 raise ValueError("It is not your turn.")
-            action = data.get("action")
+            if event == "action" and data.get("action") not in ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]:
+                raise ValueError("This action is not available.")
             target_id = data.get("target_id")
             self.last_action = {"action": action, "player_id": player_id, "target_id": target_id}
             self.status["current_match_state"] = "action_declared"
@@ -178,6 +186,7 @@ class Match:
                 # implement the challenge logic
                 pass
     
+    # Returns a player's possible options given their number of coins
     def get_options(self, player_id: str):
         player = self.players[player_id]
         if player.coins >= 10:
