@@ -42,7 +42,7 @@ def test_set_avatar(session, client, test_player, tmp_path):
     client.cookies = {"session_token": str(test_player.id)}
 
     with open(test_image, "rb") as file:
-        response = client.patch("/api/profile/avatar", files={"avatar": file})
+        response = client.post("/api/profile/avatar", files={"avatar": file})
 
     data = response.json()
 

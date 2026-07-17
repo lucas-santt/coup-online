@@ -21,7 +21,7 @@ async def me(player: RequiredRegisteredOrGuestDep) -> dict[str, str | bool | Non
 
 
 @router.patch("/display-name")
-async def set_display_name(
+async def set_displayname(
     displayname: Annotated[str, Body(embed=True)],
     session: SessionDep,
     player: RequiredRegisteredOrGuestDep,
@@ -33,7 +33,7 @@ async def set_display_name(
     return {"displayname": player.displayname}
 
 
-@router.patch("/avatar")
+@router.post("/avatar")
 async def set_avatar(
     avatar: Annotated[UploadFile, File()],
     session: SessionDep,
