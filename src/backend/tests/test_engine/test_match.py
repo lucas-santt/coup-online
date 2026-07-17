@@ -1,48 +1,12 @@
 import pytest
-from src.backend.engine import Player, Deck, Match
+from src.backend.engine.match import Match
 
-def test_player_init():
-    # Tests player1 initialization
-    player1 = Player("ABCXYZ", "João", 2)
-    assert(repr(player1) == "ID: ABCXYZ | Name: João | Coins: 2 \n| Alive: True | Cards: []")
-
-def test_deck_init():
-    # Tests finite deck initialization 
-    finite_deck = Deck(3, ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"])
-    assert(repr(finite_deck) == "Deck: ['Ambassador', 'Assassin', 'Captain', 'Contessa', 'Duke', 'Ambassador', 'Assassin', 'Captain', 'Contessa', 'Duke', 'Ambassador', 'Assassin', 'Captain', 'Contessa', 'Duke']")
-
-    # Tests infinite deck initialization
-    infinite_deck = Deck(0, ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"])
-    assert(repr(infinite_deck) == "Deck: ['Ambassador', 'Assassin', 'Captain', 'Contessa', 'Duke']")
-
-def test_deck_pop_card():
-    # Tests the order of removals
-    base_cards = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
-    deck = Deck(1, base_cards)
-    for i in range(5):
-        card = deck.pop_card()
-        assert(card == base_cards[4-i])
-    
-    # Tests a removal with empty deck
-    with pytest.raises(ValueError, match="The deck is empty."):
-        deck.pop_card()
-
-def test_deck_shuffle_and_push_card():
-    # Tests shuffle
-    deck = Deck(1, ["Ambassador"])
-    deck.shuffle()
-    assert(repr(deck) == "Deck: ['Ambassador']")
-
-    # Tests pushing a card
-    deck.push_card("Assassin")
-    assert(repr(deck) == "Deck: ['Ambassador', 'Assassin']")
-
-def test_match_init():
+def test_init():
     # Tests init match
     match = Match("ABCXYZ")
     assert(len(match.players.values()) == 0 and not match.status["started"])
 
-def test_match_add_and_remove_players():
+def test_add_and_remove_players():
     match = Match("ABCXYZ")
     
     # Tests adding a player while the game has not started
@@ -60,7 +24,7 @@ def test_match_add_and_remove_players():
     match.remove_player("PLAYER1")
     assert("PLAYER1" not in match.players and "PLAYER1" not in match.order)
 
-def test_match_start():
+def test_start():
     # Tests starting a match with one player
     match = Match("ABCXYZ")
     match.add_player("PLAYER1", "João")
@@ -77,7 +41,7 @@ def test_match_start():
     with pytest.raises(ValueError, match="The match is not accepting new players."):
         match.add_player("PLAYER3", "Antônio")
 
-def test_match_check_winner_and_check_elimination():
+def test_check_winner_and_check_elimination():
     match = Match("ABCXYZ")
     match.add_player("PLAYER1", "João")
     match.add_player("PLAYER2", "Maria")
@@ -96,7 +60,7 @@ def test_match_check_winner_and_check_elimination():
     with pytest.raises(ValueError, match="There are no living players in the game."):
         match.check_winner()
 
-def test_match_new_turn():
+def test_new_turn():
     match = Match("ABCXYZ")
     match.add_player("PLAYER1", "João")
     match.add_player("PLAYER2", "Maria")
@@ -113,7 +77,7 @@ def test_match_new_turn():
     with pytest.raises(ValueError, match="There are no living players in the game."):
         match.new_turn()
 
-def test_match_process_event():
+def test_process_event():
     match = Match("ABCXYZ")
     match.add_player("PLAYER1", "João")
     match.add_player("PLAYER2", "Maria")

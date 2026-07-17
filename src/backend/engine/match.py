@@ -1,49 +1,6 @@
 import random
-
-class Player:
-    def __init__(self, id: str, name: str, starting_coins):
-        self.id = id
-        self.name = name
-        self.coins = starting_coins
-        self.alive = True
-        self.cards = []
-
-    def __repr__(self):
-        return f"ID: {self.id} | Name: {self.name} | Coins: {self.coins} \n| Alive: {self.alive} | Cards: {self.cards}"
-
-class Deck:
-    def __init__(self, copies_by_card: int, base_cards: list[str]):
-        self.copies_by_card = copies_by_card
-        self.base_cards = base_cards
-        self.deck = []
-        # If copies_by_card <= 0, then the deck has infinite copies of each influence
-        if copies_by_card > 0:
-            self.deck = self.copies_by_card * self.base_cards
-    
-    # Shuffles the deck of cards
-    def shuffle(self):
-        if self.copies_by_card > 0:
-            random.shuffle(self.deck)
-    
-    # Select a card from the deck
-    def pop_card(self):
-        if self.copies_by_card <= 0:
-            return random.choice(self.base_cards)
-        elif len(self.deck) < 1:
-            raise ValueError("The deck is empty.")
-        else: 
-            return self.deck.pop()
-    
-    # Returns a card to the deck
-    def push_card(self, card: str):
-        if self.copies_by_card > 0:
-            self.deck.append(card)
-
-    def __repr__(self):
-        if self.copies_by_card > 0:
-            return f"Deck: {self.deck}"
-        else:
-            return f"Deck: {self.base_cards}"
+from src.backend.engine.player import Player
+from src.backend.engine.deck import Deck
 
 class Match:
     def __init__(self, id: str, base_cards=["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]):
