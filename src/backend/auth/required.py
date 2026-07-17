@@ -40,7 +40,7 @@ def require_registered(player: OptionalRegisteredDep) -> Player:
 
     if not player:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Acess denied: you are not logged in.",
         )
 
