@@ -1,15 +1,13 @@
 import {
-    QUAD_VERTICES,
-    CIRCLE_VERTICES,
-    QUAD_INDICES,
-    BACKGROUND_COLOR,
-    CAMERA_ZOOM
+    GEOMETRY,
+    INIT_CAM,
+    GAME,
 } from '../config.js'
 import {
-    QUAD_VERTEX_SHADER,
-    QUAD_FRAGMENT_SHADER,
-    CIRCLE_VERTEX_SHADER,
-    CIRCLE_FRAGMENT_SHADER
+    CARD_VERTEX_SHADER,
+    CARD_FRAGMENT_SHADER,
+    COIN_VERTEX_SHADER,
+    COIN_FRAGMENT_SHADER
 } from '../shaders.js'
 
 import * as wlgm from '../utils/wglm.js'
@@ -33,12 +31,12 @@ export default class Renderer {
     render(scene) {
         this.#updateCanvasResolution();
 
-        this.gl.clearColor(...BACKGROUND_COLOR);
+        this.gl.clearColor(...GAME.backgroundColor);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
         // Sending projection and view matrices into shaders
         const projection = wlgm.perspective(
-            wlgm.radians(CAMERA_ZOOM), // 45
+            wlgm.radians(INIT_CAM.zoom), // 45
             this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
             0.1,
             100
@@ -52,16 +50,20 @@ export default class Renderer {
         }
 
         // Drawing scene objects
-        this.#quadMaterial.shader.use();
-        for(const card of scene.cards) {
-            this.#quadMaterial.shader.setMat4("model", card.getModelTransform());
-            this.#quadMesh.draw()
+        this.#quadMaterial.bind(this.gl);
+        for(const playerCards of scene.cards) {
+            for(const card of playerCards) {
+                this.#quadMaterial.shader.setMat4("model", card.getModelTransform());
+                this.#quadMesh.draw();
+            }
         }
 
-        this.#circleMaterial.shader.use();
-        for(const coin of scene.coins) {
-            this.#circleMaterial.shader.setMat4("model", coin.getModelTransform());
-            this.#circleMesh.draw();
+        this.#circleMaterial.bind(this.gl);
+        for(const playerCoins of scene.coins) {
+            for(const coin of playerCoins) {
+                this.#circleMaterial.shader.setMat4("model", coin.getModelTransform());
+                this.#circleMesh.draw();
+            }
         }
 
         const error = this.gl.getError();
@@ -72,19 +74,20 @@ export default class Renderer {
 
     #makeAssets() {
         // Create Materials and Meshes
-        this.#quadMesh = new Mesh(this.gl, QUAD_VERTICES, QUAD_INDICES);
+        this.#quadMesh = new Mesh(this.gl, GEOMETRY.quad.vertices, GEOMETRY.quad.indices);
         this.#quadMaterial = new Material(
             this.gl,
-            QUAD_VERTEX_SHADER,
-            QUAD_FRAGMENT_SHADER,
+            CARD_VERTEX_SHADER,
+            CARD_FRAGMENT_SHADER,
             '/static/img/Template_Card.png'
         )
 
-        this.#circleMesh = new Mesh(this.gl, CIRCLE_VERTICES);
+        this.#circleMesh = new Mesh(this.gl, GEOMETRY.circle.vertices, GEOMETRY.circle.indices);
         this.#circleMaterial = new Material(
             this.gl,
-            CIRCLE_VERTEX_SHADER,
-            CIRCLE_FRAGMENT_SHADER
+            COIN_VERTEX_SHADER,
+            COIN_FRAGMENT_SHADER,
+            '/static/img/Coin.png'
         )
     }
 

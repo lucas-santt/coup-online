@@ -8,7 +8,7 @@ export default class Mesh {
         this.#has_indices = indices !== null;
 
         if(this.#has_indices) this.#element_count = indices.length
-        else this.#element_count = vertices.length / 3;
+        else this.#element_count = vertices.length / 5;
 
         this.#VAO = this.#generateVAO(vertices, indices);
     }

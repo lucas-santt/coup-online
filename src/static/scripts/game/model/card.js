@@ -1,11 +1,13 @@
 import * as wglm from '../utils/wglm.js'
 import { Vector3 } from '../utils/wglm-classes.js'
+import { OBJ } from '../config.js';
+
 import SceneObject from './sceneObject.js';
 
 export default class Card extends SceneObject {
     movIdx = 0; timer = 0; perc = 0;
 
-    constructor(initPos, initScale, initRotation) {
+    constructor(initPos, initRotation, initScale = OBJ.card.scale) {
         super(initPos, initScale, initRotation);
     }
 

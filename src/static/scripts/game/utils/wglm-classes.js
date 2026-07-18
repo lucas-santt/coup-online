@@ -20,8 +20,11 @@ export class Vector3 extends Array{
         return Math.hypot(this.x, this.y, this.z);
     }
 
-    static add(v1, v2) {
-        return new Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+    static add(v, vc) {
+        if(vc instanceof Vector3)
+            return new Vector3(v.x + vc.x, v.y + vc.y, v.z + vc.z);
+        else
+            return new Vector3(v.x + vc, v.y + vc, v.z + vc);
     }
 
     static subtract(v1, v2) {
@@ -30,6 +33,11 @@ export class Vector3 extends Array{
 
     static mult(v, c) {
         return new Vector3(v.x*c, v.y*c, v.z*c);
+    }
+
+    static hadMult(v1, v2) {
+        /* Hadamard Multiplication */
+        return new Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
     }
 
     static divide(v, c) {
