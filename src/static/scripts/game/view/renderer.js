@@ -1,9 +1,4 @@
-import {
-    GEOMETRY,
-    INIT_CAM,
-    GAME,
-    OBJ,
-} from '../config.js'
+import { GEOMETRY, INIT_CAM, GAME, OBJ } from '../config.js'
 import {
     CARD_VERTEX_SHADER,
     CARD_FRAGMENT_SHADER,
@@ -60,7 +55,7 @@ export default class Renderer {
                 this.#cardMesh.draw();
             }
         }
-        for(const card of scene.supply[0]) {
+        for(const card of scene.drawPile) {
             this.#cardMaterial.shader.setMat4("model", card.getModelTransform());
             this.#cardMesh.draw();
         }
@@ -73,7 +68,7 @@ export default class Renderer {
                 this.#coinMesh.draw();
             }
         }
-        for(const coin of scene.supply[1]) {
+        for(const coin of scene.coinBank) {
             this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
             this.#coinMesh.draw();
         }
