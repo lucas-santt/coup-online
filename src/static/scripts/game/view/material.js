@@ -2,7 +2,7 @@ import Shader from './shader.js'
 import ImageLoader from './imageLoader.js';
 
 export default class Material {
-    shader; texture;
+    shader; texture; textureTarget;
 
     constructor(gl, vertexSource, fragmentSource, texturePaths = null) {
         this.shader = new Shader(gl, vertexSource, fragmentSource);
@@ -14,22 +14,47 @@ export default class Material {
 
         if(this.texture) {
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
+            gl.bindTexture(this.textureTarget, this.texture);
             this.shader.setInt("uTextureMap", 0);
         }
     }
 
     async #generateTexture(gl, imagePaths) {
+        // Placeholder texture while loading image
         const placeholderData =  [];
         for(let i=0; i<imagePaths.length; i++)
             placeholderData.push({width: 1, height: 1, data: new Uint8Array([0, 0, 0, 0])});
-        this.texture = this.#bind3DTex(gl, placeholderData);
+        this.#bindTex(gl, placeholderData);
         
         const images = await ImageLoader.loadImages(imagePaths);
-        const newTex = this.#bind3DTex(gl, images);
+        
+        this.#bindTex(gl, images);
+    }
 
+    #bindTex(gl, images) {
         if(this.texture) gl.deleteTexture(this.texture);
-        this.texture = newTex;
+
+        if(images.length === 1) {
+            this.textureTarget = gl.TEXTURE_2D;
+            this.texture = this.#bind2DTex(gl, images[0]);
+        } else {
+            this.textureTarget = gl.TEXTURE_2D_ARRAY;
+            this.texture = this.#bind3DTex(gl, images);
+        }
+
+        gl.generateMipmap(this.textureTarget);
+        gl.texParameteri(this.textureTarget, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(this.textureTarget, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    }
+
+    #bind2DTex(gl, img) {
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+
+        const sourceData = img.data ? img.data : img;
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, img.width, img.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, sourceData);
+        
+        return tex;
     }
 
     #bind3DTex(gl, images3D) {
@@ -46,10 +71,6 @@ export default class Material {
             const sourceImg = img.data ? img.data : img;
             gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, index, width, height, 1, gl.RGBA, gl.UNSIGNED_BYTE, sourceImg);
         });
-
-        gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-        gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
         return tex;
     }

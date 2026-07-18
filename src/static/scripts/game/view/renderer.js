@@ -2,6 +2,7 @@ import {
     GEOMETRY,
     INIT_CAM,
     GAME,
+    OBJ,
 } from '../config.js'
 import {
     CARD_VERTEX_SHADER,
@@ -79,10 +80,7 @@ export default class Renderer {
             this.gl,
             CARD_VERTEX_SHADER,
             CARD_FRAGMENT_SHADER,
-            [
-                '/static/img/Card - Back.png',
-                '/static/img/Card - Captain v2.0.png'
-            ]
+            OBJ.card.textures
         )
 
         this.#circleMesh = new Mesh(this.gl, GEOMETRY.circle.vertices, GEOMETRY.circle.indices);
@@ -90,7 +88,7 @@ export default class Renderer {
             this.gl,
             COIN_VERTEX_SHADER,
             COIN_FRAGMENT_SHADER,
-            ['/static/img/Coin.png']
+            OBJ.coin.textures
         )
     }
 

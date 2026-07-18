@@ -65,7 +65,7 @@ precision mediump float;
 
 in vec2 vTexCoord;
 
-uniform mediump sampler2DArray uTextureMap;
+uniform mediump sampler2D uTextureMap;
 
 out vec4 outColor;
 
@@ -75,7 +75,7 @@ void main() {
     vec2 dx = dFdx(vTexCoord) * MIPMAP_PRECISION;
     vec2 dy = dFdx(vTexCoord) * MIPMAP_PRECISION;
 
-    vec4 texColor = textureGrad(uTextureMap, vec3(vTexCoord, 0.0), dx, dy);
+    vec4 texColor = textureGrad(uTextureMap, vTexCoord, dx, dy);
     
     if(texColor.a < 0.1) discard;
     outColor = texColor;

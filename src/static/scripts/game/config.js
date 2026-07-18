@@ -40,11 +40,16 @@ export const OBJ = {
         scale: new Vector3(0.08, 0.08, 1),
         rotation: new Vector3(90, 0, 0),
         height: -0.9,
-        heightPadding: 0.026
+        heightPadding: 0.026,
+        textures: [ '/static/img/Coin.png' ]
     },
     card: {
         scale: new Vector3(0.4, 0.42, 1.0),
-        height: -0.7
+        height: -0.7,
+        textures: [
+            '/static/img/Card - Back.png',
+            '/static/img/Card - Captain v2.0.png'
+        ]
     },
     deck: {
         count: 15,
