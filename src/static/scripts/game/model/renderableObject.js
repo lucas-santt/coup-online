@@ -1,7 +1,7 @@
 import { Vector3, Mat4 } from '../utils/wglm-classes.js'
 import * as wglm from '../utils/wglm.js'
 
-export default class SceneObject {
+export default class RenderableObject {
     position; scale; rotation;
 
     constructor(initPos, initScale, initRotation) {

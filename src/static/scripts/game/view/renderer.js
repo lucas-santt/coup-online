@@ -52,22 +52,30 @@ export default class Renderer {
 
         // Drawing scene objects
         this.#cardMaterial.bind(this.gl);
-        for(const playerCards of scene.cards) {
-            for(const card of playerCards) {
+        for(const player of scene.players) {
+            for(const card of player.cards) {
                 this.#cardMaterial.shader.setMat4("model", card.getModelTransform());
                 this.#cardMaterial.shader.setInt("uCardIdx", card.typeIdx + 1); // Sum one bcs of back card w/ idx 0
 
                 this.#cardMesh.draw();
             }
         }
+        for(const card of scene.supply[0]) {
+            this.#cardMaterial.shader.setMat4("model", card.getModelTransform());
+            this.#cardMesh.draw();
+        }
 
         this.#coinMaterial.bind(this.gl);
-        for(const coinDeck of scene.coinDecks) {
-            for(const coin of coinDeck.coins) {
+        for(const player of scene.players) {
+            for(const coin of player.coinStack.coins) {
                 this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
                 
                 this.#coinMesh.draw();
             }
+        }
+        for(const coin of scene.supply[1]) {
+            this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
+            this.#coinMesh.draw();
         }
 
         const error = this.gl.getError();

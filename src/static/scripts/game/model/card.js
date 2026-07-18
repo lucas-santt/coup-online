@@ -1,10 +1,11 @@
-import * as wglm from '../utils/wglm.js'
 import { Vector3 } from '../utils/wglm-classes.js'
+import * as wglm from '../utils/wglm.js'
+
 import { OBJ } from '../config.js';
 
-import SceneObject from './sceneObject.js';
+import RenderableObject from './renderableObject.js';
 
-export default class Card extends SceneObject {
+export default class Card extends RenderableObject {
     movIdx = 0; timer = 0; perc = 0;
 
     typeIdx = 0;

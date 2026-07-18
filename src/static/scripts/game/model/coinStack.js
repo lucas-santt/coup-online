@@ -1,14 +1,15 @@
-import { OBJ } from "../config.js";
 import { Vector3 } from "../utils/wglm-classes.js";
-import Coin from "./coin.js";
-import SceneObject from "./sceneObject.js";
 
-export default class CoinDeck extends SceneObject {
-    coins;
+import { OBJ } from "../config.js";
+
+import Coin from "./coin.js";
+
+export default class CoinStack {
+    position; coins;
     #heightPadding;
 
     constructor(initPos, coinsCount, heightPadding = OBJ.coin.heightPadding) {
-        super(initPos, new Vector3(1, 1, 1), new Vector3(0, 0, 0));
+        this.position = initPos;
         this.coins = [];
         this.heightPadding = heightPadding;
 
@@ -16,7 +17,7 @@ export default class CoinDeck extends SceneObject {
     }
 
     update(dt) {
-        return;
+        this.coins.forEach(coin => coin.update(dt));
     }
 
     #createCoin() {

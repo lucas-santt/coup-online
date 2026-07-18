@@ -54,7 +54,7 @@ export const OBJ = {
             '/static/img/Card-Contessa_v2.0.png'
         ]
     },
-    deck: {
+    drawPile: {
         count: 15,
         heightPadding: 0.01,
         position: new Vector3(-1.5, -1.0, -2.5),
