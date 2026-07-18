@@ -60,7 +60,7 @@ export const OBJ = {
         position: new Vector3(-1.5, -1.0, -2.5),
         rotation: new Vector3(90, 45, 0.0)
     },
-    coinsDeck: {
+    coinBank: {
         count: 15,
         heightPadding: 0.02,
         position: new Vector3(-1.3, -1.0, -2.9),
