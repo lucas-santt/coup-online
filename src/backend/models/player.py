@@ -1,11 +1,15 @@
 import uuid
 from enum import StrEnum
-from typing import Self
+from typing import Self, TYPE_CHECKING
 
 from pydantic import model_validator
 from sqlmodel import Field, Relationship, SQLModel
 
 from backend import constants
+from backend.models.player_match_link import PlayerMatchLink
+
+if TYPE_CHECKING:
+    from backend.models.match import Match
 
 
 class PlayerType(StrEnum):
@@ -63,7 +67,7 @@ class PlayerSignup(PlayerBase):
 class Player(PlayerBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
-    is_guest: bool = False  ## type: PlayerType = PlayerType.REGISTERED ?
+    is_guest: bool = False
     status: PlayerStatus = PlayerStatus.ONLINE
     avatar_url: str = str(constants.DEFAULT_AVATAR_PATH)
 
@@ -77,4 +81,8 @@ class Player(PlayerBase, table=True):
             primaryjoin="Player.id==PlayerFriendLink.player_id",
             secondaryjoin="Player.id==PlayerFriendLink.friend_id",
         ),
+    )
+
+    matches: list["Match"] = Relationship(
+        back_populates="players", link_model=PlayerMatchLink
     )
