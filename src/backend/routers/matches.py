@@ -61,7 +61,7 @@ async def get_match(
     if gamemode:
         query = query.where(Match.gamemode == gamemode)
 
-    maches = [
+    matches = [
         {
             "match_id": match.id,
             "lobby_name": match.lobby_name,
@@ -74,7 +74,7 @@ async def get_match(
         for match in session.exec(query).all()
     ]
 
-    return maches
+    return matches
 
 
 @router.post("/join")
