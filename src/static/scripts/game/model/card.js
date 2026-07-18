@@ -7,8 +7,11 @@ import SceneObject from './sceneObject.js';
 export default class Card extends SceneObject {
     movIdx = 0; timer = 0; perc = 0;
 
-    constructor(initPos, initRotation, initScale = OBJ.card.scale) {
+    typeIdx = 0;
+
+    constructor(typeIdx, initPos, initRotation, initScale = OBJ.card.scale) {
         super(initPos, initScale, initRotation);
+        this.typeIdx = typeIdx;
     }
 
     update(dt) {

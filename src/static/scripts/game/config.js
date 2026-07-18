@@ -47,8 +47,11 @@ export const OBJ = {
         scale: new Vector3(0.4, 0.42, 1.0),
         height: -0.7,
         textures: [
-            '/static/img/Card - Back.png',
-            '/static/img/Card - Captain v2.0.png'
+            '/static/img/Card-Back.png',
+            '/static/img/Card-Ambassador_v2.0.png',
+            '/static/img/Card-Assasin_v2.0.png',
+            '/static/img/Card-Captain_v2.0.png',
+            '/static/img/Card-Contessa_v2.0.png'
         ]
     },
     deck: {

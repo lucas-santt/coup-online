@@ -130,9 +130,11 @@ export default class Scene {
         const bases = this.#getPlayerCardsBases();
 
         bases.forEach((base, playerIdx) => {
+            const frontIdx = Math.floor(Math.random() * 4);
+            const backIdx  = Math.floor(Math.random() * 4);
             this.cards[playerIdx].push(
-                new Card(base.frontPos, base.frontRot),
-                new Card(base.backPos,  base.backRot)
+                new Card(frontIdx, base.frontPos, base.frontRot),
+                new Card(backIdx,  base.backPos,  base.backRot)
             );
         });
     }
@@ -143,13 +145,13 @@ export default class Scene {
         for(let i=0; i<OBJ.deck.count; i++) {
             const padding = i * OBJ.deck.heightPadding;
             const pos = Vector3.add(OBJ.deck.position, new Vector3(0, padding, playerDist));
-            this.cards[4].push(new Card(pos, OBJ.deck.rotation));
+            this.cards[4].push(new Card(0, pos, OBJ.deck.rotation));
         }
 
         for(let i=0; i<OBJ.coinsDeck.count; i++) {
             const padding = i * OBJ.coinsDeck.heightPadding;
             const pos = Vector3.add(OBJ.coinsDeck.position, new Vector3(0, padding, playerDist));
-            this.coins[4].push(new Coin(pos, OBJ.coin.scale, OBJ.coin.rotation));
+            this.coins[4].push(new Coin(0, pos, OBJ.coin.scale, OBJ.coin.rotation));
         }
     }
 }

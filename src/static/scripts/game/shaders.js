@@ -22,6 +22,7 @@ precision mediump float;
 in vec2 vTexCoord;
 
 uniform mediump sampler2DArray uTextureMap;
+uniform int uCardIdx;
 
 out vec4 outColor;
 
@@ -33,7 +34,7 @@ void main() {
     vec2 dy = dFdy(vTexCoord) * MIPMAP_PRECISION;
 
     float texIndex = 0.0; 
-    if(gl_FrontFacing) texIndex = 1.0;
+    if(gl_FrontFacing) texIndex = float(uCardIdx);
 
     vec4 texColor = textureGrad(uTextureMap, vec3(vTexCoord, texIndex), dx, dy);
 
@@ -60,7 +61,6 @@ void main() {
 `
 
 export const COIN_FRAGMENT_SHADER = `#version 300 es
-
 precision mediump float;
 
 in vec2 vTexCoord;

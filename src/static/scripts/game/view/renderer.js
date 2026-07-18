@@ -19,8 +19,8 @@ import Material from './material.js'
 export default class Renderer {
     canvas; gl; 
 
-    #quadMesh; #quadMaterial;
-    #circleMesh; #circleMaterial;
+    #cardMesh; #cardMaterial;
+    #coinMesh; #coinMaterial;
 
     constructor(canvas, gl) {
         this.canvas = canvas
@@ -43,7 +43,7 @@ export default class Renderer {
             100
         );
 
-        const shaders = [this.#quadMaterial.shader, this.#circleMaterial.shader];
+        const shaders = [this.#cardMaterial.shader, this.#coinMaterial.shader];
         for(const s of shaders) {
             s.use();
             s.setMat4("projection", projection.flatten());
@@ -51,19 +51,22 @@ export default class Renderer {
         }
 
         // Drawing scene objects
-        this.#quadMaterial.bind(this.gl);
+        this.#cardMaterial.bind(this.gl);
         for(const playerCards of scene.cards) {
             for(const card of playerCards) {
-                this.#quadMaterial.shader.setMat4("model", card.getModelTransform());
-                this.#quadMesh.draw();
+                this.#cardMaterial.shader.setMat4("model", card.getModelTransform());
+                this.#cardMaterial.shader.setInt("uCardIdx", card.typeIdx + 1); // Sum one bcs of back card w/ idx 0
+
+                this.#cardMesh.draw();
             }
         }
 
-        this.#circleMaterial.bind(this.gl);
+        this.#coinMaterial.bind(this.gl);
         for(const playerCoins of scene.coins) {
             for(const coin of playerCoins) {
-                this.#circleMaterial.shader.setMat4("model", coin.getModelTransform());
-                this.#circleMesh.draw();
+                this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
+                
+                this.#coinMesh.draw();
             }
         }
 
@@ -75,16 +78,16 @@ export default class Renderer {
 
     #makeAssets() {
         // Create Materials and Meshes
-        this.#quadMesh = new Mesh(this.gl, GEOMETRY.quad.vertices, GEOMETRY.quad.indices);
-        this.#quadMaterial = new Material(
+        this.#cardMesh = new Mesh(this.gl, GEOMETRY.quad.vertices, GEOMETRY.quad.indices);
+        this.#cardMaterial = new Material(
             this.gl,
             CARD_VERTEX_SHADER,
             CARD_FRAGMENT_SHADER,
             OBJ.card.textures
         )
 
-        this.#circleMesh = new Mesh(this.gl, GEOMETRY.circle.vertices, GEOMETRY.circle.indices);
-        this.#circleMaterial = new Material(
+        this.#coinMesh = new Mesh(this.gl, GEOMETRY.circle.vertices, GEOMETRY.circle.indices);
+        this.#coinMaterial = new Material(
             this.gl,
             COIN_VERTEX_SHADER,
             COIN_FRAGMENT_SHADER,
