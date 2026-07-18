@@ -6,6 +6,7 @@ from sqlmodel.pool import StaticPool
 from backend.database import get_session
 from backend.main import app
 from backend.models.player import Player
+from backend.models.match import Match
 
 
 @pytest.fixture(name="session")
@@ -21,17 +22,50 @@ def session_fixture():
 
 @pytest.fixture
 def test_player(session: Session):
-    player1 = Player(
-        username="player1",
-        password="password1",
-        password_confirmation="password1",
-        display_name="Super Cool Player 1",
+    player = Player(
+        username="some_name",
+        password="some_password",
+        password_confirmation="some_password",
+        display_name="Super Cool Player",
         status="online",
     )
-    session.add(player1)
+    session.add(player)
     session.commit()
-    session.refresh(player1)
-    return player1
+    session.refresh(player)
+    return player
+
+
+@pytest.fixture
+def test_public_match(session: Session, test_player):
+    match = Match(
+        lobby_name="some_name",
+        max_players=4,
+        gamemode="classic",
+        visibility="public",
+        bot_fill="none",
+    )
+    match.players.append(test_player)
+    session.add(match)
+    session.commit()
+    session.refresh(match)
+    return match
+
+
+@pytest.fixture
+def test_private_match(session: Session, test_player):
+    match = Match(
+        lobby_name="some_name",
+        max_players=4,
+        gamemode="classic",
+        visibility="private",
+        password="some_password",
+        bot_fill="none",
+    )
+    match.players.append(test_player)
+    session.add(match)
+    session.commit()
+    session.refresh(match)
+    return match
 
 
 @pytest.fixture(name="client")
