@@ -1,11 +1,12 @@
 import Shader from './shader.js'
+import ImageLoader from './imageLoader.js';
 
 export default class Material {
     shader; texture;
 
-    constructor(gl, vertexSource, fragmentSource, texturePath = null) {
+    constructor(gl, vertexSource, fragmentSource, texturePaths = null) {
         this.shader = new Shader(gl, vertexSource, fragmentSource);
-        if(texturePath != null) this.#generateTexture(gl, texturePath);
+        if(texturePaths) this.#generateTexture(gl, texturePaths);
     }
 
     bind(gl = null) {
@@ -13,34 +14,43 @@ export default class Material {
 
         if(this.texture) {
             gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+            gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture);
             this.shader.setInt("uTextureMap", 0);
         }
     }
 
-    #generateTexture(gl, imagePath) {
-        this.texture = gl.createTexture();
+    async #generateTexture(gl, imagePaths) {
+        const placeholderData =  [];
+        for(let i=0; i<imagePaths.length; i++)
+            placeholderData.push({width: 1, height: 1, data: new Uint8Array([0, 0, 0, 0])});
+        this.texture = this.#bind3DTex(gl, placeholderData);
+        
+        const images = await ImageLoader.loadImages(imagePaths);
+        const newTex = this.#bind3DTex(gl, images);
 
+        if(this.texture) gl.deleteTexture(this.texture);
+        this.texture = newTex;
+    }
+
+    #bind3DTex(gl, images3D) {
+        const width  = images3D[0].width;
+        const height = images3D[0].height;
+        const mipmapLevels = Math.floor(Math.log2(Math.max(width, height))) + 1;
+
+        const tex = gl.createTexture();
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.bindTexture(gl.TEXTURE_2D_ARRAY, tex);
 
-        const img = new Image();
-        img.src = imagePath;
-        
-        // Temp. while waiting img to load
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
-        
-        img.onload = () => {
-            gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texStorage3D(gl.TEXTURE_2D_ARRAY, mipmapLevels, gl.RGBA8, width, height, images3D.length);
+        images3D.forEach((img, index) => {
+            const sourceImg = img.data ? img.data : img;
+            gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, index, width, height, 1, gl.RGBA, gl.UNSIGNED_BYTE, sourceImg);
+        });
 
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+        gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        }
+        return tex;
     }
 }

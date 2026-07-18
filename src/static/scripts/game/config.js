@@ -23,8 +23,8 @@ export const GEOMETRY = {
 
 export const GAME = {
     backgroundColor: [0.8941, 0.8314, 0.7373, 0],
-    playerDistance: -3.5,
-    sidePlayerDistance: 0.9,
+    playerDistance: -4.0,
+    sidePlayerDistance: 1.9,
     playerCoinCount: 7
 }
 
@@ -49,13 +49,13 @@ export const OBJ = {
     deck: {
         count: 15,
         heightPadding: 0.01,
-        position: new Vector3(-1.0, -1.0, -2.0),
+        position: new Vector3(-1.5, -1.0, -2.5),
         rotation: new Vector3(90, 45, 0.0)
     },
     coinsDeck: {
         count: 15,
         heightPadding: 0.02,
-        position: new Vector3(-1.3, -1.0, -2.4),
+        position: new Vector3(-1.3, -1.0, -2.9),
     }
 }
 
@@ -79,9 +79,9 @@ export const PLAYERS_OBJ = {
         }
     },
     upper: {
-        coinsPos: new Vector3(0.5, 0.0, -2.1),
+        coinsPos: new Vector3(0.5, 0.0, -2.6),
         cards: {
-            pos: new Vector3(-0.15, -0.7, -2.0),
+            pos: new Vector3(-0.15, -0.7, -2.5),
             rot: new Vector3(-10.0, -180.0, 0.0)
         }
     }

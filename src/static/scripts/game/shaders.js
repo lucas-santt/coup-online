@@ -17,24 +17,27 @@ void main() {
 `
 
 export const CARD_FRAGMENT_SHADER = `#version 300 es
-precision highp float;
-out vec4 outColor;
+precision mediump float;
 
 in vec2 vTexCoord;
 
-uniform sampler2D uTextureMap;
+uniform mediump sampler2DArray uTextureMap;
+
+out vec4 outColor;
+
+const float ALPHA_TOLERANCE = 0.5;
+const float MIPMAP_PRECISION = 0.6;
 
 void main() {
-    vec2 texUV = vTexCoord;
-    if(gl_FrontFacing) {
-        texUV.x *= 0.5;
-    } else {
-        texUV.x = 1.0 - (vTexCoord.x * 0.5);    
-    }
+    vec2 dx = dFdx(vTexCoord) * MIPMAP_PRECISION;
+    vec2 dy = dFdy(vTexCoord) * MIPMAP_PRECISION;
 
-    vec4 texColor = texture(uTextureMap, texUV);
-    if(texColor.a < 0.4) discard;
+    float texIndex = 0.0; 
+    if(gl_FrontFacing) texIndex = 1.0;
 
+    vec4 texColor = textureGrad(uTextureMap, vec3(vTexCoord, texIndex), dx, dy);
+
+    if(texColor.a < ALPHA_TOLERANCE) discard;
     outColor = texColor;
 }
 `
@@ -58,18 +61,23 @@ void main() {
 
 export const COIN_FRAGMENT_SHADER = `#version 300 es
 
-precision highp float;
+precision mediump float;
 
 in vec2 vTexCoord;
 
-uniform sampler2D uTextureMap;
+uniform mediump sampler2DArray uTextureMap;
 
 out vec4 outColor;
 
-void main() {
-    vec4 texColor = texture(uTextureMap, vTexCoord);
-    if(texColor.a < 0.1) discard;
+const float MIPMAP_PRECISION = 0.8;
 
+void main() {
+    vec2 dx = dFdx(vTexCoord) * MIPMAP_PRECISION;
+    vec2 dy = dFdx(vTexCoord) * MIPMAP_PRECISION;
+
+    vec4 texColor = textureGrad(uTextureMap, vec3(vTexCoord, 0.0), dx, dy);
+    
+    if(texColor.a < 0.1) discard;
     outColor = texColor;
 }
 `

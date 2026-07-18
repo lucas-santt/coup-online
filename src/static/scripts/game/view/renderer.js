@@ -79,7 +79,10 @@ export default class Renderer {
             this.gl,
             CARD_VERTEX_SHADER,
             CARD_FRAGMENT_SHADER,
-            '/static/img/Template_Card.png'
+            [
+                '/static/img/Card - Back.png',
+                '/static/img/Card - Captain v2.0.png'
+            ]
         )
 
         this.#circleMesh = new Mesh(this.gl, GEOMETRY.circle.vertices, GEOMETRY.circle.indices);
@@ -87,7 +90,7 @@ export default class Renderer {
             this.gl,
             COIN_VERTEX_SHADER,
             COIN_FRAGMENT_SHADER,
-            '/static/img/Coin.png'
+            ['/static/img/Coin.png']
         )
     }
 
