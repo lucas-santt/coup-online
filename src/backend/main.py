@@ -144,6 +144,7 @@ async def start_match(match_id: str):
 # Maintains a persistent connection with the player during the match
 @app.websocket("/ws/{match_id}/{player_id}")
 async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str):
+    # Catch errors
     if match_id not in active_matches:
         await websocket.close()
         return
@@ -151,24 +152,33 @@ async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str
     if player_id not in match.players:
         await websocket.close()
         return
+    
+    # Connects player
     player = match.players[player_id]
     await manager.connect(websocket, match_id, player_id)
     await manager.broadcast({"event": "player_connected", "player": player_id}, match_id)
+    
     try:
         while True:
             data = await websocket.receive_json()
             try:
                 result = match.process_event(player_id, data)
                 if result:
-                    # Sends the result of the action to every connected player
-                    await manager.broadcast(result, match_id) 
-                    # if the action has already been completed and has passed the challenge phase, play passes to the next player 
-                    if result["event"] == "action_completed":
+                    event = result["event"]
+                    if event == "action_confirmed":
+                        await manager.broadcast(result, match_id)
+                        # Implement the logic to perform the action...
                         new_state = match.new_turn()
                         await manager.broadcast(new_state, match_id)
-            # if it is not the player's turn 
+                    elif event == "block_confirmed":
+                        await manager.broadcast(result, match_id)
+                        new_state = match.new_turn()
+                        await manager.broadcast(new_state, match_id)
+                    elif event in ["action_declared", "block_declared", "action_pass_registered", "block_pass_registered"]:
+                        await manager.broadcast(result, match_id)
+
             except ValueError as e:
-                await manager.send_personal_message({"erro": str(e)}, match_id, player_id)
+                await manager.send_personal_message({"error": str(e)}, match_id, player_id)
     except WebSocketDisconnect:
         manager.disconnect(match_id, player_id)
         await manager.broadcast({"event": "player_disconnected", "player": player_id}, match_id)

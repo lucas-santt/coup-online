@@ -9,16 +9,32 @@ class Match:
         self.status = {"started": False, # status of the match
                        "finished": False,
                        "current_match_state": None}
+        # Possible values of current_match_state:
+        # "waiting_action": wait for the player on the turn to choose an action;
+        # "action_declared": the player on the turn declared their action, but it is subject to challenges or blocks;
+        # "block_declared": a player blocked the current action, but it is open to challenge;
+        # "action_confirmed": all the other players accepted the action, which will be executed immediately;
+        # "block_confirmed": all the other players accepted the block. The current action will be canceled;
+        # "challenge_confirmed": a challenge has been initiated and will be resolved immediately;
+        # "waiting_card_loss": a player with more than one card has lost influence and must choose one of their cards;
+        # "waiting_exchange": a player used the "exchange" action and must return two cards to the deck.
+        
         self.order = [] # player order
         self.turn_id = 0 # indicates whose turn it is to play (order[turn_id])
         self.base_cards = base_cards
-        self.last_action = None
+        self.action_description = {"source_id": None, # informations about the last action
+                                   "target_id": None,
+                                   "action": None,
+                                   "blocker_id": None,
+                                   "challenger_id": None,
+                                   "num_pass_action": 0, # number of players who accepted the last action (did not block or challenge)
+                                   "num_pass_block": 0}
 
     # Adds a player to the match
     def add_player(self, id: str, name: str):
         if self.status["started"]:
             raise ValueError("The match is not accepting new players.")
-        elif len(self.order) == 10:
+        elif len(self.order) >= 10:
             raise ValueError("The match is already full.")
         else:
             new_player = Player(id, name, 0)
@@ -58,6 +74,11 @@ class Match:
         self.give_coins(starting_coins)
         self.status["started"] = True
         self.status["current_match_state"] = "waiting_action"
+        first_player = self.players[self.order[0]] # first player
+        return{"event": "new_turn",
+               "player": first_player.id,
+               "options": first_player.get_action_options(),
+               "last_eliminated": []}
     
     # Deal the cards to each player
     def deal_cards(self):
@@ -86,10 +107,13 @@ class Match:
     
     # Eliminates players with no cards
     def check_elimination(self):
+        eliminated = []
         for player_id in self.order:
             player = self.players[player_id]
-            if(player.alive and len(player.cards) == 0):
+            if player.alive and len(player.cards) == 0:
                 player.alive = False
+                eliminated.append(player_id)
+        return eliminated
 
     # Checks how many players are alive in the match. If there is only 1 (the winner), it returns that player
     def check_winner(self):
@@ -103,54 +127,218 @@ class Match:
     
     # Checks for eliminations, checks if there is a winner, and otherwise returns the next player to play
     def new_turn(self):
-        self.check_elimination()
-        winner = self.check_winner()
-        if winner is not None:
+        self.end_current_turn()
+        last_eliminated = self.check_elimination()
+        winner_id = self.check_winner()
+        if winner_id is not None:
             self.status["finished"] = True
             self.status["current_match_state"] = "end_of_match"
             return{"event": "end_of_match",
-                   "winner": winner.id}
+                   "winner": winner_id,
+                   "last_eliminated": last_eliminated}
         else:
             player = self.next_player()
-            options = self.get_options(player.id)
+            options = player.get_action_options()
             return{"event": "new_turn",
                    "player": player.id,
-                   "options": options}
+                   "options": options,
+                   "last_eliminated": last_eliminated}
     
     # Processes events related to player actions and challenges
     def process_event(self, player_id: str, data: dict):
-        event = data.get("event")
-        if self.status["current_match_state"] == "waiting_action":
-            action = data.get("action")
-            if player_id != self.order[self.turn_id]:
-                raise ValueError("It is not your turn.")
-            if event == "action" and data.get("action") not in ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]:
-                raise ValueError("This action is not available.")
-            target_id = data.get("target_id")
-            self.last_action = {"action": action, "player_id": player_id, "target_id": target_id}
-            self.status["current_match_state"] = "action_declared"
-            return {"event": "action",
-                    "action": action,
-                    "player_id": player_id}
-        elif self.status["current_match_state"] == "action_declared":
-            if event == "pass":
-                # implement the pass logic
-                pass
-            elif event == "block":
-                # Implement the block logic
-                pass
-            elif event == "challenge":
-                # implement the challenge logic
-                pass
+        current_state_match = self.status["current_match_state"]
+        
+        # If the player_id is already dead
+        if not self.players[player_id].alive:
+            raise ValueError("You can not make anything while you are dead.")
+
+        # If the match is waiting for some action from a player
+        elif current_state_match == "waiting_action":
+            return self.process_event_while_waiting_action(player_id, data)
+           
+        # If an action has already been declared and has not been blocked
+        elif current_state_match == "action_declared":
+            return self.process_event_while_action_declared(player_id, data)
+                
+        # If an action has already been declared and has already been blocked
+        elif current_state_match == "block_declared":   
+            return self.process_event_while_block_declared(player_id, data)
+        
+        # If some player must lose a card (challenge, coup or assassinate)
+        elif current_state_match == "waiting_card_loss":
+            return self.process_event_while_card_loss(player_id, data)
+
+        # If some player must give two cards back to the deck (exchange)
+        elif current_state_match == "waiting_exchange":
+            return self.process_event_while_waiting_exchange(player_id, data)
     
-    # Returns a player's possible options given their number of coins
-    def get_options(self, player_id: str):
-        player = self.players[player_id]
-        if player.coins >= 10:
-            return ["coup"]
-        elif player.coins >= 7:
-            return ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]
-        elif player.coins >= 3:
-            return ["income", "foreing_aid", "tax", "assassinate", "steal", "exchange"]
+    # Processes the action while the state is "waiting_action"
+    def process_event_while_waiting_action(self, player_id: str, data: dict):
+        event = data.get("event")
+        action = data.get("action")
+        target_id = data.get("target_id")
+
+        # Catch errors
+        if event != "chosen_action":
+            raise ValueError("You can not do it right now.")
+        if player_id != self.order[self.turn_id]:
+            raise ValueError("It is not your turn.")
+        if action not in self.players[player_id].get_action_options():
+            raise ValueError("This is not a valid option or you do not have enough money.")
+        if action in ["coup", "assassinate", "steal"]:
+            # If the target is not on game, if target is dead or the source and the target are the same
+            if target_id not in self.order or player_id == target_id or not self.players[target_id].alive:
+                raise ValueError("You can not do it with this player.")
+            if action == "steal" and self.players[target_id].coins == 0:
+                raise ValueError("You can not steal from a player with no coins.")
+        
+        # Gets action description
+        self.action_description = {"source_id": player_id,
+                                   "target_id": target_id,
+                                   "action": action,
+                                   "blocker_id": None,
+                                   "challenger_id": None,
+                                   "num_pass_action": 0,
+                                   "num_pass_block": 0}
+        
+        # If the action can not be blocked or challenged
+        if action in ["income", "coup"]:
+            self.status["current_match_state"] = "action_confirmed"
         else:
-            return ["income", "foreing_aid", "tax", "steal", "exchange"]
+            # The match will wait for each player to confirm or not the action
+            self.status["current_match_state"] = "action_declared"
+            self.action_description["num_pass_action"] = 0
+        return {"event": self.status["current_match_state"],
+                "action": action,
+                "player_id": player_id,
+                "target_id": target_id}
+
+    # Processes the action while the state is "action_declared"
+    def process_event_while_action_declared(self, player_id: str, data: dict):
+        event = data.get("event")
+        action = self.action_description["action"]
+        source_id = self.action_description["source_id"]
+        target_id = self.action_description["target_id"]
+
+        if event not in ["pass", "block", "challenge"]:
+            raise ValueError("You can not do it right now.")
+        
+        elif event == "pass":
+            # Catch errors
+            if player_id == source_id:
+                raise ValueError("You can not pass your own action.")
+            
+            self.action_description["num_pass_action"] += 1
+            players_alive = [p for p in self.players.values() if p.alive]
+            
+            # if all living players have already passed the action
+            if self.action_description["num_pass_action"] >= len(players_alive) - 1:
+                self.status["current_match_state"] = "action_confirmed"
+                return {"event": "action_confirmed",
+                "action": action,
+                "player_id": source_id,
+                "target_id": target_id}
+            else:
+                return {"event": "action_pass_registered", "player_id": player_id}
+            
+        elif event == "block":
+            # Catch errors
+            if player_id == self.action_description["source_id"]:
+                raise ValueError("You can not block your own action.")
+            if action not in ["foreign_aid", "assassinate", "steal"]:
+                raise ValueError("This action can not be blocked.")
+            
+            self.action_description["blocker_id"] = player_id
+            self.action_description["num_pass_block"] = 0
+            self.status["current_match_state"] = "block_declared"
+            return {"event": "block_declared",
+                    "action": action,
+                    "player_id": source_id,
+                    "target_id": target_id,
+                    "blocker_id": player_id}
+        
+        elif event == "challenge":
+            # Catch errors
+            if player_id == self.action_description["source_id"]:
+                raise ValueError("You can not challenge your own action.")
+            if action not in ["tax", "assassinate", "steal", "exchange"]:
+                raise ValueError("The current action can not be challenged.")
+            
+            self.status["current_match_state"] = "challenge_confirmed"
+            return {"event": "challenge_confirmed",
+                    "action": action,
+                    "player_id": source_id,
+                    "target_id": target_id,
+                    "challenger_id": player_id}
+        
+    # Processes the action while the state is "block_declared"
+    def process_event_while_block_declared(self, player_id: str, data: dict):
+        event = data.get("event")
+        action = self.action_description["action"]
+        source_id = self.action_description["source_id"]
+        target_id = self.action_description["target_id"]
+        blocker_id = self.action_description["blocker_id"]
+
+        if event not in ["pass", "challenge"]:
+            raise ValueError("You can not do it right now.")
+        
+        elif event == "pass":
+            # Catch errors
+            if player_id == blocker_id:
+                raise ValueError("You can not pass your own block.")
+            
+            self.action_description["num_pass_block"] += 1
+            players_alive = [p for p in self.players.values() if p.alive]
+            
+            # if all living players have already passed the block
+            if self.action_description["num_pass_block"] >= len(players_alive) - 1:
+                self.status["current_match_state"] = "block_confirmed"
+                return {"event": "block_confirmed",
+                        "action": action,
+                        "player_id": source_id,
+                        "target_id": target_id,
+                        "blocker_id": blocker_id}
+            else:
+                return {"event": "block_pass_registered", "player_id": player_id}
+        
+        elif event == "challenge":
+            # Catch errors
+            if player_id == blocker_id:
+                raise ValueError("You can not challenge your own block.")
+            
+            self.status["current_match_state"] = "challenge_confirmed"
+            return {"event": "challenge_confirmed",
+                    "action": action,
+                    "source_id": source_id,
+                    "target_id": target_id,
+                    "challenger_id": player_id}  
+        
+    # Processes the action while the state is "waiting_card_loss"
+    def process_event_while_card_loss(self, player_id: str, data: dict):
+        pass
+
+    # Processes the action while the state is "waiting_exchange"
+    def process_event_while_waiting_exchange(self, player_id: str, data: dict):
+        pass
+
+    # Reset the state of the match and starts a new turn 
+    def end_current_turn(self):
+        self.status["current_match_state"] = "waiting_action"
+        self.action_description = {"source_id": None,
+                                   "target_id": None,
+                                    "action": None,
+                                    "blocker_id": None,
+                                    "challenger_id": None,
+                                    "num_pass_action": 0,
+                                    "num_pass_block": 0}
+    
+    # Add coins to a player in the match
+    def add_coins_to_player(self, player_id: str, coins: int):
+        self.players[player_id].coins += coins
+    
+    # Steal coins from target_id and give it to source_id
+    def steal_coins(self, source_id: str, target_id: str, coins: int):
+        if self.players[target_id].coins < coins:
+            raise ValueError("The target player does not have enough coins.")
+        self.add_coins_to_player(source_id, coins)
+        self.add_coins_to_player(target_id, -coins)

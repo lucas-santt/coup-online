@@ -71,7 +71,7 @@ def test_new_turn():
     assert(match.new_turn()["player"] == other_player_id)
     # Tests new_turn while there is only one player alive (winner)
     match.players["PLAYER2"].cards = []
-    assert(match.new_turn()["winner"] == "PLAYER1")
+    assert(match.new_turn()["winner"].id == "PLAYER1")
     # Tests new_turn while there is no player alive
     match.players["PLAYER1"].cards = []
     with pytest.raises(ValueError, match="There are no living players in the game."):
@@ -86,23 +86,17 @@ def test_process_event():
     wrong_player_id = "PLAYER1" if current_player_id == "PLAYER2" else "PLAYER2"
     # Tests playing on the wrong turn
     with pytest.raises(ValueError, match="It is not your turn."):
-        match.process_event(wrong_player_id, {"event": "action", "action": "income"})
+        match.process_event(wrong_player_id, {"event": "chosen_action", "action": "income"})
 
     # Tests playing on the wright turn
-    data_action = {"event": "action", "action": "income", "target_id": None}
+    data_action = {"event": "chosen_action", "action": "income"}
     result = match.process_event(current_player_id, data_action)
-    assert(result == {
-        "event": "action",
-        "action": "income",
-        "player_id": current_player_id
-    })
-    assert(match.status["current_match_state"] == "action_declared")
-    assert(match.last_action == {
-        "action": "income",
-        "player_id": current_player_id,
-        "target_id": None
-    })
-    
-    match.process_event("PLAYER2", {"event": "pass"})
-    match.process_event("PLAYER2", {"event": "block"})
-    match.process_event("PLAYER2", {"event": "challenge"})
+    assert(result["event"] == "action_confirmed")
+    assert(match.status["current_match_state"] == "action_confirmed")
+    assert(match.action_description == {"source_id": current_player_id, 
+                                   "target_id": None,
+                                   "action": "income",
+                                   "blocker_id": None,
+                                   "challenger_id": None,
+                                   "num_pass_action": 0,
+                                   "num_pass_block": 0})
