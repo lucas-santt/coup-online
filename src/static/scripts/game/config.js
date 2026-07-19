@@ -23,6 +23,7 @@ export const GEOMETRY = {
 
 export const GAME = {
     backgroundColor: [0.8941, 0.8314, 0.7373, 0],
+    totalCardTypes: 4,
     playerDistance: -4.0,
     sidePlayerDistance: 1.9,
     playerCoinCount: 7
@@ -39,13 +40,10 @@ export const OBJ = {
     coin: {
         scale: new Vector3(0.08, 0.08, 1),
         rotation: new Vector3(90, 0, 0),
-        height: -0.9,
-        heightPadding: 0.026,
         textures: [ '/static/img/Coin.png' ]
     },
     card: {
         scale: new Vector3(0.4, 0.42, 1.0),
-        height: -0.7,
         textures: [
             '/static/img/Card-Back.png',
             '/static/img/Card-Ambassador_v2.0.png',
@@ -67,30 +65,41 @@ export const OBJ = {
     }
 }
 
-export const PLAYERS_OBJ = {
+export const PLAYERS = {
+    cardHeight: -0.7,
+    coinHeight: -0.9,
+    coinHeightPadding: 0.026,
     user: {
-        coinsPos: new Vector3(0.55, -2.4, -1.6),
-        cards: {
-            frontPos: new Vector3(-0.15, -2.1, -1.4),
-            frontRot: new Vector3(-30.0, 0.0, 5.0),
-            backPos:  new Vector3(0.15, -2.1, -1.39),
-            backRot:  new Vector3(-30.0, 0.0, -5.0)
+        pos: {
+            coinStack: new Vector3( 0.55, -2.4, -1.6),
+            frontCard: new Vector3(-0.15, -2.1, -1.4),
+            backCard:  new Vector3( 0.15, -2.1, -1.39)
+        },
+        rot: {
+            frontCard: new Vector3(-30.0, 0.0,  5.0),
+            backCard:  new Vector3(-30.0, 0.0, -5.0)
         }
     },
     side: {
-        coinsPos: new Vector3(-0.2, 0.0, -1.0),
-        cards: {
-            frontPos: new Vector3(0.18, 0.0, -0.49),
-            frontRot: new Vector3(-7.0, 140.0, 0.0),
-            backPos:  new Vector3(0.0, 0.0, -0.7),
-            backRot:  new Vector3(-5.0, 130.0, 0.0)
+        pos: {
+            coinStack: new Vector3(-0.2,  0.0, -1.0),
+            frontCard: new Vector3( 0.18, 0.0, -0.49),
+            backCard:  new Vector3( 0.0,  0.0, -0.7)
+        },
+        rot: {
+            frontCard: new Vector3(-7.0, 140.0, 0.0),
+            backCard:  new Vector3(-5.0, 130.0, 0.0)
         }
     },
     upper: {
-        coinsPos: new Vector3(0.5, 0.0, -2.6),
-        cards: {
-            pos: new Vector3(-0.15, -0.7, -2.5),
-            rot: new Vector3(-10.0, -180.0, 0.0)
+        pos: {
+            coinStack: new Vector3( 0.5,  0.0, -2.6),
+            frontCard: new Vector3( 0.15, 0.0, -2.49),
+            backCard:  new Vector3(-0.15, 0.0, -2.5)
+        },
+        rot: {
+            frontCard: new Vector3(-10.0, -180.0, 0.0),
+            backCard:  new Vector3(-10.0, -180.0, 0.0)
         }
     }
 }

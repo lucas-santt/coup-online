@@ -8,7 +8,7 @@ export default class CoinStack {
     position; coins;
     #heightPadding;
 
-    constructor(initPos, coinsCount, heightPadding = OBJ.coin.heightPadding) {
+    constructor(initPos, coinsCount, heightPadding) {
         this.position = initPos;
         this.coins = [];
         this.heightPadding = heightPadding;

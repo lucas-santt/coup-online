@@ -1,6 +1,6 @@
 import { Vector3 } from "../utils/wglm-classes.js";
 
-import { GAME, INIT_CAM, OBJ, PLAYERS_OBJ } from '../config.js';
+import { GAME, INIT_CAM, OBJ, PLAYERS } from '../config.js';
 
 import Card from "./card.js";
 import Coin from "./coin.js";
@@ -8,7 +8,11 @@ import CoinStack from "./coinStack.js";
 import Player from "./player.js";
 
 export default class SceneBuilder {
+    static configsApplied = false;
+
     static build() {
+        if(!this.configsApplied) this.#applyConfigs();
+
         const players = this.#generatePlayers();
         const { drawPile, coinBank } = this.#generateSupply();
         return { players, drawPile, coinBank };
@@ -17,61 +21,44 @@ export default class SceneBuilder {
     static #mirrorPos(v) { return Vector3.hadMult(v, new Vector3(-1, 1, 1)); }
     static #mirrorRot(v) { return Vector3.hadMult(v, new Vector3(1, -1, 1)); }
 
-    static #getPlayerBases() {
+    static #applyConfigs() {
         const { playerDistance, sidePlayerDistance } = GAME;
-        const { user, side, upper } = PLAYERS_OBJ;
-        const coinHeight = OBJ.coin.height;
-        const cardHeight = OBJ.card.height;
+        const { cardHeight, coinHeight, user, side, upper } = PLAYERS;
+        PLAYERS.lSide = { pos: {}, rot: {}}
+        const lSide = PLAYERS.lSide;
 
-        const rightCardPos = new Vector3(sidePlayerDistance, cardHeight, playerDistance);
-        const leftCardPos  = this.#mirrorPos(rightCardPos);
-        const rightCoinPos = new Vector3(sidePlayerDistance, coinHeight, playerDistance);
-        const leftCoinPos  = this.#mirrorPos(rightCoinPos);
-        const upperCoinPos = new Vector3(0, coinHeight, playerDistance);
-
-        return [
-            { // User
-                coinPos:      Vector3.add(INIT_CAM.position, user.coinsPos),
-                cardFrontPos: Vector3.add(INIT_CAM.position, user.cards.frontPos),
-                cardFrontRot: user.cards.frontRot,
-                cardBackPos:  Vector3.add(INIT_CAM.position, user.cards.backPos),
-                cardBackRot:  user.cards.backRot
-            },
-            { // Right Player
-                coinPos:      Vector3.add(rightCoinPos, side.coinsPos),
-                cardFrontPos: Vector3.add(rightCardPos, side.cards.frontPos),
-                cardFrontRot: side.cards.frontRot,
-                cardBackPos:  Vector3.add(rightCardPos, side.cards.backPos),
-                cardBackRot:  side.cards.backRot
-            },
-            { // Left Player
-                coinPos:      Vector3.add(leftCoinPos, this.#mirrorPos(side.coinsPos)),
-                cardFrontPos: Vector3.add(leftCardPos, this.#mirrorPos(side.cards.frontPos)),
-                cardFrontRot: this.#mirrorRot(side.cards.frontRot),
-                cardBackPos:  Vector3.add(leftCardPos, this.#mirrorRot(side.cards.backPos)),
-                cardBackRot:  this.#mirrorRot(side.cards.backRot)
-            },
-            { // Upper Player
-                coinPos:      Vector3.add(upperCoinPos, upper.coinsPos),
-                cardFrontPos: Vector3.add(upper.cards.pos, new Vector3(0, 0, playerDistance)),
-                cardFrontRot: upper.cards.rot,
-                cardBackPos:  Vector3.add(this.#mirrorPos(upper.cards.pos), new Vector3(0, 0, playerDistance + 0.01)),
-                cardBackRot:  upper.cards.rot
+        // User Objects
+        for(let key in user.pos) 
+            user.pos[key] = Vector3.add(user.pos[key], INIT_CAM.position); 
+    
+        // Other Players Objects
+        [upper.pos, side.pos].forEach(p => {
+            for(let key in p) {
+                p[key].y += key === "coinStack" ? coinHeight : cardHeight;
+                p[key].z += playerDistance;
             }
-        ];
+        });
+
+        for(let key in side.pos) {
+            side.pos[key].x += sidePlayerDistance;
+            lSide.pos[key] = this.#mirrorPos(side.pos[key]);
+            if(side.rot[key]) lSide.rot[key] = this.#mirrorRot(side.rot[key]);
+        }
+
+        this.configsApplied = true;
     }
 
     static #generatePlayers() {
-        const bases = this.#getPlayerBases();
+        const players = [PLAYERS.user, PLAYERS.side, PLAYERS.lSide, PLAYERS.upper];
 
-        return bases.map((base, idx) => {
-            const coinStack = new CoinStack(base.coinPos, GAME.playerCoinCount);
+        return players.map((p, idx) => {
+            const coinStack = new CoinStack(p.pos.coinStack, GAME.playerCoinCount, PLAYERS.coinHeightPadding);
 
-            const frontIdx = Math.floor(Math.random() * 4);
-            const backIdx  = Math.floor(Math.random() * 4);
+            const frontIdx = Math.floor(Math.random() * GAME.totalCardTypes);
+            const backIdx  = Math.floor(Math.random() * GAME.totalCardTypes);
 
-            const frontCard = new Card(frontIdx, base.cardFrontPos, base.cardFrontRot);
-            const backCard  = new Card(backIdx,  base.cardBackPos,  base.cardBackRot);
+            const frontCard = new Card(frontIdx, p.pos.frontCard, p.rot.frontCard);
+            const backCard  = new Card(backIdx,  p.pos.backCard,  p.rot.backCard);
 
             return new Player(idx, coinStack, frontCard, backCard);
         })
