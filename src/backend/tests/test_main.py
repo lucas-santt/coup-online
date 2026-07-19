@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocketDisconnect
-from src.backend.main import app, active_matches
+from backend.main import app, active_matches
 
 client = TestClient(app)
 

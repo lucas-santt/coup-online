@@ -1,6 +1,6 @@
 import random
-from src.backend.engine.player import Player
-from src.backend.engine.deck import Deck
+from backend.engine.player import Player
+from backend.engine.deck import Deck
 
 class Match:
     def __init__(self, id: str, base_cards=["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]):

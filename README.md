@@ -43,7 +43,7 @@ uv run coup
 If you don't have ``uv``, you will need to manage the virtual environment manually.
 
 <details>
-<summary>Linux</summary>
+<summary>Linux/MacOS</summary>
 
 ```sh
 # Create venv

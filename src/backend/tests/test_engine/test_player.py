@@ -1,5 +1,5 @@
 import pytest
-from src.backend.engine.player import Player
+from backend.engine.player import Player
 
 def test_init():
     # Tests player1 initialization

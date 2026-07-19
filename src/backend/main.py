@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
-from src.backend.engine.match import Match
+from backend.engine.match import Match
 
 app = FastAPI()
 
@@ -177,3 +177,13 @@ async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str
     except WebSocketDisconnect:
         manager.disconnect(match_id, player_id)
         await manager.broadcast({"event": "player_disconnected", "player": player_id}, match_id)
+
+def main() -> None:
+	import uvicorn
+	uvicorn.run(
+		"backend.main:app",
+		host="127.0.0.1",
+		port=8000,
+		reload=True,
+		reload_dirs=["src"],
+	)

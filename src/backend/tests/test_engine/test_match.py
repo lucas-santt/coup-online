@@ -1,5 +1,5 @@
 import pytest
-from src.backend.engine.match import Match
+from backend.engine.match import Match
 
 def test_init():
     # Tests init match
