@@ -1,8 +1,9 @@
 
 # General
 
-# Ignore files starting with a double underscore
-__*
+
+# Personal ignores
+.hide*
 
 # VSCode
 .vscode/
