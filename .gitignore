@@ -17,6 +17,12 @@ __*
 *.pyc
 __pycache__
 .venv/
+venv/
+
+# Tests
+.coverage
+.pytest_cache/
+htmlcov/
 
 # Pytest
 .coverage

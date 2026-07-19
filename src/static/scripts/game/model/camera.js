@@ -1,6 +1,15 @@
 import { Vector3 } from '../utils/wglm-classes.js'
 import * as wglm from "../utils/wglm.js"
 
+export const CameraMovement = {
+    FORWARD: 'FORWARD',
+    BACKWARD: 'BACKWARD',
+    LEFT: 'LEFT',
+    RIGHT: 'RIGHT',
+    UP: 'UP',
+    DOWN: 'DOWN'
+};
+
 export default class Camera {
     position;
     front; up; right;
@@ -8,19 +17,67 @@ export default class Camera {
 
     yaw; pitch;
 
-    constructor(position, worldUp, yaw, pitch) {
+    #allowMovement;
+
+    constructor(position, worldUp, yaw, pitch, allowMovement = false) {
         this.position = position;
         this.worldUp  = worldUp;
         this.yaw   = yaw;
         this.pitch = pitch;
+        this.#allowMovement = allowMovement;
 
         this.#updateCameraVectors();
     }
 
+    /**
+     * Generates lookAt matrix, in wich transforms any point into
+     *  the camera viewspace. Need to be applied in a shader
+     *
+     * @returns {Float32Array} 
+     */
     getView() {
         return wglm.lookAt(this.position, Vector3.add(this.position, this.front), this.up).flatten();
     }
 
+    processKeyboardMovement(dir, deltaTime) {
+        if(!this.#allowMovement) return;
+
+        const vel = 2 * deltaTime;
+
+        if(dir == CameraMovement.FORWARD)
+            this.position = Vector3.add(this.position, Vector3.mult(this.front, vel));
+        
+        else if(dir == CameraMovement.BACKWARD)
+            this.position = Vector3.subtract(this.position, Vector3.mult(this.front, vel));
+
+        else if(dir == CameraMovement.LEFT)
+            this.position = Vector3.subtract(this.position, Vector3.mult(this.right, vel));
+
+        else if(dir == CameraMovement.RIGHT)
+            this.position = Vector3.add(this.position, Vector3.mult(this.right, vel));
+    }
+
+    processMouseMovement(xOffset, yOffset, constraintPitch = true) {
+        if(!this.#allowMovement) return;
+
+        xOffset *= 0.5;
+        yOffset *= 0.5;
+
+        this.yaw   += xOffset;
+        this.pitch += yOffset;
+
+        if(constraintPitch){
+            if(this.pitch > 89.0) this.pitch = 89.0;
+            if(this.pitch < -89.0) this.pitch = -89.0;
+        }
+
+        this.#updateCameraVectors();
+    }
+
+    /** 
+     * Updates camera's front, right and up vectors.
+     *  Which are essential for the lookAt matrix creation
+     */
     #updateCameraVectors() {
         const newFront = new Vector3();
         const yawRadians   = wglm.radians(this.yaw);
