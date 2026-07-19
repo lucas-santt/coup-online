@@ -1,6 +1,5 @@
+import { OBJ } from "../settings.js";
 import { Vector3 } from "../utils/wglm-classes.js";
-
-import { OBJ } from "../config.js";
 
 import Coin from "./coin.js";
 
@@ -21,8 +20,8 @@ export default class CoinStack {
     }
 
     #createCoin() {
-        const padding = (this.coins.length * this.heightPadding);
-        const pos = Vector3.add(this.position, new Vector3(0, padding, 0));
+        const heightPadding = (this.coins.length * this.heightPadding);
+        const pos = Vector3.add(this.position, new Vector3(0, heightPadding, 0));
         this.coins.push(new Coin(pos, OBJ.coin.scale, OBJ.coin.rotation));
     }
 }

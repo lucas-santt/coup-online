@@ -1,10 +1,18 @@
-import { INIT_CAM } from '../config.js'
-
+import { INIT_CAM } from '../settings.js'
 import { Vector3 } from '../utils/wglm-classes.js'
 
 import Camera, { CameraMovement } from "./camera.js";
 import SceneBuilder from './sceneBuilder.js';
 
+/**
+ * Responsable for the management of each
+ *  object, its frame logic update and 
+ *  keyboard input
+ *
+ * @export
+ * @class Scene
+ * @typedef {Scene}
+ */
 export default class Scene {
     camera; players;
     drawPile; coinBank;

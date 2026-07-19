@@ -12,6 +12,7 @@ export default class ImageLoader {
     static loadImages(imagePaths) {
         const promises = imagePaths.map(imagePath => this.imageLoadPromise(imagePath));
 
+        // Wait all promises be completed (images loaded) and return the result of them
         return Promise.all(promises);
     }
 }

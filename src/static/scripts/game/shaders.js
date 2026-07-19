@@ -1,4 +1,8 @@
-// QUAD or CARD shader?
+
+/**
+ * @file All materials shaders, including one vertex 
+ * and one fragment shader for each material
+ */
 export const CARD_VERTEX_SHADER = `#version 300 es
 
 layout(location = 0) in vec3 aPos; 
@@ -30,14 +34,17 @@ const float ALPHA_TOLERANCE = 0.5;
 const float MIPMAP_PRECISION = 0.6;
 
 void main() {
+    // Generating mipmap precision by derivatives
     vec2 dx = dFdx(vTexCoord) * MIPMAP_PRECISION;
     vec2 dy = dFdy(vTexCoord) * MIPMAP_PRECISION;
 
+    // Checks if the texture is from the face or back card
     float texIndex = 0.0; 
     if(gl_FrontFacing) texIndex = float(uCardIdx);
 
     vec4 texColor = textureGrad(uTextureMap, vec3(vTexCoord, texIndex), dx, dy);
-
+    
+    // Check alpha tolerance and discard if necessary
     if(texColor.a < ALPHA_TOLERANCE) discard;
     outColor = texColor;
 }
@@ -72,12 +79,11 @@ out vec4 outColor;
 const float MIPMAP_PRECISION = 0.8;
 
 void main() {
+    // Manually generates mipmap precision by derivatives
     vec2 dx = dFdx(vTexCoord) * MIPMAP_PRECISION;
     vec2 dy = dFdx(vTexCoord) * MIPMAP_PRECISION;
 
     vec4 texColor = textureGrad(uTextureMap, vTexCoord, dx, dy);
-    
-    if(texColor.a < 0.1) discard;
     outColor = texColor;
 }
 `

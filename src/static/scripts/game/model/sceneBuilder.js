@@ -1,17 +1,31 @@
+import { GAME, INIT_CAM, OBJ, PLAYERS } from '../settings.js';
 import { Vector3 } from "../utils/wglm-classes.js";
-
-import { GAME, INIT_CAM, OBJ, PLAYERS } from '../config.js';
 
 import Card from "./card.js";
 import Coin from "./coin.js";
 import CoinStack from "./coinStack.js";
 import Player from "./player.js";
 
+/**
+ * Responsable for generating game's initial scene.
+ *  Wich includes the manipulation of objects positions
+ *  and rotations, and it's creation
+ *
+ * @export
+ * @class SceneBuilder
+ * @typedef {SceneBuilder}
+ */
 export default class SceneBuilder {
     static configsApplied = false;
 
+    /**
+     * Builds intial scene and return it's objects
+     *
+     * @static
+     * @returns {{ players: Player[]; drawPile: Card[]; coinBank: Coin[]; }} 
+     */
     static build() {
-        if(!this.configsApplied) this.#applyConfigs();
+        if(!this.configsApplied) this.#applyInitialSettings();
 
         const players = this.#generatePlayers();
         const { drawPile, coinBank } = this.#generateSupply();
@@ -21,7 +35,17 @@ export default class SceneBuilder {
     static #mirrorPos(v) { return Vector3.hadMult(v, new Vector3(-1, 1, 1)); }
     static #mirrorRot(v) { return Vector3.hadMult(v, new Vector3(1, -1, 1)); }
 
-    static #applyConfigs() {
+    
+    /**
+     * Apply initial settings of distance and camera to all
+     *  objects of the scene.
+     * Calculates players positions and rotations. Generating left 
+     *  player positions and rotation from mirroring right player
+     *
+     * @private
+     * @static
+     */
+    static #applyInitialSettings() {
         const { playerDistance, sidePlayerDistance } = GAME;
         const { cardHeight, coinHeight, user, side, upper } = PLAYERS;
         PLAYERS.lSide = { pos: {}, rot: {}}
@@ -48,10 +72,18 @@ export default class SceneBuilder {
         this.configsApplied = true;
     }
 
+    /**
+     * Instantiate four players (user and right, left and upper players).
+     * Each player have it's own coin stack and two cards
+     * 
+     * @private
+     * @returns {Player[]} 
+     */
     static #generatePlayers() {
         const players = [PLAYERS.user, PLAYERS.side, PLAYERS.lSide, PLAYERS.upper];
 
         return players.map((p, idx) => {
+            // Create a new Player
             const coinStack = new CoinStack(p.pos.coinStack, GAME.playerCoinCount, PLAYERS.coinHeightPadding);
 
             const frontIdx = Math.floor(Math.random() * GAME.totalCardTypes);
@@ -64,19 +96,30 @@ export default class SceneBuilder {
         })
     }
 
+    /**
+     * Generates table central supplies: Draw pile and the coin bank.
+     *  Stacking it by incrementing it's y axis.
+     * Each supply is a static object, in other words, doesn't have a
+     *  frame update logic, are only rendered in the screen.
+     * 
+     * @private
+     * @returns {{ drawPile: Card[], coinBank: Coin[] }}
+     */
     static #generateSupply() {
         const playerDist = GAME.playerDistance;
         const drawPile = [], coinBank = [];
 
+        // First, the drawPile
         for(let i=0; i<OBJ.drawPile.count; i++) {
             const padding = i * OBJ.drawPile.heightPadding;
             const pos = Vector3.add(OBJ.drawPile.position, new Vector3(0, padding, playerDist));
             drawPile.push(new Card(0, pos, OBJ.drawPile.rotation));
         };
 
+        // Then, the coinBank
         for(let i=0; i<OBJ.coinBank.count; i++) {
-            const padding = i * OBJ.coinBank.heightPadding;
-            const pos = Vector3.add(OBJ.coinBank.position, new Vector3(0, padding, playerDist));
+            const heightPadding = i * OBJ.coinBank.heightPadding;
+            const pos = Vector3.add(OBJ.coinBank.position, new Vector3(0, heightPadding, playerDist));
             coinBank.push(new Coin(pos, OBJ.coin.scale, OBJ.coin.rotation));
         };
 

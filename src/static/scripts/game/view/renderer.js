@@ -1,4 +1,4 @@
-import { GEOMETRY, INIT_CAM, GAME, OBJ } from '../config.js'
+import { GEOMETRY, INIT_CAM, GAME, OBJ } from '../settings.js'
 import {
     CARD_VERTEX_SHADER,
     CARD_FRAGMENT_SHADER,
@@ -30,7 +30,7 @@ export default class Renderer {
         this.gl.clearColor(...GAME.backgroundColor);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-        // Sending projection and view matrices into shaders
+        // First, send projection and view matrices into shaders
         const projection = wlgm.perspective(
             wlgm.radians(INIT_CAM.zoom), // 45
             this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
@@ -45,7 +45,8 @@ export default class Renderer {
             s.setMat4("view", scene.camera.getView());
         }
 
-        // Drawing scene objects
+        // Then, Draw scene objects
+        // Cards first
         this.#cardMaterial.bind(this.gl);
         for(const player of scene.players) {
             for(const card of [...player.cards, ...scene.drawPile]) {
@@ -56,6 +57,7 @@ export default class Renderer {
             }
         }
 
+        // Now, coins
         this.#coinMaterial.bind(this.gl);
         for(const player of scene.players) {
             for(const coin of [...player.coinStack.coins, ...scene.coinBank]) {
@@ -65,14 +67,19 @@ export default class Renderer {
             }
         }
 
+        // Logs any error for debugging
         const error = this.gl.getError();
         if (error !== this.gl.NO_ERROR) {
             console.error("WebGL Error:", error);
         }
     }
 
+    /**
+     * Create objects meshes and materials
+     * 
+     * @private
+     */
     #makeAssets() {
-        // Create Materials and Meshes
         this.#cardMesh = new Mesh(this.gl, GEOMETRY.quad.vertices, GEOMETRY.quad.indices);
         this.#cardMaterial = new Material(
             this.gl,
@@ -90,6 +97,12 @@ export default class Renderer {
         )
     }
 
+    
+    /** 
+     * Update canvas resolution based on its aspect ratio
+     * 
+     * @private
+     */
     #updateCanvasResolution() {
         const dpr = window.devicePixelRatio || 1;
         const canvasWidth  = this.canvas.clientWidth;

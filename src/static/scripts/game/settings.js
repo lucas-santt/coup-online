@@ -1,3 +1,7 @@
+/**
+ *  @file Main settings for geometry, game and
+ *  objects and players positions and rotations
+ */
 import { Vector3 } from './utils/wglm-classes.js'
 
 export const GEOMETRY = {
@@ -15,9 +19,7 @@ export const GEOMETRY = {
         ]
     },
     circle: {
-        resolution: 24,
-        vertices: [],
-        indices: []
+        resolution: 24
     }
 }
 

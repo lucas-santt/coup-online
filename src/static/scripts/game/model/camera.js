@@ -17,24 +17,30 @@ export default class Camera {
 
     yaw; pitch;
 
-    #moveInputs;
+    #allowMovement;
 
-    constructor(position, worldUp, yaw, pitch, moveInputs = false) {
+    constructor(position, worldUp, yaw, pitch, allowMovement = false) {
         this.position = position;
         this.worldUp  = worldUp;
         this.yaw   = yaw;
         this.pitch = pitch;
-        this.#moveInputs = moveInputs;
+        this.#allowMovement = allowMovement;
 
         this.#updateCameraVectors();
     }
 
+    /**
+     * Generates lookAt matrix, in wich transforms any point into
+     *  the camera viewspace. Need to be applied in a shader
+     *
+     * @returns {Float32Array} 
+     */
     getView() {
         return wglm.lookAt(this.position, Vector3.add(this.position, this.front), this.up).flatten();
     }
 
     processKeyboardMovement(dir, deltaTime) {
-        if(!this.#moveInputs) return;
+        if(!this.#allowMovement) return;
 
         const vel = 2 * deltaTime;
 
@@ -52,7 +58,7 @@ export default class Camera {
     }
 
     processMouseMovement(xOffset, yOffset, constraintPitch = true) {
-        if(!this.#moveInputs) return;
+        if(!this.#allowMovement) return;
 
         xOffset *= 0.5;
         yOffset *= 0.5;
@@ -68,6 +74,10 @@ export default class Camera {
         this.#updateCameraVectors();
     }
 
+    /** 
+     * Updates camera's front, right and up vectors.
+     *  Which are essential for the lookAt matrix creation
+     */
     #updateCameraVectors() {
         const newFront = new Vector3();
         const yawRadians   = wglm.radians(this.yaw);

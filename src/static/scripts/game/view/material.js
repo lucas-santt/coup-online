@@ -34,6 +34,7 @@ export default class Material {
     #bindTex(gl, images) {
         if(this.texture) gl.deleteTexture(this.texture);
 
+        // Bind texture based on it's dimension
         if(images.length === 1) {
             this.textureTarget = gl.TEXTURE_2D;
             this.texture = this.#bind2DTex(gl, images[0]);
@@ -42,9 +43,10 @@ export default class Material {
             this.texture = this.#bind3DTex(gl, images);
         }
 
-        gl.generateMipmap(this.textureTarget);
+        // Set mipmap settings and generates it
         gl.texParameteri(this.textureTarget, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         gl.texParameteri(this.textureTarget, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.generateMipmap(this.textureTarget);
     }
 
     #bind2DTex(gl, img) {
@@ -66,6 +68,7 @@ export default class Material {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D_ARRAY, tex);
 
+        // Stores space for the full image and then, for each level, stores the source image
         gl.texStorage3D(gl.TEXTURE_2D_ARRAY, mipmapLevels, gl.RGBA8, width, height, images3D.length);
         images3D.forEach((img, index) => {
             const sourceImg = img.data ? img.data : img;

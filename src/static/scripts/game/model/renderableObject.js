@@ -1,6 +1,16 @@
 import { Vector3, Mat4 } from '../utils/wglm-classes.js'
 import * as wglm from '../utils/wglm.js'
 
+/**
+ * Scene Object that need to be rendered.
+ * Responsable for the heavy rendering math, absorving it
+ *  instead of being thrown at each object script
+ * Needs to be inherited for each object that will be rendered 
+ *
+ * @export
+ * @class RenderableObject
+ * @typedef {RenderableObject}
+ */
 export default class RenderableObject {
     position; scale; rotation;
 
@@ -9,7 +19,14 @@ export default class RenderableObject {
         this.scale = initScale;
         this.rotation = initRotation || new Vector3(0, 0, 0);
     }
-
+    
+    /**
+     * Generates the model transform matrix, wich is
+     *  the transformation matrix that applies a rotation,
+     *  scale and translation of each object's point
+     *
+     * @returns {Float32Array} 
+     */
     getModelTransform() {
         const mat = new Mat4(0);
 
