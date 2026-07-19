@@ -1,5 +1,5 @@
 import pytest
-from src.backend.engine.deck import Deck
+from backend.engine.deck import Deck
 
 def test_init():
     # Tests finite deck initialization 

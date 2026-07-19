@@ -1,46 +1,55 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+import uvicorn
 from pydantic import BaseModel
-from pathlib import Path
-from src.backend.engine.match import Match
 
-app = FastAPI()
+from backend.database import create_db_and_tables
+from backend.engine.match import Match
+from backend.routers import routers
+from backend.constants import STATIC_DIR, PAGES_DIR, ASSETS_DIR
 
-# 1. Descobre o caminho absoluto da pasta onde este arquivo (main.py) está (pasta backend)
-BASE_DIR = Path(__file__).resolve().parent
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    create_db_and_tables()
+    yield
 
-# 2. Volta um nível (.parent) e entra na pasta static
-STATIC_DIR = BASE_DIR.parent / "static"
+app = FastAPI(lifespan=lifespan)
 
-# 3. Monta a pasta static para que o navegador consiga carregar os scripts e outros assets
-# Agora, um arquivo em static/scripts/app.js poderá ser acessado via /static/scripts/app.js
+
+# Include routers (API endpoints)
+for router in routers:
+    app.include_router(router)
+
+
+# Mount 'static' directory
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# 4. Cria a rota principal para servir o index.html (landing)
+
 @app.get("/")
-async def read_root():
-    # Caminho exato para o index.html
-    index_path = STATIC_DIR / "pages" / "index.html"
+async def read_root() -> FileResponse:
+    """Serves the root page (index.html)."""
+    return FileResponse(PAGES_DIR / "index.html")
 
-    # Retorna o arquivo HTML diretamente para o navegador
-    return FileResponse(index_path)
 
-# 4b. Rota para a lobby (após login/guest na landing)
 @app.get("/lobby")
-async def read_lobby():
-    lobby_path = STATIC_DIR / "pages" / "lobby.html"
-    return FileResponse(lobby_path)
+async def read_lobby() -> FileResponse:
+    """Serves the lobby page."""
+    return FileResponse(PAGES_DIR / "lobby.html")
+
 
 @app.get("/game")
-async def read_game():
-    game_path = STATIC_DIR / "pages" / "game.html"
-    return FileResponse(game_path)
+async def read_game() -> FileResponse:
+    """Serves the game page."""
+    return FileResponse(PAGES_DIR / "game.html")
 
-# 5. Serve o favicon na raiz para compatibilidade com os browsers
+
 @app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return FileResponse(STATIC_DIR / "assets" / "favicon.ico")
+async def favicon() -> FileResponse:
+    """Serves the favicon."""
+    return FileResponse(ASSETS_DIR / "favicon.ico")
 
 active_matches = {}
 
@@ -66,7 +75,7 @@ class ConnectionManager:
     # Sends a JSON to a particular player connected to the match
     async def send_personal_message(self, message: dict, match_id: str, player_id: str):
         if match_id in self.active_connections and player_id in self.active_connections[match_id]:
-            websocket = self.active_connections[match_id][player_id]    
+            websocket = self.active_connections[match_id][player_id]
             try:
                 await websocket.send_json(message)
             except:
@@ -96,7 +105,7 @@ class JoinMatchRequest(BaseModel):
 def create_match(req : CreateMatchRequest):
     if req.id in active_matches:
         raise HTTPException(status_code=400, detail=f"This match already exists.")
-    
+
     active_matches[req.id] = Match(req.id)
     return {"status": "success",
             "message": f"Match {req.id} successfully created."}
@@ -122,9 +131,9 @@ def join_match(match_id: str, req: JoinMatchRequest):
 async def start_match(match_id: str):
     if match_id not in active_matches:
         raise HTTPException(status_code=404, detail=f"There is no match {match_id}.")
-        
+
     match = active_matches[match_id]
-    
+
     try:
         match.start_match()
         # Signals to every player that the match has started
@@ -166,14 +175,23 @@ async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str
                 result = match.process_event(player_id, data)
                 if result:
                     # Sends the result of the action to every connected player
-                    await manager.broadcast(result, match_id) 
-                    # if the action has already been completed and has passed the challenge phase, play passes to the next player 
+                    await manager.broadcast(result, match_id)
+                    # if the action has already been completed and has passed the challenge phase, play passes to the next player
                     if result["event"] == "action_completed":
                         new_state = match.new_turn()
                         await manager.broadcast(new_state, match_id)
-            # if it is not the player's turn 
+            # if it is not the player's turn
             except ValueError as e:
                 await manager.send_personal_message({"erro": str(e)}, match_id, player_id)
     except WebSocketDisconnect:
         manager.disconnect(match_id, player_id)
         await manager.broadcast({"event": "player_disconnected", "player": player_id}, match_id)
+
+
+def main() -> None:
+    """Starts the server with uvicorn."""
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+if __name__ == "__main__":
+    main()
