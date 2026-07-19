@@ -60,7 +60,7 @@ export default class Renderer {
         // Now, coins
         this.#coinMaterial.bind(this.gl);
         for(const player of scene.players) {
-            for(const coin of [...player.coinStack.coins, ...scene.coinBank]) {
+            for(const coin of [...player.coinStack.getCoins(), ...scene.coinBank]) {
                 this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
                 
                 this.#coinMesh.draw();

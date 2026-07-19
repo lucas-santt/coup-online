@@ -5,14 +5,12 @@ export default class Animator {
 
     constructor(renderableObject) {
         this.#object = renderableObject;
-        this.#animations = {};
+        this.#animations = new Map();
     }
 
     update(dt) {
-        for(let key in this.#animations) {
-            if(this.#animations[key])
-                this.#animations[key].update(dt);
-        }
+        for(const animation of this.#animations.values()) 
+            animation.update(dt);
     }
 
     positionAnimation(config) {
@@ -28,14 +26,14 @@ export default class Animator {
     }
 
     #addAnimation(name, target, config) {
-        this.#animations[name] = new Animation(target, config);
+        this.#animations.set(name, new Animation(target, config));
     }
 }
 
 export class Animation {
     #fullAnimTime; #currAnimTime; #timer;
     #target; #from; #to;
-    #animationCurve;
+    #animationCurve; #callback;
     #active;
 
     constructor(target, config) {
@@ -44,7 +42,8 @@ export class Animation {
             from = null, 
             to, 
             startInstantly = true, 
-            animationCurve = linearCurve
+            animationCurve = linearCurve,
+            callback = null
         } = config;
         
         this.#fullAnimTime = animTime;
@@ -52,6 +51,7 @@ export class Animation {
         this.#from = from ? from : target.clone();
         this.#to = to;
         this.#animationCurve = animationCurve;
+        this.#callback = callback;
 
         if (startInstantly) this.start();
         else this.#active = false;
@@ -66,9 +66,10 @@ export class Animation {
         const currValue = this.#animationCurve(this.#from, this.#to, percentage);
         this.#target.copy(currValue);
         
-        if(percentage === 1.0) this.stop();
+        if(percentage === 1.0) this.#end();
     }
 
+    
     pause() {
         this.#active = false;
     }
@@ -87,14 +88,19 @@ export class Animation {
         this.#timer = 0;
         this.#active = true;
     }
-
+    
     changeAnimationTime(newAnimTime) {
         this.#fullAnimTime = newAnimTime;
-
+        
         if(this.#active) {
             const progress = this.#timer / this.#currAnimTime;
             this.#currAnimTime = newAnimTime;
             this.#timer = progress * this.#currAnimTime;
         }
+    }
+
+    #end() {
+        this.stop();
+        if(this.#callback) this.#callback();
     }
 }

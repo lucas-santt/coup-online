@@ -37,5 +37,8 @@ export default class Scene {
         if(keys['KeyS']) this.camera.processKeyboardMovement(CameraMovement.BACKWARD, dt);
         if(keys['KeyA']) this.camera.processKeyboardMovement(CameraMovement.LEFT, dt);
         if(keys['KeyD']) this.camera.processKeyboardMovement(CameraMovement.RIGHT, dt);
+
+        if(keys['KeyC']) this.players[0].coinStack.spend(); keys['KeyC'] = false;
+        if(keys['KeyV']) this.players[0].coinStack.buy();   keys['KeyV'] = false;
     }
 }
