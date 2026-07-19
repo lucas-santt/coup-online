@@ -1,10 +1,10 @@
 import { GAME, INIT_CAM, OBJ, PLAYERS } from '../settings.js';
 import { Vector3 } from "../utils/wglm-classes.js";
 
-import Card from "./card.js";
-import Coin from "./coin.js";
-import CoinStack from "./coinStack.js";
-import Player from "./player.js";
+import Card from "./objects/card.js";
+import Coin from "./objects/coin.js";
+import CoinStack from "./objects/coinStack.js";
+import Player from "./objects/player.js";
 
 /**
  * Responsable for generating game's initial scene.
@@ -120,7 +120,7 @@ export default class SceneBuilder {
         for(let i=0; i<OBJ.coinBank.count; i++) {
             const heightPadding = i * OBJ.coinBank.heightPadding;
             const pos = Vector3.add(OBJ.coinBank.position, new Vector3(0, heightPadding, playerDist));
-            coinBank.push(new Coin(pos, OBJ.coin.scale, OBJ.coin.rotation));
+            coinBank.push(new Coin(pos, OBJ.coin.rotation, OBJ.coin.scale));
         };
 
         return { drawPile, coinBank };
