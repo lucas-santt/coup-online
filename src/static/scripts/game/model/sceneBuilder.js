@@ -1,10 +1,10 @@
 import { GAME, INIT_CAM, OBJ, PLAYERS } from '../settings.js';
 import { Vector3 } from "../utils/wglm-classes.js";
 
-import Card from "./card.js";
-import Coin from "./coin.js";
-import CoinStack from "./coinStack.js";
-import Player from "./player.js";
+import Card from "./objects/card.js";
+import Coin from "./objects/coin.js";
+import CoinStack from "./objects/coinStack.js";
+import Player from "./objects/player.js";
 
 /**
  * Responsable for generating game's initial scene.
@@ -48,6 +48,7 @@ export default class SceneBuilder {
     static #applyInitialSettings() {
         const { playerDistance, sidePlayerDistance } = GAME;
         const { cardHeight, coinHeight, user, side, upper } = PLAYERS;
+        const { drawPile, coinBank } = OBJ;
         PLAYERS.lSide = { pos: {}, rot: {}}
         const lSide = PLAYERS.lSide;
 
@@ -68,6 +69,14 @@ export default class SceneBuilder {
             lSide.pos[key] = this.#mirrorPos(side.pos[key]);
             if(side.rot[key]) lSide.rot[key] = this.#mirrorRot(side.rot[key]);
         }
+
+        // Supplies
+        drawPile.position.z += playerDistance;
+        coinBank.position.z += playerDistance;
+        coinBank.middlePos = Vector3.add(
+            coinBank.position,
+            new Vector3(0, (coinBank.count / 2) * coinBank.heightPadding, 0)
+        );
 
         this.configsApplied = true;
     }
@@ -112,15 +121,17 @@ export default class SceneBuilder {
         // First, the drawPile
         for(let i=0; i<OBJ.drawPile.count; i++) {
             const padding = i * OBJ.drawPile.heightPadding;
-            const pos = Vector3.add(OBJ.drawPile.position, new Vector3(0, padding, playerDist));
+            const pos = OBJ.drawPile.position.clone();
+            pos.y += padding;
             drawPile.push(new Card(0, pos, OBJ.drawPile.rotation));
         };
 
         // Then, the coinBank
         for(let i=0; i<OBJ.coinBank.count; i++) {
             const heightPadding = i * OBJ.coinBank.heightPadding;
-            const pos = Vector3.add(OBJ.coinBank.position, new Vector3(0, heightPadding, playerDist));
-            coinBank.push(new Coin(pos, OBJ.coin.scale, OBJ.coin.rotation));
+            const pos = OBJ.coinBank.position.clone();
+            pos.y += heightPadding
+            coinBank.push(new Coin(pos));
         };
 
         return { drawPile, coinBank };
