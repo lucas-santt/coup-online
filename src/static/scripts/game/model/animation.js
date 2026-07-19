@@ -33,7 +33,7 @@ export default class Animator {
 export class Animation {
     #fullAnimTime; #currAnimTime; #timer;
     #target; #from; #to;
-    #animationCurve; #callback;
+    #animCurve; #callback;
     #active;
 
     constructor(target, config) {
@@ -42,7 +42,7 @@ export class Animation {
             from = null, 
             to, 
             startInstantly = true, 
-            animationCurve = linearCurve,
+            animCurve = linearCurve,
             callback = null
         } = config;
         
@@ -50,7 +50,7 @@ export class Animation {
         this.#target = target;
         this.#from = from ? from : target.clone();
         this.#to = to;
-        this.#animationCurve = animationCurve;
+        this.#animCurve = animCurve;
         this.#callback = callback;
 
         if (startInstantly) this.start();
@@ -63,7 +63,7 @@ export class Animation {
         this.#timer += dt;
         const percentage = Math.min(this.#timer / this.#currAnimTime, 1.0);
         
-        const currValue = this.#animationCurve(this.#from, this.#to, percentage);
+        const currValue = this.#animCurve(this.#from, this.#to, percentage);
         this.#target.copy(currValue);
         
         if(percentage === 1.0) this.#end();

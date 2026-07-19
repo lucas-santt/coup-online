@@ -16,6 +16,18 @@ export function lerp(start, end, t) {
     return start + (end-start) * t;
 }
 
+/**
+ * Easing function for ease-in and ease-out
+ *
+ * @export
+ * @param {number} t Linear factor between 0 and 1 
+ * @returns {number} 
+ */
+export function smoothstep(t) {
+    const clampedT = Math.max(0, Math.min(1, t));
+    return clampedT * clampedT * (3 - 2 * clampedT);
+}
+
 export function radians(degreesAngle) {
     return degreesAngle * (Math.PI / 180.0);
 }
