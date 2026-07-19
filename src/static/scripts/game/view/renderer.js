@@ -1,15 +1,9 @@
+import { GEOMETRY, INIT_CAM, GAME, OBJ } from '../settings.js'
 import {
-    QUAD_VERTICES,
-    CIRCLE_VERTICES,
-    QUAD_INDICES,
-    BACKGROUND_COLOR,
-    CAMERA_ZOOM
-} from '../config.js'
-import {
-    QUAD_VERTEX_SHADER,
-    QUAD_FRAGMENT_SHADER,
-    CIRCLE_VERTEX_SHADER,
-    CIRCLE_FRAGMENT_SHADER
+    CARD_VERTEX_SHADER,
+    CARD_FRAGMENT_SHADER,
+    COIN_VERTEX_SHADER,
+    COIN_FRAGMENT_SHADER
 } from '../shaders.js'
 
 import * as wlgm from '../utils/wglm.js'
@@ -20,8 +14,8 @@ import Material from './material.js'
 export default class Renderer {
     canvas; gl; 
 
-    #quadMesh; #quadMaterial;
-    #circleMesh; #circleMaterial;
+    #cardMesh; #cardMaterial;
+    #coinMesh; #coinMaterial;
 
     constructor(canvas, gl) {
         this.canvas = canvas
@@ -33,60 +27,82 @@ export default class Renderer {
     render(scene) {
         this.#updateCanvasResolution();
 
-        this.gl.clearColor(...BACKGROUND_COLOR);
+        this.gl.clearColor(...GAME.backgroundColor);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-        // Sending projection and view matrices into shaders
+        // First, send projection and view matrices into shaders
         const projection = wlgm.perspective(
-            wlgm.radians(CAMERA_ZOOM), // 45
+            wlgm.radians(INIT_CAM.zoom), // 45
             this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
             0.1,
             100
         );
 
-        const shaders = [this.#quadMaterial.shader, this.#circleMaterial.shader];
+        const shaders = [this.#cardMaterial.shader, this.#coinMaterial.shader];
         for(const s of shaders) {
             s.use();
             s.setMat4("projection", projection.flatten());
             s.setMat4("view", scene.camera.getView());
         }
 
-        // Drawing scene objects
-        this.#quadMaterial.shader.use();
-        for(const card of scene.cards) {
-            this.#quadMaterial.shader.setMat4("model", card.getModelTransform());
-            this.#quadMesh.draw()
+        // Then, Draw scene objects
+        // Cards first
+        this.#cardMaterial.bind(this.gl);
+        for(const player of scene.players) {
+            for(const card of [...player.cards, ...scene.drawPile]) {
+                this.#cardMaterial.shader.setMat4("model", card.getModelTransform());
+                this.#cardMaterial.shader.setInt("uCardIdx", card.typeIdx + 1); // Sum one bcs of back card w/ idx 0
+
+                this.#cardMesh.draw();
+            }
         }
 
-        this.#circleMaterial.shader.use();
-        for(const coin of scene.coins) {
-            this.#circleMaterial.shader.setMat4("model", coin.getModelTransform());
-            this.#circleMesh.draw();
+        // Now, coins
+        this.#coinMaterial.bind(this.gl);
+        for(const player of scene.players) {
+            for(const coin of [...player.coinStack.coins, ...scene.coinBank]) {
+                this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
+                
+                this.#coinMesh.draw();
+            }
         }
 
+        // Logs any error for debugging
         const error = this.gl.getError();
         if (error !== this.gl.NO_ERROR) {
             console.error("WebGL Error:", error);
         }
     }
 
+    /**
+     * Create objects meshes and materials
+     * 
+     * @private
+     */
     #makeAssets() {
-        // Create Materials and Meshes
-        this.#quadMesh = new Mesh(this.gl, QUAD_VERTICES, QUAD_INDICES);
-        this.#quadMaterial = new Material(
+        this.#cardMesh = new Mesh(this.gl, GEOMETRY.quad.vertices, GEOMETRY.quad.indices);
+        this.#cardMaterial = new Material(
             this.gl,
-            QUAD_VERTEX_SHADER,
-            QUAD_FRAGMENT_SHADER
+            CARD_VERTEX_SHADER,
+            CARD_FRAGMENT_SHADER,
+            OBJ.card.textures
         )
 
-        this.#circleMesh = new Mesh(this.gl, CIRCLE_VERTICES);
-        this.#circleMaterial = new Material(
+        this.#coinMesh = new Mesh(this.gl, GEOMETRY.circle.vertices, GEOMETRY.circle.indices);
+        this.#coinMaterial = new Material(
             this.gl,
-            CIRCLE_VERTEX_SHADER,
-            CIRCLE_FRAGMENT_SHADER
+            COIN_VERTEX_SHADER,
+            COIN_FRAGMENT_SHADER,
+            OBJ.coin.textures
         )
     }
 
+    
+    /** 
+     * Update canvas resolution based on its aspect ratio
+     * 
+     * @private
+     */
     #updateCanvasResolution() {
         const dpr = window.devicePixelRatio || 1;
         const canvasWidth  = this.canvas.clientWidth;

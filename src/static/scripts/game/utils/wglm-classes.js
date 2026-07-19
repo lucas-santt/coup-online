@@ -32,6 +32,18 @@ export class Vector3 extends Array{
         return new Vector3(v.x*c, v.y*c, v.z*c);
     }
 
+    /**
+     * Hadmard Multiplication
+     *
+     * @static
+     * @param {Vector3} v1 
+     * @param {Vector3} v2 
+     * @returns {Vector3} 
+     */
+    static hadMult(v1, v2) {
+        return new Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+    }
+
     static divide(v, c) {
         if(c==0) return new Vector3(0, 0, 0);
         return new Vector3(v.x/c, v.y/c, v.z/c);

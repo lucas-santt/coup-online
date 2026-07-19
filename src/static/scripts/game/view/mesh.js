@@ -8,7 +8,7 @@ export default class Mesh {
         this.#has_indices = indices !== null;
 
         if(this.#has_indices) this.#element_count = indices.length
-        else this.#element_count = vertices.length / 3;
+        else this.#element_count = vertices.length / 5;
 
         this.#VAO = this.#generateVAO(vertices, indices);
     }
@@ -19,23 +19,38 @@ export default class Mesh {
         if(this.#has_indices) 
             this.gl.drawElements(this.gl.TRIANGLES, this.#element_count, this.gl.UNSIGNED_SHORT, 0)
         else
-            this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+            this.gl.drawArrays(this.gl.TRIANGLES, 0, this.#element_count);
         
         this.gl.bindVertexArray(null);
     }
 
+    /**
+     * Generates the vertices array object and its associated buffer
+     * 
+     * @private
+     * @param {number[]} vertices 
+     * @param {numer[]|null} indices 
+     * @returns {WebGLVertexArrayObject}
+     */
     #generateVAO(vertices, indices = null) {
+        const FLOAT_SIZE = Float32Array.BYTES_PER_ELEMENT;
+
         const vao = this.gl.createVertexArray();
         this.gl.bindVertexArray(vao);
 
+        // Bind VBO buffer and vertices to it
         const buffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
 
+        // Properties (Vertices and UV coordinates)
         this.gl.enableVertexAttribArray(0);
-        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 5 * FLOAT_SIZE, 0);
 
-        // EBO 
+        this.gl.enableVertexAttribArray(1);
+        this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 5 * FLOAT_SIZE, 3 * FLOAT_SIZE);
+
+        // Bind EBO buffer and bind indices to it
         if(this.#has_indices) {
             const indexBuffer = this.gl.createBuffer();
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
