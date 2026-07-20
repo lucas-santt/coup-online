@@ -5,13 +5,15 @@ import Renderer from '../view/renderer.js'
 
 /**
  * Game's main class, responsable for its initialization
- *  and loop. Manages model and view tasks
+ *  and loop. Manages model/view tasks and gets input but
+ *  does not handle them
  *
  * @export
  * @class App
  * @typedef {App}
  */
 export default class App {
+    #canvas;
     #scene; #renderer;
     #deltaTime = 0; #lastFrame = 0;
     #keys = {};
@@ -27,6 +29,7 @@ export default class App {
         this.#genCircleVertices();
         this.#initGL(gl);
 
+        this.#canvas = canvas;
         this.#scene = new Scene();
         this.#renderer = new Renderer(canvas, gl);
         this.#lastFrame = Date.now();
@@ -66,10 +69,18 @@ export default class App {
     }
 
     #mouseMovementCallback(event) {
+        let mouseX = event.offsetX;
+        let mouseY = event.offsetY;
+
         let xOffset = event.movementX;
         let yOffset = -event.movementY;
 
         this.#scene.camera.processMouseMovement(xOffset, yOffset);
+
+        const mouseX_norm = (2.0 * mouseX) / this.#canvas.width - 1.0;
+        const mouseY_norm = 1.0 - (2.0 * mouseY) / this.#canvas.height; // Y Inverted
+        const aspectRatio = this.canvas.width / this.canvas.height; 
+        this.#scene.processHover(mouseX_norm, mouseY_norm, aspectRatio);
     }
 
     /** 

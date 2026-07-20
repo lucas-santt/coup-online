@@ -1,4 +1,4 @@
-import { GEOMETRY, INIT_CAM, GAME, OBJ } from '../settings.js'
+import { GEOMETRY, GAME, OBJ } from '../settings.js'
 import {
     CARD_VERTEX_SHADER,
     CARD_FRAGMENT_SHADER,
@@ -6,7 +6,7 @@ import {
     COIN_FRAGMENT_SHADER
 } from '../shaders.js'
 
-import * as wlgm from '../utils/wglm.js'
+import * as wglm from '../utils/wglm.js'
 
 import Mesh from './mesh.js'
 import Material from './material.js'
@@ -28,11 +28,11 @@ export default class Renderer {
         this.#updateCanvasResolution();
 
         this.gl.clearColor(...GAME.backgroundColor);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
 
         // First, send projection and view matrices into shaders
-        const projection = wlgm.perspective(
-            wlgm.radians(INIT_CAM.zoom), // 45
+        const projection = wglm.perspective(
+            wglm.radians(scene.camera.zoom),
             this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
             0.1,
             100
@@ -46,25 +46,21 @@ export default class Renderer {
         }
 
         // Then, Draw scene objects
+        const { cards, coins } = scene.getAllObjects();
         // Cards first
         this.#cardMaterial.bind(this.gl);
-        for(const player of scene.players) {
-            for(const card of [...player.cards, ...scene.drawPile]) {
-                this.#cardMaterial.shader.setMat4("model", card.getModelTransform());
-                this.#cardMaterial.shader.setInt("uCardIdx", card.typeIdx + 1); // Sum one bcs of back card w/ idx 0
+        for(const c of cards) {
+            this.#cardMaterial.shader.setMat4("model", c.getModelTransform());
+            this.#cardMaterial.shader.setInt("uCardIdx", c.typeIdx + 1); // Sum one bcs of back card w/ idx 0
 
-                this.#cardMesh.draw();
-            }
+            this.#cardMesh.draw();
         }
 
         // Now, coins
         this.#coinMaterial.bind(this.gl);
-        for(const player of scene.players) {
-            for(const coin of [...player.coinStack.getAllCoins(), ...scene.coinBank]) {
-                this.#coinMaterial.shader.setMat4("model", coin.getModelTransform());
-                
-                this.#coinMesh.draw();
-            }
+        for(const c of coins) {
+            this.#coinMaterial.shader.setMat4("model", c.getModelTransform());
+            this.#coinMesh.draw();
         }
 
         // Logs any error for debugging

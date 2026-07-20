@@ -18,7 +18,7 @@ export default class Scene {
     drawPile; coinBank;
     
     constructor() {
-        this.camera = new Camera(INIT_CAM.position, new Vector3(0, 1, 0), INIT_CAM.yaw, INIT_CAM.pitch);
+        this.camera = new Camera(INIT_CAM.position, new Vector3(0, 1, 0), INIT_CAM.yaw, INIT_CAM.pitch, INIT_CAM.zoom);
         
         const { players, drawPile, coinBank } = SceneBuilder.build();
         this.players  = players;
@@ -40,5 +40,22 @@ export default class Scene {
 
         if(keys['KeyC']) this.players[0].coinStack.spend(); keys['KeyC'] = false;
         if(keys['KeyV']) this.players[0].coinStack.buy();   keys['KeyV'] = false;
+    }
+
+    processHover(mouseX, mouseY, aspectRatio) {
+        // Assumes mouse coords are ndc
+        const screenPoint = new Vector2(mouseX, mouseY);
+        const ray = this.camera.rayCast(SceneBuilder, aspectRatio);
+    }
+
+    getAllObjects() {
+        const cards = [...this.drawPile];
+        const coins = [...this.coinBank];
+
+        for(const p of this.players) {
+            cards.push(...p.cards);
+            coins.push(...p.coinStack.getAllCoins());
+        }
+        return { cards, coins };
     }
 }

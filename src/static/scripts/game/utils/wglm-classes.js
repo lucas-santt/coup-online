@@ -1,3 +1,32 @@
+export class Vector2 extends Array{
+
+    constructor(x=0, y=0) {
+        super(x, y);
+    }
+
+    get x()    { return this[0]; }
+    set x(val) { this[0] = val; }
+
+    get y()    { return this[1] }
+    set y(val) { this[1] = val; }
+
+    mag() {
+        return Math.hypot(this.x, this.y);
+    }
+
+    copy(v) {
+        this.x = v.x; this.y = v.y;
+    }
+
+    clone() {
+        return new Vector2(this.x, this.y);
+    }
+
+    static mult(v, c) {
+        return new Vector2(v.x * c, v.y * c);   
+    }
+}
+
 export class Vector3 extends Array{
     /*
         Could be optimized by not creating a Vector3
@@ -78,4 +107,17 @@ export class Mat4 extends Array{
         */
         return new Float32Array(this.flat());
     } 
+}
+
+export class Ray {
+    origin; direction;
+
+    constructor(origin, direction) {
+        this.origin = origin;
+        this.direction = direction;
+    }
+
+    point(t) {
+        return Vector3.add(Vector3.mult(this.direction, t), this.origin);
+    }
 }
