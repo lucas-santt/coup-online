@@ -8,14 +8,31 @@
 	const btnAuthAction = document.getElementById('btn-auth-action');
 	const tabFriends = document.getElementById('tab-friends');
 
-	function revealLobby(result) {
+	async function revealLobby(result) {
+		let profile;
+		try {
+			const res = await fetch(LOBBY_SETTINGS.endpoints.profile.me, {
+				credentials: 'same-origin',
+			});
+			if (!res.ok) throw new Error('profile fetch failed');
+			profile = await res.json();
+		} catch (err) {
+			Toast.show(ToastMessages.connectionLost(), 'network');
+			return;
+		}
+
 		LobbySession.set({
-			isGuest: result.isGuest,
-			username: result.username,
-			displayName: result.isGuest ? `Guest-${Math.floor(1000 + Math.random() * 9000)}` : result.username,
-			avatarUrl: null,
+			isGuest: profile.is_guest,
+			username: profile.username,
+			displayName: profile.displayname,
+			avatarUrl: profile.avatar_url,
 		});
 		const currentUser = LobbySession.get();
+
+		const avatarImg = document.getElementById('avatar-img');
+		if (avatarImg && currentUser.avatarUrl) {
+			avatarImg.src = `${currentUser.avatarUrl}?t=${Date.now()}`;
+		}
 
 		displayNameEl.textContent = currentUser.displayName;
 		btnAuthAction.textContent = currentUser.isGuest ? 'Login / Sign Up' : 'Logout';

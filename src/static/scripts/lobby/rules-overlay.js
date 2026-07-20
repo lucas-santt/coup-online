@@ -23,6 +23,9 @@ const RulesOverlay = (() => {
 
 	function close() {
 		overlay.classList.remove('visible');
+		if (overlay.contains(document.activeElement)) {
+			document.activeElement.blur();
+		}
 		overlay.setAttribute('aria-hidden', 'true');
 	}
 

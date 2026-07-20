@@ -26,7 +26,7 @@ def test_set_display_name(session, client, test_player):
 
     new_display_name = "new display name"
     response = client.patch(
-        "/api/profile/display-name", json={"displayname": new_display_name}
+        "/api/profile/displayname", json={"displayname": new_display_name}
     )
     data = response.json()
 

@@ -41,7 +41,7 @@ async def guest(
 
         add_to_db(session_guest, session)
 
-        response.set_cookie(key="session_token", value=str(session_guest.id))
+        response.set_cookie(key="session_token", value=str(session_guest.id), path="/")
 
     return {
         "message": "Successfully entered as guest.",
@@ -72,7 +72,7 @@ async def login(
     db_player.status = PlayerStatus.ONLINE
     add_to_db(db_player, session)
 
-    response.set_cookie(key="session_token", value=str(db_player.id))
+    response.set_cookie(key="session_token", value=str(db_player.id), path="/")
 
     return {"message": "Successfully logged in"}
 
@@ -106,7 +106,7 @@ async def signup(
 
     add_to_db(player, session)
 
-    response.set_cookie(key="session_token", value=str(player.id))
+    response.set_cookie(key="session_token", value=str(player.id), path="/")
 
     return {"message": "Successfully signed up"}
 
@@ -121,4 +121,4 @@ async def logout(
         session_player.status = PlayerStatus.OFFLINE
         add_to_db(session_player, session)
 
-    response.delete_cookie("session_token")
+    response.delete_cookie("session_token", path="/")

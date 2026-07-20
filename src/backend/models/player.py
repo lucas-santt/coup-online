@@ -65,12 +65,23 @@ class PlayerSignup(PlayerBase):
         return self
 
 
+import random
+
+def _to_static_url(path: Path) -> str:
+	return f"/static/{path.relative_to(constants.STATIC_DIR).as_posix()}"
+
+
+def _random_default_avatar_url() -> str:
+	files = sorted(constants.DEFAULT_AVATARS_DIR.glob("*.png")) if constants.DEFAULT_AVATARS_DIR.exists() else []
+	chosen = random.choice(files) if files else constants.DEFAULT_AVATARS_DIR / "placeholder.png"
+	return _to_static_url(chosen)
+
 class Player(PlayerBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     is_guest: bool = False
     status: PlayerStatus = PlayerStatus.ONLINE
-    avatar_url: str = str(constants.DEFAULT_AVATAR_PATH)
+    avatar_url: str = Field(default_factory=_random_default_avatar_url)
 
     wins: int = 0
     losses: int = 0

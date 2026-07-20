@@ -36,3 +36,6 @@ htmlcov/
 
 # SQL
 *.db
+
+# Profile pictures
+src/static/assets/avatars/uploads/*.png

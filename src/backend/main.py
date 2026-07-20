@@ -10,11 +10,15 @@ from backend.database import create_db_and_tables
 from backend.engine.match import Match
 from backend.routers import routers
 from backend.constants import STATIC_DIR, PAGES_DIR, ASSETS_DIR
+from backend.settings import settings
+from backend.constants import DEFAULT_AVATARS_DIR
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    create_db_and_tables()
-    yield
+	settings.avatar_upload_dir.mkdir(parents=True, exist_ok=True)
+	DEFAULT_AVATARS_DIR.mkdir(parents=True, exist_ok=True)
+	create_db_and_tables()
+	yield
 
 app = FastAPI(lifespan=lifespan)
 

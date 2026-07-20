@@ -103,6 +103,9 @@ const AuthOverlay = (() => {
 
 	function resolve(result) {
 		overlay.classList.remove('visible');
+		if (overlay.contains(document.activeElement)) {
+			document.activeElement.blur();
+		}
 		overlay.setAttribute('aria-hidden', 'true');
 		authForm.reset();
 		const callback = onDone;
@@ -234,7 +237,6 @@ const AuthOverlay = (() => {
 						password_confirmation: confirmPassword,
 					}),
 				});
-				console.log(res);
 
 				if (!res.ok) {
 					Toast.show(await ToastMessages.fromResponse(res), 'warning');

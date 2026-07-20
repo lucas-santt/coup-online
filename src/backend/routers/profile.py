@@ -20,7 +20,7 @@ async def me(player: RequiredRegisteredOrGuestDep) -> dict[str, str | bool | Non
     }
 
 
-@router.patch("/display-name")
+@router.patch("/displayname")
 async def set_displayname(
     displayname: Annotated[str, Body(embed=True)],
     session: SessionDep,
@@ -35,18 +35,17 @@ async def set_displayname(
 
 @router.post("/avatar")
 async def set_avatar(
-    avatar: Annotated[UploadFile, File()],
-    session: SessionDep,
-    player: RequiredRegisteredOrGuestDep,
+	avatar: Annotated[UploadFile, File()],
+	session: SessionDep,
+	player: RequiredRegisteredOrGuestDep,
 ) -> dict[str, str]:
-    # TODO: Validate/Process file
+	filename = f"{player.id.hex}.png"
+	filepath = settings.avatar_upload_dir / filename
 
-    avatar_url = settings.avatar_upload_dir / f"{player.id.hex}.png"
+	with open(filepath, "wb+") as file:
+		shutil.copyfileobj(avatar.file, file)
 
-    with open(avatar_url.resolve(), "wb+") as file:
-        shutil.copyfileobj(avatar.file, file)
+	player.avatar_url = f"/static/assets/avatars/uploads/{filename}"
+	add_to_db(player, session)
 
-    player.avatar_url = str(avatar_url)
-    add_to_db(player, session)
-
-    return {"avatar_url": player.avatar_url}
+	return {"avatar_url": player.avatar_url}
