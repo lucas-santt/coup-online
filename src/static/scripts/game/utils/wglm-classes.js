@@ -20,6 +20,14 @@ export class Vector3 extends Array{
         return Math.hypot(this.x, this.y, this.z);
     }
 
+    copy(v) {
+        this.x = v.x; this.y = v.y; this.z = v.z;
+    }
+
+    clone() {
+        return new Vector3(this.x, this.y, this.z);
+    }
+
     static add(v1, v2) {
         return new Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
     }
@@ -30,6 +38,18 @@ export class Vector3 extends Array{
 
     static mult(v, c) {
         return new Vector3(v.x*c, v.y*c, v.z*c);
+    }
+
+    /**
+     * Hadmard Multiplication
+     *
+     * @static
+     * @param {Vector3} v1 
+     * @param {Vector3} v2 
+     * @returns {Vector3} 
+     */
+    static hadMult(v1, v2) {
+        return new Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
     }
 
     static divide(v, c) {

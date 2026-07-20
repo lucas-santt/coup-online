@@ -7,11 +7,13 @@ export default class Shader {
         const vertexShader   = this.#createShader(gl.VERTEX_SHADER, vertexSrc);
         const fragmentShader = this.#createShader(gl.FRAGMENT_SHADER, fragmentSrc);
         
+        // Create shader program and link the vertex and fragments shaders
         const program = gl.createProgram();
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
         gl.linkProgram(program);
 
+        // Check for any linking error
         if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             console.error(gl.getProgramInfoLog(program));
         }
@@ -47,6 +49,7 @@ export default class Shader {
         this.gl.shaderSource(shader, src);
         this.gl.compileShader(shader);
 
+        // Check for any compiling error
         if(!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
             console.error(this.gl.getShaderInfoLog(shader));
             this.gl.deleteShader(shader);

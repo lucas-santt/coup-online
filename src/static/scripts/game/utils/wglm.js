@@ -1,31 +1,38 @@
-/*
-    WebGL Mathematics
-    Utility Math functions for 3D rendering in WebGL
-
-    Created and maintained by the creators of this repository
-*/
-
+/**
+ *  @file Utility model for essencial math functions
+ * 
+  */
 import { Mat4, Vector3 } from "./wglm-classes.js"
 
-// Pure math
-
+/**
+ * Linear interpolation of a constant
+ * 
+ * @param {number} start 
+ * @param {number} end 
+ * @param {number} t Interpolation factor
+ * @returns {number}
+ */
 export function lerp(start, end, t) {
     return start + (end-start) * t;
 }
 
-export function lerpVector3(start, end, t) {
-    return new Vector3(
-        lerp(start.x, end.x, t),
-        lerp(start.y, end.y, t),
-        lerp(start.z, end.z, t)
-    )
+/**
+ * Easing function for ease-in and ease-out
+ *
+ * @export
+ * @param {number} t Linear factor between 0 and 1 
+ * @returns {number} 
+ */
+export function smoothstep(t) {
+    const clampedT = Math.max(0, Math.min(1, t));
+    return clampedT * clampedT * (3 - 2 * clampedT);
 }
 
 export function radians(degreesAngle) {
     return degreesAngle * (Math.PI / 180.0);
 }
 
-// Vector
+// ------------- Vectors -------------
 
 export function normalize(v) {
     let mag = v.mag();
@@ -38,18 +45,40 @@ export function dot(a, b) {
     return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
 
+/**
+ * Cross product between two vectors a and b
+ * 
+ * @param {Vector3} a 
+ * @param {Vector3} b 
+ * @returns {Vector3}
+ */
 export function cross(a, b) {
-    /* Returns cross product between two vectors a and b */
     return new Vector3(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x);
 }
 
+/**
+ * Calculates the distance between two points
+ * 
+ * @param {Vector3} p1 
+ * @param {Vector3} p2 
+ * @returns {number}
+ */
 export function distance(p1, p2) {
     /* Returns distance between two points */
     return Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
-// Transformation Matrices
+// ------------- Transformation Matrices -------------
 
+/**
+ * Generates View Matrix based on the camera's position,
+ *  point in wich it's looking at and it's up vector
+ * 
+ * @param {Vector3} eye 
+ * @param {Vector3} center 
+ * @param {Vector3} up 
+ * @returns {Mat4}
+ */
 export function lookAt(eye, center, up) {
     let lam = new Mat4(0);
 
@@ -71,6 +100,16 @@ export function lookAt(eye, center, up) {
     return lam;
 }
 
+/**
+ * Generates a perspective projection matrix.
+ * i.e, makes the world have a perspective.
+ * 
+ * @param {number} fovy 
+ * @param {number} aspect 
+ * @param {number} near 
+ * @param {number} far 
+ * @returns {Mat4}
+ */
 export function perspective(fovy, aspect, near, far) {
     let p = new Mat4(0);
 

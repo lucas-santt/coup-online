@@ -1,26 +1,44 @@
-import { 
-    CAMERA_POSITION, 
-    CAMERA_YAW, 
-    CAMERA_PITCH 
-} from '../config.js'
+import { INIT_CAM } from '../settings.js'
+import { Vector3 } from '../utils/wglm-classes.js'
 
-import {Vector3} from '../utils/wglm-classes.js'
+import Camera, { CameraMovement } from "./camera.js";
+import SceneBuilder from './sceneBuilder.js';
 
-import Camera from "./camera.js";
-import Card from "./card.js";
-
+/**
+ * Responsable for the management of each
+ *  object, its frame logic update and 
+ *  keyboard input
+ *
+ * @export
+ * @class Scene
+ * @typedef {Scene}
+ */
 export default class Scene {
-    camera;
-    cards = []; coins = [];
+    camera; players;
+    drawPile; coinBank;
     
     constructor() {
-        this.camera = new Camera(CAMERA_POSITION, new Vector3(0, 1, 0), CAMERA_YAW, CAMERA_PITCH);
-        this.cards.push(new Card(new Vector3(0, 0, -3), new Vector3(0.5, 0.5, 1)));
+        this.camera = new Camera(INIT_CAM.position, new Vector3(0, 1, 0), INIT_CAM.yaw, INIT_CAM.pitch);
+        
+        const { players, drawPile, coinBank } = SceneBuilder.build();
+        this.players  = players;
+        this.drawPile = drawPile;
+        this.coinBank = coinBank; 
     }
 
-    update(dt) {
-        for(const card of this.cards) card.update(dt);
+    update(dt, keys) {
+        this.processInput(dt, keys);
 
-        for(const coin of this.coins) coin.update(dt);
+        this.players.forEach(player => player.update(dt));
+    }
+
+    processInput(dt, keys) {
+        if(keys['KeyW']) this.camera.processKeyboardMovement(CameraMovement.FORWARD, dt);
+        if(keys['KeyS']) this.camera.processKeyboardMovement(CameraMovement.BACKWARD, dt);
+        if(keys['KeyA']) this.camera.processKeyboardMovement(CameraMovement.LEFT, dt);
+        if(keys['KeyD']) this.camera.processKeyboardMovement(CameraMovement.RIGHT, dt);
+
+        if(keys['KeyC']) this.players[0].coinStack.spend(); keys['KeyC'] = false;
+        if(keys['KeyV']) this.players[0].coinStack.buy();   keys['KeyV'] = false;
     }
 }

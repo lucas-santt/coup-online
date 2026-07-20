@@ -32,6 +32,11 @@ async def read_lobby():
     lobby_path = STATIC_DIR / "pages" / "lobby.html"
     return FileResponse(lobby_path)
 
+@app.get("/game")
+async def read_game():
+    game_path = STATIC_DIR / "pages" / "game.html"
+    return FileResponse(game_path)
+
 # 5. Serve o favicon na raiz para compatibilidade com os browsers
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
