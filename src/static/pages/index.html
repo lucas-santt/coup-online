@@ -3,12 +3,12 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Coup - Lobby</title>
-	<meta name="description" content="Create a new court or join a rival's. The Coup lobby.">
+	<title>Coup — Access Terminal</title>
+	<meta name="description" content="Open a new tribunal or join a rival's. The Coup access terminal.">
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=MedievalSharp&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
 	<link rel="icon" href="/static/assets/favicon.ico">
 	<!-- Split from a single lobby.css into per-component stylesheets. -->
@@ -25,50 +25,27 @@
 	<link rel="stylesheet" href="/static/styles/lobby/misc-panels.css">
 </head>
 <body>
-	<div class="ambient-overlay"></div>
-	<div class="background-vignette"></div>
+	<div class="surveillance-overlay"></div>
 
 	<!-- ============================================================
 	     Auth Overlay — reusable gate (first load) / convert (guest ->
 	     account) modal. See auth-overlay.js for the two contexts.
 	     ============================================================ -->
 	<div class="overlay-backdrop" id="auth-overlay" aria-hidden="true">
-		<div class="overlay-scroll scroll-container" id="auth-overlay-scroll">
-			<div class="ornate-corner top-left">
-				<svg viewBox="0 0 100 100" width="100%" height="100%">
-					<path d="M10,10 L90,10 M10,10 L10,90 M20,20 L80,20 M20,20 L20,80 M10,50 C10,30 30,10 50,10 M50,10 C40,25 25,40 20,60" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
-					<circle cx="20" cy="20" r="4" fill="var(--color-gold)"/>
-				</svg>
-			</div>
-			<div class="ornate-corner top-right">
-				<svg viewBox="0 0 100 100" width="100%" height="100%">
-					<path d="M90,10 L10,10 M90,10 L90,90 M80,20 L20,20 M80,20 L80,80 M90,50 C90,30 70,10 50,10 M50,10 C60,25 75,40 80,60" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
-					<circle cx="80" cy="20" r="4" fill="var(--color-gold)"/>
-				</svg>
-			</div>
-			<div class="ornate-corner bottom-left">
-				<svg viewBox="0 0 100 100" width="100%" height="100%">
-					<path d="M10,90 L90,90 M10,90 L10,10 M20,80 L80,80 M20,80 L20,20 M10,50 C10,70 30,90 50,90 M50,90 C40,75 25,60 20,40" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
-					<circle cx="20" cy="80" r="4" fill="var(--color-gold)"/>
-				</svg>
-			</div>
-			<div class="ornate-corner bottom-right">
-				<svg viewBox="0 0 100 100" width="100%" height="100%">
-					<path d="M90,90 L10,90 M90,90 L90,10 M80,80 L20,80 M80,80 L80,20 M90,50 C90,70 70,90 50,90 M50,90 C60,75 75,60 80,40" fill="none" stroke="var(--color-gold)" stroke-width="2"/>
-					<circle cx="80" cy="80" r="4" fill="var(--color-gold)"/>
+		<div class="overlay-scroll scroll-container corner-brackets" id="auth-overlay-scroll">
+			<div class="official-stamp" aria-hidden="true">
+				<svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg" fill="none">
+					<circle cx="21" cy="21" r="19" stroke="var(--color-ink)" stroke-width="1"/>
+					<circle cx="21" cy="21" r="14.5" stroke="var(--color-orange)" stroke-width="1"/>
+					<circle cx="21" cy="21" r="6" stroke="var(--color-ink)" stroke-width="1"/>
+					<circle cx="21" cy="21" r="2" fill="var(--color-ink)"/>
 				</svg>
 			</div>
 
 			<header class="scroll-header">
-				<h2 class="overlay-title" id="overlay-title">Enter the Court</h2>
-				<p class="overlay-subtitle" id="overlay-subtitle">Log in, sign up, or slip in as a guest.</p>
-				<div class="gold-divider mini">
-					<svg viewBox="0 0 200 20" width="100%" height="100%">
-						<line x1="0" y1="10" x2="80" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
-						<line x1="120" y1="10" x2="200" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
-						<circle cx="100" cy="10" r="4" fill="var(--color-gold)"/>
-					</svg>
-				</div>
+				<h2 class="overlay-title" id="overlay-title">Identity Verification</h2>
+				<p class="overlay-subtitle" id="overlay-subtitle">State your credentials, or proceed as an unregistered observer.</p>
+				<div class="gold-divider mini"></div>
 			</header>
 
 			<section class="auth-section">
@@ -80,42 +57,36 @@
 				<div class="panels-container">
 					<form id="auth-form" class="auth-form" autocomplete="on">
 						<div class="input-group" id="group-username">
-							<label for="auth-username" class="input-label">Moniker</label>
-							<input type="text" id="auth-username" name="username" placeholder="Thy moniker..." required autocomplete="username" maxlength="24">
+							<label for="auth-username" class="input-label">Citizen ID</label>
+							<input type="text" id="auth-username" name="username" placeholder="Enter your designation" required autocomplete="username" maxlength="24">
 						</div>
 						<div class="input-group" id="group-password">
-							<label for="auth-password" class="input-label">Passphrase</label>
-							<input type="password" id="auth-password" name="password" placeholder="Thy secret passphrase..." required autocomplete="current-password" maxlength="72">
+							<label for="auth-password" class="input-label">Access Code</label>
+							<input type="password" id="auth-password" name="password" placeholder="Enter your access code" required autocomplete="current-password" maxlength="72">
 						</div>
 						<div class="input-group confirm-password-wrapper" id="confirm-password-group">
-							<label for="auth-confirm-password" class="input-label">Confirm Passphrase</label>
-							<input type="password" id="auth-confirm-password" name="confirm_password" placeholder="Repeat thy passphrase..." autocomplete="new-password" maxlength="72">
+							<label for="auth-confirm-password" class="input-label">Confirm Access Code</label>
+							<input type="password" id="auth-confirm-password" name="confirm_password" placeholder="Repeat your access code" autocomplete="new-password" maxlength="72">
 						</div>
 						<button type="submit" class="medieval-btn primary-btn" id="btn-submit">
 							<span class="btn-text-wrapper">
-								<span class="btn-text-login active">Enter the Court</span>
-								<span class="btn-text-signup">Pledge Allegiance</span>
+								<span class="btn-text-login active">Authenticate</span>
+								<span class="btn-text-signup">Register</span>
 							</span>
 						</button>
 					</form>
 				</div>
 
 				<div class="auth-toggle-link-container">
-					<p class="toggle-text" id="toggle-hint-text">Don't have an account? <a href="#" id="link-toggle-auth" class="renaissance-link">Sign up</a></p>
+					<p class="toggle-text" id="toggle-hint-text">No citizen file on record? <a href="#" id="link-toggle-auth" class="renaissance-link">Register</a></p>
 				</div>
 			</section>
 
 			<section class="guest-section" id="overlay-guest-section">
-				<div class="gold-divider mini">
-					<svg viewBox="0 0 200 20" width="100%" height="100%">
-						<line x1="0" y1="10" x2="80" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
-						<line x1="120" y1="10" x2="200" y2="10" stroke="var(--color-gold)" stroke-width="1"/>
-						<circle cx="100" cy="10" r="4" fill="var(--color-gold)"/>
-					</svg>
-				</div>
-				<p class="guest-desc">Or enter the realm incognito, without a ledger.</p>
+				<div class="gold-divider mini"></div>
+				<p class="guest-desc">Or proceed unregistered, off the record.</p>
 				<button type="button" id="btn-guest" class="medieval-btn secondary-btn">
-					<span class="btn-text">Play as Guest</span>
+					<span class="btn-text">Enter Unregistered</span>
 				</button>
 			</section>
 		</div>
@@ -126,10 +97,10 @@
 	     player reposition/zoom before committing the portrait.
 	     ============================================================ -->
 	<div class="overlay-backdrop" id="avatar-edit-overlay" aria-hidden="true">
-		<div class="overlay-scroll scroll-container avatar-edit-scroll">
+		<div class="overlay-scroll scroll-container avatar-edit-scroll corner-brackets">
 			<header class="scroll-header">
-				<h2 class="overlay-title">Choose Thy Portrait</h2>
-				<p class="overlay-subtitle">Drag the square to reposition it, or use its corner (or the slider) to resize.</p>
+				<h2 class="overlay-title">Submit Identification Photo</h2>
+				<p class="overlay-subtitle">Drag to reposition the frame, or use its corner (or the slider) to resize.</p>
 			</header>
 
 			<div class="avatar-edit-stage">
@@ -137,13 +108,13 @@
 			</div>
 
 			<div class="avatar-edit-controls">
-				<label for="avatar-zoom-slider" class="input-label">Crop Size</label>
+				<label for="avatar-zoom-slider" class="input-label">Frame Size</label>
 				<input type="range" id="avatar-zoom-slider" class="volume-slider" min="40" max="320" value="320" aria-label="Crop size">
 			</div>
 
 			<div class="avatar-edit-actions">
 				<button type="button" class="medieval-btn secondary-btn" id="btn-avatar-cancel">Cancel</button>
-				<button type="button" class="medieval-btn primary-btn" id="btn-avatar-confirm">Set Portrait</button>
+				<button type="button" class="medieval-btn primary-btn" id="btn-avatar-confirm">Confirm Photo</button>
 			</div>
 		</div>
 	</div>
@@ -155,9 +126,9 @@
 	     handles all of that. See rules-overlay.js for tab switching.
 	     ============================================================ -->
 	<div class="overlay-backdrop" id="rules-overlay" aria-hidden="true">
-		<div class="overlay-scroll scroll-container rules-overlay-scroll" id="rules-overlay-scroll">
+		<div class="overlay-scroll scroll-container rules-overlay-scroll corner-brackets" id="rules-overlay-scroll">
 			<header class="scroll-header">
-				<h2 class="overlay-title">The Rules of the Court</h2>
+				<h2 class="overlay-title">Statutes of the Bureau</h2>
 				<button type="button" class="rules-close-btn" id="btn-rules-close" aria-label="Close rules">&times;</button>
 			</header>
 
@@ -167,10 +138,10 @@
 			</div>
 
 			<div class="rules-content" id="rules-content-base">
-				<p>You are the head of a family in an Italian city-state run by a weak, corrupt, and treacherous court. Manipulate, bluff, and bribe your way to power. Eliminate the influence of every other player: the last family standing wins.</p>
+				<p>You are a ranking officer of a Ministry within a single-party state under total observation. Deceive, bluff, and discredit rival officers to seize control. Eliminate the influence of every other player: the last officer standing wins.</p>
 
 				<h4>Influence</h4>
-				<p>Your two face-down cards are your influence. Only you can see them. When you lose an influence, you choose which card to reveal, and it stays face up and visible to everyone from then on. Lose both, and you're exiled from the game.</p>
+				<p>Your two face-down cards are your standing within the Ministries. Only you can see them. When you lose an influence, you choose which card to reveal, and it stays face up and visible to everyone from then on. Lose both, and you're removed from the Bureau's registry.</p>
 
 				<h4>Taking a Turn</h4>
 				<p>On your turn you must choose exactly one action, you cannot pass. If you begin your turn with 10 or more coins, that action must be a Coup. Once you declare an action, other players get a chance to block or challenge it before it resolves. If nobody does, it succeeds automatically.</p>
@@ -187,10 +158,10 @@
 				<p>Claiming a character action means claiming to hold that card. You never have to reveal it unless challenged.</p>
 				<table class="rules-table">
 					<tr><th>Character</th><th>Action</th><th>Effect</th></tr>
-					<tr><td>Duke</td><td>Tax</td><td>Take 3 coins from the Treasury.</td></tr>
-					<tr><td>Assassin</td><td>Assassinate</td><td>Pay 3 coins; target loses one influence unless blocked by a claimed Contessa.</td></tr>
-					<tr><td>Captain</td><td>Extort</td><td>Take 2 coins from another player (or their last coin, if they only have 1). Can be blocked by a claimed Ambassador or Captain.</td></tr>
-					<tr><td>Ambassador</td><td>Exchange</td><td>Draw 2 random cards, then return 2 to the deck, keeping the same number of influences.</td></tr>
+					<tr><td>Duke (Ministry of Finance)</td><td>Tax</td><td>Take 3 coins from the Treasury.</td></tr>
+					<tr><td>Assassin (the Underground)</td><td>Assassinate</td><td>Pay 3 coins; target loses one influence unless blocked by a claimed Contessa.</td></tr>
+					<tr><td>Captain (Ministry of Defense)</td><td>Extort</td><td>Take 2 coins from another player (or their last coin, if they only have 1). Can be blocked by a claimed Ambassador or Captain.</td></tr>
+					<tr><td>Ambassador (Ministry of Foreign Affairs)</td><td>Exchange</td><td>Draw 2 random cards, then return 2 to the deck, keeping the same number of influences.</td></tr>
 				</table>
 
 				<h4>Challenges</h4>
@@ -199,11 +170,11 @@
 					<li>If they have it: the challenger loses one influence. The revealed card is shuffled back into the deck and its owner draws a fresh one, so their hand isn't exposed.</li>
 					<li>If they don't: they lose one influence, and the action or block fails (any coins spent on it are still lost).</li>
 				</ul>
-				<p class="rules-note">Watch out for the double-loss trap: failing a challenge against an Assassin (or a bluffed Contessa block) costs you one influence for the failed challenge, then another for the assassination itself.</p>
+				<p class="rules-note">Note the double-loss trap: failing a challenge against an Assassin (or a bluffed Contessa block) costs you one influence for the failed challenge, then another for the assassination itself.</p>
 			</div>
 
 			<div class="rules-content hidden" id="rules-content-reformation">
-				<p>Reformation adds religion to the court. Every player is either Catholic or Protestant, shown on a Religion card in front of them, alternating around the table at the start of a match. A Reformation match also swaps the <strong>Ambassador</strong> out for the <strong>Inquisitor</strong>.</p>
+				<p>Reformation adds religion to the Bureau. Every player is either Catholic or Protestant, shown on a Religion card in front of them, alternating around the table at the start of a match. A Reformation match also swaps the <strong>Ambassador</strong> out for the <strong>Inquisitor</strong>.</p>
 
 				<h4>Religion Restriction</h4>
 				<p>You cannot Coup, Assassinate, Extort, or block another player's Foreign Aid if they share your religion, unless every remaining player shares the same religion.</p>
@@ -241,7 +212,7 @@
 	     Lobby — hidden until the overlay above resolves
 	     ============================================================ -->
 	<main class="lobby-container hidden" id="lobby-container">
-		<header class="lobby-topbar">
+		<header class="lobby-topbar corner-brackets">
 			<div class="profile-block">
 				<button class="avatar-btn" id="btn-avatar" title="Change portrait">
 					<!-- NOTE: /static/img/default-avatar.png doesn't exist yet,
@@ -251,13 +222,13 @@
 				<input type="file" id="avatar-input" accept="image/*" hidden>
 
 				<div class="name-block">
-					<span class="display-name" id="display-name" title="Click to edit">Traveller</span>
+					<span class="display-name" id="display-name" title="Click to edit">Citizen</span>
 					<input type="text" class="display-name-input hidden" id="display-name-input">
 					<button class="edit-name-btn" id="btn-edit-name" title="Edit name">✎</button>
 				</div>
 			</div>
 
-			<button type="button" class="medieval-btn secondary-btn small-btn" id="btn-auth-action">Login / Sign Up</button>
+			<button type="button" class="medieval-btn secondary-btn small-btn" id="btn-auth-action">Sign In / Register</button>
 		</header>
 
 		<div class="lobby-body">
@@ -272,16 +243,16 @@
 			<!-- Play -->
 			<section class="lobby-panel active" id="panel-play" role="tabpanel">
 				<div class="primary-actions">
-					<button class="medieval-btn primary-btn" id="btn-open-create">Create Match</button>
-					<button class="medieval-btn primary-btn" id="btn-open-join">Join Match</button>
+					<button class="medieval-btn primary-btn" id="btn-open-create">Open Tribunal</button>
+					<button class="medieval-btn primary-btn" id="btn-open-join">Join Tribunal</button>
 				</div>
 
 				<div class="config-panel hidden" id="create-match-panel">
-					<h3 class="panel-heading">Create a New Match</h3>
+					<h3 class="panel-heading">Open a New Tribunal</h3>
 
 					<div class="input-group" id="group-lobby-name">
-						<label for="input-lobby-name" class="input-label">Lobby Name</label>
-						<input type="text" id="input-lobby-name" placeholder="Name thy court..." required>
+						<label for="input-lobby-name" class="input-label">Tribunal Name</label>
+						<input type="text" id="input-lobby-name" placeholder="Name this tribunal" required>
 					</div>
 
 					<div class="config-row">
@@ -306,8 +277,8 @@
 					</div>
 
 					<div class="input-group hidden" id="group-lobby-password">
-						<label for="input-lobby-password" class="input-label">Password</label>
-						<input type="password" id="input-lobby-password" placeholder="Guard thy court with a passphrase...">
+						<label for="input-lobby-password" class="input-label">Access Code</label>
+						<input type="password" id="input-lobby-password" placeholder="Required to join">
 					</div>
 
 					<div class="config-row">
@@ -319,28 +290,28 @@
 						</select>
 					</div>
 
-					<button class="medieval-btn primary-btn" id="btn-create-match">Create the Match</button>
+					<button class="medieval-btn primary-btn" id="btn-create-match">Open the Tribunal</button>
 				</div>
 
 				<div class="config-panel hidden" id="join-match-panel">
-					<h3 class="panel-heading">Join a Match</h3>
+					<h3 class="panel-heading">Join a Tribunal</h3>
 
 					<div class="join-tabs">
 						<button class="join-tab active" data-jointab="code">Enter Code</button>
-						<button class="join-tab" data-jointab="browse">Browse Matches</button>
+						<button class="join-tab" data-jointab="browse">Browse Tribunals</button>
 					</div>
 
 					<div class="join-view active" id="join-view-code">
 						<div class="input-group">
-							<label for="input-match-code" class="input-label">Match Code</label>
+							<label for="input-match-code" class="input-label">Tribunal Code</label>
 							<input type="text" id="input-match-code" placeholder="e.g. 7F2K9" maxlength="8">
 						</div>
-						<button class="medieval-btn primary-btn" id="btn-join-code">Enter Match</button>
+						<button class="medieval-btn primary-btn" id="btn-join-code">Join Tribunal</button>
 					</div>
 
 					<div class="join-view" id="join-view-browse">
 						<div class="browse-filters">
-							<input type="text" id="filter-search" class="filter-search-input" placeholder="Search by court name..." maxlength="30">
+							<input type="text" id="filter-search" class="filter-search-input" placeholder="Search by tribunal name..." maxlength="30">
 							<select id="filter-players">
 								<option value="any">Any player count</option>
 							</select>
@@ -362,7 +333,7 @@
 			<!-- Rules -->
 			<section class="lobby-panel" id="panel-rules" role="tabpanel">
 				<h3 class="panel-heading">Rules</h3>
-				<p>Coup is a game of influence, deceit, and quiet ruin among rival courts.</p>
+				<p>Coup is a game of influence, deception, and quiet elimination among rival ministries.</p>
 				<ul class="rules-links">
 					<li><button type="button" class="renaissance-link rules-open-btn" data-rules-tab="base">Base Rules</button></li>
 					<li><button type="button" class="renaissance-link rules-open-btn" data-rules-tab="reformation">Reformation DLC</button></li>
@@ -393,7 +364,7 @@
 			<!-- Friends -->
 			<section class="lobby-panel" id="panel-friends" role="tabpanel">
 				<h3 class="panel-heading">Friends</h3>
-				<p class="guest-lock-message hidden" id="friends-guest-message">Log in to add and see friends.</p>
+				<p class="guest-lock-message hidden" id="friends-guest-message">Sign in to add and view friends.</p>
 				<ul class="friends-list hidden" id="friends-list"></ul>
 			</section>
 		</div>

@@ -1,6 +1,6 @@
 const LOBBY_SETTINGS = {
 	audio: {
-		defaultVolume: 0.20,
+		defaultVolume: 0.10,
 		blurVolumeMultiplier: 0.30,
 		fadeDefaultDurationMs: 200,
 		fadeFocusDurationMs: 200,

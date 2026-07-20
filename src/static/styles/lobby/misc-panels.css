@@ -41,7 +41,7 @@
 	border: none;
 	font-size: 1.6rem;
 	line-height: 1;
-	color: var(--color-leather-light);
+	color: var(--color-ink-muted);
 	cursor: pointer;
 }
 
@@ -53,12 +53,15 @@
 .rules-content {
 	overflow-y: auto;
 	padding-right: 0.4rem;
-	color: var(--color-leather);
+	color: var(--color-ink);
 }
 
 .rules-content h4 {
+	font-family: var(--font-display);
+	font-size: 0.95rem;
+	letter-spacing: 0.5px;
 	margin: 1.1rem 0 0.4rem;
-	color: var(--color-leather);
+	color: var(--color-ink);
 }
 
 .rules-content h4:first-child {
@@ -71,8 +74,7 @@
 }
 
 .rules-note {
-	font-style: italic;
-	color: var(--color-leather-light);
+	color: var(--color-ink-muted);
 }
 
 .rules-table {
@@ -86,13 +88,16 @@
 .rules-table td {
 	text-align: left;
 	padding: 0.4rem 0.5rem;
-	border: 1px solid #c5b48c;
-	background: var(--color-cream-light);
+	border: 1px solid var(--color-ink);
+	background: var(--color-panel-light);
 }
 
 .rules-table th {
-	font-family: var(--font-sub);
+	font-family: var(--font-body);
+	font-weight: 700;
 	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	font-size: 0.78rem;
 }
 
 /* ============================================================
@@ -113,8 +118,8 @@
 	gap: 0.6rem;
 	padding: 2.4rem 1rem;
 	text-align: center;
-	color: var(--color-leather-light);
-	opacity: 0.8;
+	color: var(--color-ink-muted);
+	opacity: 0.85;
 }
 
 .lock-icon {
@@ -129,8 +134,12 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 1rem;
-	font-family: var(--font-sub);
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.85rem;
 	letter-spacing: 0.5px;
+	text-transform: uppercase;
+	color: var(--color-ink-muted);
 }
 
 .settings-row .volume-slider-wrapper {
@@ -143,8 +152,7 @@
    Friends panel
    ============================================================ */
 .guest-lock-message {
-	font-style: italic;
-	color: var(--color-leather-light);
+	color: var(--color-ink-muted);
 }
 
 .friends-list {
@@ -159,9 +167,9 @@
 	align-items: center;
 	gap: 0.6rem;
 	padding: 0.5rem 0.7rem;
-	background: var(--color-cream-light);
-	border: 1px solid #c5b48c;
-	border-radius: 3px;
+	background: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	border-radius: 0;
 }
 
 .friend-status {
@@ -172,16 +180,15 @@
 }
 
 .friend-status-online {
-	background-color: #3f8f4f;
-	box-shadow: 0 0 4px #3f8f4f;
+	background-color: var(--color-online);
 }
 
 .friend-status-offline {
-	background-color: #8a8478;
+	background-color: var(--color-offline);
 }
 
 .friend-name {
 	font-family: var(--font-body);
 	font-size: 1rem;
-	color: var(--color-leather);
+	color: var(--color-ink);
 }

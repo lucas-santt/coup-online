@@ -1,24 +1,37 @@
 /* buttons.css
-   The medieval-btn family (primary/secondary, shine sweep, the
-   login/signup text-crossfade used on the auth submit button) and the
-   renaissance-link text link style. */
+   The medieval-btn family (kept as the class name so lobby JS keeps
+   working; visually it's now the "official stamped button" from the
+   Panopticon Deco system: navy gradient fill, orange rule, hard-
+   offset stamp shadow that grows on hover, and a diagonal shine
+   sweep, the same four devices the old medieval buttons had, just
+   re-skinned) plus the renaissance-link text link style. */
 
 .medieval-btn {
-	font-family: var(--font-accent);
-	font-weight: 700;
+	font-family: var(--font-display);
 	font-size: 0.95rem;
-	text-transform: uppercase;
 	letter-spacing: 2px;
 	padding: 0.65rem 1.5rem;
-	border-radius: 3px;
+	border-radius: 0;
 	cursor: pointer;
 	position: relative;
 	overflow: hidden;
-	transition: all 0.3s ease;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+				transform 0.15s ease, box-shadow 0.15s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	margin-top: 0.8rem;
+	box-shadow: var(--shadow-stamp-sm);
+}
+
+.medieval-btn:hover {
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-stamp-sm-hover);
+}
+
+.medieval-btn:active {
+	transform: translateY(0);
+	box-shadow: var(--shadow-stamp-sm);
 }
 
 .btn-text-wrapper {
@@ -36,7 +49,7 @@
 	width: 100%;
 	opacity: 0;
 	transform: translateY(4px);
-	transition: opacity 0.3s ease, transform 0.3s ease;
+	transition: opacity 0.2s ease, transform 0.2s ease;
 	pointer-events: none;
 }
 
@@ -48,41 +61,40 @@
 }
 
 .primary-btn {
-	background: linear-gradient(135deg, var(--color-crimson) 0%, var(--color-crimson-dark) 100%);
-	border: 2px solid var(--color-gold);
-	color: var(--color-gold-light);
-	box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+	background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-dark) 100%);
+	border: 2px solid var(--color-orange);
+	color: var(--color-panel-light);
 }
 
 .primary-btn:hover {
-	background: linear-gradient(135deg, var(--color-crimson-light) 0%, var(--color-crimson) 100%);
-	border-color: var(--color-gold-light);
-	box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3);
-	transform: translateY(-1px);
+	background: linear-gradient(135deg, var(--color-navy-light) 0%, var(--color-navy) 100%);
+	border-color: var(--color-orange);
 }
 
 .primary-btn:active {
-	transform: translateY(1px);
-	box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+	background: var(--color-ink);
 }
 
 .secondary-btn {
-	background: rgba(43, 29, 12, 0.05);
-	border: 1px solid var(--color-gold-dark);
-	color: var(--color-leather-light);
+	background: transparent;
+	border: 2px solid var(--color-ink);
+	color: var(--color-ink);
 }
 
 .secondary-btn:hover {
-	background: rgba(212, 175, 55, 0.15);
-	color: var(--color-leather);
-	border-color: var(--color-gold);
+	background: var(--color-ink);
+	color: var(--color-panel-light);
+	border-color: var(--color-orange);
 }
 
 .secondary-btn:active {
-	background: rgba(212, 175, 55, 0.25);
+	background: var(--color-navy);
+	border-color: var(--color-navy);
 }
 
-/* Button shine sweep animation */
+/* Diagonal shine sweep, restored from the original medieval button.
+   A skewed ::before slab sits off to the left at rest and sweeps
+   across on hover. */
 .medieval-btn::before {
 	content: '';
 	position: absolute;
@@ -90,9 +102,10 @@
 	left: -150%;
 	width: 50%;
 	height: 100%;
-	background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+	background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.18), transparent);
 	transform: skewX(-25deg);
-	transition: 0.75s;
+	transition: left 0.75s ease;
+	pointer-events: none;
 }
 
 .medieval-btn:hover::before {
@@ -107,14 +120,14 @@
 }
 
 .renaissance-link {
-	color: var(--color-crimson);
+	color: var(--color-navy);
 	text-decoration: none;
 	font-weight: 700;
-	border-bottom: 1px dashed var(--color-crimson);
-	transition: color 0.2s ease, border-color 0.2s ease;
+	border-bottom: 1px solid var(--color-navy);
+	transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .renaissance-link:hover {
-	color: var(--color-crimson-light);
-	border-bottom-style: solid;
+	color: var(--color-orange);
+	border-color: var(--color-orange);
 }

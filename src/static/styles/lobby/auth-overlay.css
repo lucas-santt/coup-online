@@ -8,35 +8,32 @@
 .auth-tabs {
 	display: flex;
 	justify-content: center;
-	border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+	border-bottom: 1px solid var(--color-ink);
 	margin-bottom: 0.7rem;
 }
 
 .tab-btn {
-	font-family: var(--font-accent);
-	font-weight: 700;
-	font-size: 0.95rem;
-	text-transform: uppercase;
+	font-family: var(--font-display);
+	font-size: 0.9rem;
 	letter-spacing: 2px;
 	background: none;
 	border: none;
-	color: var(--color-leather-light);
+	color: var(--color-ink-muted);
 	padding: 0.5rem 1.8rem;
 	cursor: pointer;
 	position: relative;
-	transition: color 0.3s ease, text-shadow 0.3s ease;
-	opacity: 0.6;
+	transition: color 0.2s ease;
+	opacity: 0.7;
 }
 
 .tab-btn:hover {
-	opacity: 0.9;
-	color: var(--color-gold-dark);
+	opacity: 1;
+	color: var(--color-navy);
 }
 
 .tab-btn.active {
 	opacity: 1;
-	color: var(--color-crimson);
-	text-shadow: 0 0 1px rgba(128, 0, 0, 0.2);
+	color: var(--color-navy);
 }
 
 .tab-btn.active::after {
@@ -46,7 +43,7 @@
 	left: 15%;
 	width: 70%;
 	height: 2px;
-	background: linear-gradient(to right, transparent, var(--color-gold), transparent);
+	background: var(--color-orange);
 }
 
 /* Authentication Forms */
@@ -57,7 +54,7 @@
 .auth-form {
 	display: flex;
 	flex-direction: column;
-	animation: fade-in 0.4s ease-out;
+	animation: fade-in 0.3s ease-out;
 }
 
 /* Targeted by id, not just .confirm-password-wrapper, so it can't lose
@@ -93,9 +90,8 @@
 
 .guest-desc {
 	font-family: var(--font-body);
-	font-style: italic;
 	font-size: 0.9rem;
-	color: var(--color-leather-light);
+	color: var(--color-ink-muted);
 }
 
 /* Form toggle link section */
@@ -106,7 +102,8 @@
 
 .toggle-text {
 	font-size: 0.9rem;
-	color: var(--color-leather-light);
+	color: var(--color-ink-muted);
+	margin-top: 1.0rem;
 }
 
 /* Responsiveness */

@@ -1,26 +1,61 @@
 /* tokens.css
-   Design tokens, CSS reset, the page background/ambient/vignette
-   layers, shared keyframes, and the .hidden utility. Loaded first;
-   every other lobby stylesheet depends on the --color-* / --font-*
-   variables defined here. */
+   Design tokens, CSS reset, the page background layers, shared
+   keyframes, and the .hidden utility. Loaded first; every other
+   lobby stylesheet depends on the --color-* / --font-* variables
+   defined here.
+
+   Panopticon Deco: flat color blocking, no gradients, no soft
+   shadows. Two typefaces only. See the visual style guide for the
+   full rationale. */
 
 /* Design Tokens & Variables */
 :root {
-	--color-gold: #d4af37;
-	--color-gold-light: #f3e5ab;
-	--color-gold-dark: #aa7c11;
-	--color-crimson: #800000;
-	--color-crimson-light: #b30000;
-	--color-crimson-dark: #4a0000;
-	--color-cream: #f4ead4;
-	--color-cream-light: #fffcf4;
-	--color-leather: #2b1d0c;
-	--color-leather-light: #4a3518;
+	/* Neutrals */
+	--color-bg: #151515;
+	--color-panel: #dcd2c0;
+	--color-panel-light: #ede6d6;
+	--color-panel-dim: #cbc0aa;
+	--color-ink: #1a1310;
+	--color-ink-muted: #5c5347;
 
-	--font-header: 'Cinzel Decorative', serif;
-	--font-sub: 'MedievalSharp', cursive;
-	--font-body: 'Cormorant Garamond', serif;
-	--font-accent: 'Cinzel', serif;
+	/* Accents */
+	--color-navy: #1b2a4a;
+	--color-navy-light: #2b3f63;
+	--color-navy-dark: #121d33;
+	--color-alert: #d2451c;
+	--color-alert-dark: #a6350f;
+	--color-gold: #b8892f;
+
+	/* "Prison orange", the watchtower/inmate accent. Deliberately kept
+	   distinct from --color-alert: alert is reserved for destructive/
+	   error states (toast progress bar, delete confirmations), orange
+	   is the decorative state-seal accent (borders, corner brackets,
+	   focus rings, active-tab underline, lock badges). They read close
+	   in hue on purpose, same "official ink stamp" family, but they're
+	   not interchangeable, don't consolidate them. */
+	--color-orange: #d9631e;
+	--color-orange-dark: #ad4c15;
+
+	/* Functional (status dots, not part of the ministry palette) */
+	--color-online: #3f8f4f;
+	--color-offline: #8a8478;
+
+	/* Typography: exactly two families. Black Ops One for anything
+	   that shouts (headlines, buttons, tab labels) — a genuine
+	   stencil/military face, stamped dossier over generic poster-font;
+	   Public Sans for everything a citizen has to actually read
+	   (forms, body copy, the government-form aesthetic the brief
+	   calls for). */
+	--font-display: 'Black Ops One', sans-serif;
+	--font-body: 'Public Sans', sans-serif;
+
+	/* Reusable hard, unblurred offset shadow, the one recurring
+	   "poster pinned to a wall" device instead of soft drop shadows.
+	   The -hover variant grows on interactive elements to sell lift. */
+	--shadow-stamp: 6px 6px 0 var(--color-ink);
+	--shadow-stamp-sm: 4px 4px 0 var(--color-ink);
+	--shadow-stamp-hover: 8px 8px 0 var(--color-ink);
+	--shadow-stamp-sm-hover: 5px 5px 0 var(--color-ink);
 }
 
 /* Reset and Base Styles */
@@ -30,22 +65,17 @@
 	padding: 0;
 }
 
-/* Background lives on html so it still shows during trackpad/rubber-band
-   overscroll, when the body's box has already ended but the viewport
-   keeps scrolling past it. */
+/* Flat solid background for now, texture/imagery to be revisited later. */
 html {
 	height: 100%;
-	background-image: url('/static/img/parchment.png');
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
+	background-color: var(--color-bg);
 	overscroll-behavior-y: none;
 }
 
 body {
 	font-family: var(--font-body);
 	font-size: 16px;
-	color: var(--color-leather);
+	color: var(--color-ink);
 	min-height: 100vh;
 	overflow-y: auto;
 	overscroll-behavior-y: none;
@@ -53,43 +83,28 @@ body {
 	padding: 24px 20px;
 }
 
-/* Ambient Overlay to simulate candlelit atmosphere */
-.ambient-overlay {
+/* Faint hairline watermark, low-opacity "security paper" texture over
+   the flat background. Static, no flicker, this is a cold, watched
+   surface, not a candlelit one. */
+.surveillance-overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background: radial-gradient(circle, rgba(255, 230, 150, 0.08) 0%, rgba(20, 10, 0, 0.4) 100%);
+	background-image: repeating-linear-gradient(
+		45deg,
+		var(--color-panel) 0,
+		var(--color-panel) 1px,
+		transparent 1px,
+		transparent 13px
+	);
+	opacity: 0.035;
 	pointer-events: none;
 	z-index: 1;
-	animation: candle-flicker 8s infinite alternate ease-in-out;
-}
-
-.background-vignette {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.75) 100%);
-	pointer-events: none;
-	z-index: 2;
 }
 
 /* Animations (shared across several components below) */
-@keyframes candle-flicker {
-	0% { opacity: 0.95; }
-	30% { opacity: 0.98; }
-	35% { opacity: 0.93; }
-	45% { opacity: 0.96; }
-	50% { opacity: 0.94; }
-	65% { opacity: 0.97; }
-	70% { opacity: 0.93; }
-	85% { opacity: 0.98; }
-	100% { opacity: 0.95; }
-}
-
 @keyframes fade-in {
 	from {
 		opacity: 0;
@@ -128,19 +143,4 @@ body {
    ============================================================ */
 .hidden {
 	display: none !important;
-}
-
-/* Responsiveness */
-@media (max-width: 560px) {
-	/* On small screens the lobby content is routinely taller than the
-	   viewport. background-size: cover only sizes the parchment to the
-	   viewport, so once the page scrolls past that, the leftover
-	   canvas below shows through as flat grey. Scaling the image to
-	   the viewport width and repeating it vertically means the
-	   texture keeps wrapping down the page no matter how tall the
-	   content ends up being. */
-	html {
-		background-size: 100% auto;
-		background-repeat: repeat-y;
-	}
 }
