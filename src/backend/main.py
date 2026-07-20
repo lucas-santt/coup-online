@@ -27,6 +27,32 @@ for router in routers:
 # Mount 'static' directory
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# src/backend/main.py (or wherever your FastAPI app is instantiated)
+
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from backend.errors import ErrorCode
+
+FIELD_ERROR_CODES: dict[str, ErrorCode] = {
+	"username": ErrorCode.USERNAME_INVALID,
+	"password": ErrorCode.PASSWORD_TOO_SHORT,
+	"password_confirmation": ErrorCode.PASSWORDS_DONT_MATCH,
+}
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+	request: Request, exc: RequestValidationError
+) -> JSONResponse:
+	first_error = exc.errors()[0]
+	field = str(first_error["loc"][-1])
+	error_code = FIELD_ERROR_CODES.get(field, ErrorCode.UNKNOWN_ERROR)
+
+	return JSONResponse(
+		status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+		content={"detail": {"error_code": error_code, "detail": first_error["msg"]}},
+	)
 
 @app.get("/")
 async def read_root() -> FileResponse:

@@ -234,6 +234,7 @@ const AuthOverlay = (() => {
 						password_confirmation: confirmPassword,
 					}),
 				});
+				console.log(res);
 
 				if (!res.ok) {
 					Toast.show(await ToastMessages.fromResponse(res), 'warning');

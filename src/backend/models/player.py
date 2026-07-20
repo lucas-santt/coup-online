@@ -50,8 +50,9 @@ class PlayerBase(SQLModel):
         return self
 
 
-class PlayerLogin(PlayerBase):
-    pass
+class PlayerLogin(SQLModel):
+	username: str
+	password: str
 
 
 class PlayerSignup(PlayerBase):
