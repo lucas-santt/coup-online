@@ -75,7 +75,16 @@ class ConnectionManager:
                     await websocket.send_json(message)
                 except:
                     self.disconnect(match_id, player_id)
-
+    
+    # Sends a JSON to all players connected to the match, except one
+    async def broadcast_with_exception(self, message: dict, match_id: str, player_id_exception: str):
+        if match_id in self.active_connections:
+            for player_id, websocket in list(self.active_connections[match_id].items()):
+                if player_id != player_id_exception:
+                    try:
+                        await websocket.send_json(message)
+                    except:
+                        self.disconnect(match_id, player_id)
 
 manager = ConnectionManager()
 
@@ -165,16 +174,31 @@ async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str
                 result = match.process_event(player_id, data)
                 if result:
                     event = result["event"]
-                    if event == "action_confirmed":
+                    if event in ["action_declared", "block_declared", "action_pass_registered", "block_pass_registered"]:
                         await manager.broadcast(result, match_id)
-                        # Implement the logic to perform the action...
-                        new_state = match.new_turn()
-                        await manager.broadcast(new_state, match_id)
-                    elif event == "block_confirmed":
+                    
+                    elif event in ["turn_resolved", "block_confirmed"]:
                         await manager.broadcast(result, match_id)
                         new_state = match.new_turn()
                         await manager.broadcast(new_state, match_id)
-                    elif event in ["action_declared", "block_declared", "action_pass_registered", "block_pass_registered"]:
+                    
+                    elif event == "action_confirmed":
+                        await manager.broadcast(result, match_id)
+
+                        post_action_result = match.make_action()
+                        post_action_event = post_action_result["event"]
+
+                        if post_action_event == "turn_resolved":
+                            await manager.broadcast(post_action_result, match_id)
+                            new_state = match.new_turn()
+                            await manager.broadcast(new_state, match_id)
+                        
+                        elif post_action_event in ["waiting_card_loss", "waiting_exchange"]:
+                            target_id = post_action_result["player_id"]
+                            await manager.broadcast_with_exception({"event": post_action_event, "player_id": target_id}, match_id, target_id)
+                            await manager.send_personal_message(post_action_result, match_id, target_id)
+                        
+                    elif event in ["action_challenge_confirmed", "block_challenge_confirmed"]:
                         await manager.broadcast(result, match_id)
 
             except ValueError as e:

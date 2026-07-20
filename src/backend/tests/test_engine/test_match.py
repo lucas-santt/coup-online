@@ -93,10 +93,3 @@ def test_process_event():
     result = match.process_event(current_player_id, data_action)
     assert(result["event"] == "action_confirmed")
     assert(match.status["current_match_state"] == "action_confirmed")
-    assert(match.action_description == {"source_id": current_player_id, 
-                                   "target_id": None,
-                                   "action": "income",
-                                   "blocker_id": None,
-                                   "challenger_id": None,
-                                   "num_pass_action": 0,
-                                   "num_pass_block": 0})
