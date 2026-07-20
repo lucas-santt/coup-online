@@ -17,25 +17,22 @@ export function lerp(start, end, t) {
 }
 
 /**
- * Linear interpolation between two 3D vectors
- * 
- * @param {Vector3} start 
- * @param {Vector3} end 
- * @param {number} t Interpolation factor
- * @returns {Vector3}
+ * Easing function for ease-in and ease-out
+ *
+ * @export
+ * @param {number} t Linear factor between 0 and 1 
+ * @returns {number} 
  */
-export function lerpVector3(start, end, t) {
-    return new Vector3(
-        lerp(start.x, end.x, t),
-        lerp(start.y, end.y, t),
-        lerp(start.z, end.z, t)
-    )
+export function smoothstep(t) {
+    const clampedT = Math.max(0, Math.min(1, t));
+    return clampedT * clampedT * (3 - 2 * clampedT);
 }
 
 export function radians(degreesAngle) {
     return degreesAngle * (Math.PI / 180.0);
 }
 
+// ------------- Vectors -------------
 
 export function normalize(v) {
     let mag = v.mag();
@@ -47,8 +44,6 @@ export function normalize(v) {
 export function dot(a, b) {
     return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
 }
-
-// ------------- Vectors -------------
 
 /**
  * Cross product between two vectors a and b

@@ -54,6 +54,7 @@ source .venv/bin/activate
 
 # Install dependencies in venv
 python -m pip install .
+python -m pip install -e .
 ```
 
 </details>
@@ -69,7 +70,7 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 
 # Install dependencies in venv
-python -m pip install .
+python -m pip install -e .
 ```
 
 </details>

@@ -1,5 +1,7 @@
-import { Vector3, Mat4 } from '../utils/wglm-classes.js'
-import * as wglm from '../utils/wglm.js'
+import { Vector3, Mat4 } from '../../utils/wglm-classes.js'
+import * as wglm from '../../utils/wglm.js'
+
+import Animator from '../animation.js';
 
 /**
  * Scene Object that need to be rendered.
@@ -12,12 +14,19 @@ import * as wglm from '../utils/wglm.js'
  * @typedef {RenderableObject}
  */
 export default class RenderableObject {
-    position; scale; rotation;
+    position; rotation; scale;
+    animator;
 
-    constructor(initPos, initScale, initRotation) {
+    constructor(initPos, initRotation, initScale) {
         this.position = initPos;
         this.scale = initScale;
         this.rotation = initRotation || new Vector3(0, 0, 0);
+        
+        this.animator = new Animator(this);
+    }
+
+    update(dt) {
+        this.animator.update(dt);
     }
     
     /**

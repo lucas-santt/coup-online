@@ -29,7 +29,7 @@ export default class App {
 
         this.#scene = new Scene();
         this.#renderer = new Renderer(canvas, gl);
-    
+        this.#lastFrame = Date.now();
 
         document.addEventListener('mousemove', (e) => this.#mouseMovementCallback(e));
         document.addEventListener('keydown', (e) => this.#keys[e.code] = true);

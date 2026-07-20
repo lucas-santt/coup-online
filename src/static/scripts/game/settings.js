@@ -3,6 +3,7 @@
  *  objects and players positions and rotations
  */
 import { Vector3 } from './utils/wglm-classes.js'
+import { easeInOutCurve } from "./utils/wlgm-animation-curves.js";
 
 export const GEOMETRY = {
     quad: {
@@ -103,5 +104,18 @@ export const PLAYERS = {
             frontCard: new Vector3(-10.0, -180.0, 0.0),
             backCard:  new Vector3(-10.0, -180.0, 0.0)
         }
+    }
+}
+
+export const ANIM = {
+    coinStack: {
+        buy: {
+            animTime: 1.0,
+            animCurve: easeInOutCurve
+        },
+        spend: { 
+            animTime: 1.0,
+            animCurve: easeInOutCurve
+        },
     }
 }
