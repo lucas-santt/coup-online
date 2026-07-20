@@ -1,3 +1,4 @@
+import random
 import uuid
 
 from fastapi import APIRouter, HTTPException, Response, status
@@ -12,7 +13,19 @@ from backend.models.player import (
     PlayerSignup,
 )
 
+from backend.errors import ErrorCode, api_error
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+def _generate_guest_username(session: SessionDep) -> str:
+    while True:
+        candidate = f"Guest-{random.randint(0, 999999):06d}"
+        taken = session.exec(
+            select(Player).where(Player.username == candidate)
+        ).first()
+        if not taken:
+            return candidate
 
 
 @router.post("/guest")
@@ -21,16 +34,19 @@ async def guest(
 ) -> dict[str, str]:
 
     if not session_guest:
-        name = f"guest-{uuid.uuid4().hex}"
+        name = _generate_guest_username(session)
         session_guest = Player(
-            username=name, password="", password_confirmation="", is_guest=True
+            username=name, password="", is_guest=True
         )
 
         add_to_db(session_guest, session)
 
         response.set_cookie(key="session_token", value=str(session_guest.id))
 
-    return {"message": "Successfully entered as guest."}
+    return {
+        "message": "Successfully entered as guest.",
+        "username": session_guest.username,
+    }
 
 
 @router.post("/login")
@@ -47,8 +63,10 @@ async def login(
     db_player: Player | None = session.exec(query).first()
 
     if not db_player:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Wrong username or password."
+        raise api_error(
+            status.HTTP_404_NOT_FOUND,
+            ErrorCode.INVALID_CREDENTIALS,
+            "Wrong username or password.",
         )
 
     db_player.status = PlayerStatus.ONLINE
@@ -71,8 +89,10 @@ async def signup(
     db_player = session.exec(query).first()
 
     if db_player:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Username already exists."
+        raise api_error(
+            status.HTTP_409_CONFLICT,
+            ErrorCode.USERNAME_TAKEN,
+            "Username already exists.",
         )
 
     if session_guest:

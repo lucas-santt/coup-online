@@ -45,7 +45,7 @@
 			});
 		} else {
 			console.log(`Logout Requested: POST ${LOBBY_SETTINGS.endpoints.auth.logout}`);
-			Toast.show('Farewell for now, traveller.', 'info');
+			Toast.show(ToastMessages.session.loggedOut(), 'info');
 			LobbySession.set(null);
 			lobbyContainer.classList.add('hidden');
 			AuthOverlay.open({ context: 'gate', onDone: revealLobby });

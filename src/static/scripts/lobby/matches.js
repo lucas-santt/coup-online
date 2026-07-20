@@ -6,6 +6,15 @@
 //   - By browsing: public matches join immediately; private matches
 //     require the lobby's password, entered inline in the list item.
 (() => {
+	// Small inline icon, kept local since it's a UI marker rather than
+	// a toast — if it ends up reused elsewhere, move it into settings.js
+	// alongside the toast icon set.
+	const LOCK_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="match-lock-icon">
+		<rect x="6" y="11" width="12" height="9" stroke="currentColor" stroke-width="1.5"/>
+		<path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3" stroke="currentColor" stroke-width="1.5"/>
+		<circle cx="12" cy="15" r="1.2" fill="currentColor"/>
+	</svg>`;
+
 	// =============================================
 	//  Create Match
 	// =============================================
@@ -67,13 +76,13 @@
 		const password = inputLobbyPassword.value;
 
 		if (!name) {
-			Toast.show('Name thy court before creating a match!', 'warning');
+			Toast.show(ToastMessages.matches.nameRequired(), 'warning');
 			inputLobbyName.focus();
 			return;
 		}
 
 		if (visibility === 'private' && !password) {
-			Toast.show('Set a passphrase to guard thy private court!', 'warning');
+			Toast.show(ToastMessages.matches.passwordRequired(), 'warning');
 			inputLobbyPassword.focus();
 			return;
 		}
@@ -88,11 +97,11 @@
 		};
 
 		console.log(`Create Match Requested: POST ${LOBBY_SETTINGS.endpoints.matches.create}`, body);
-		Toast.show('Creating your match...', 'info');
+		Toast.show(ToastMessages.matches.creating(), 'info');
 
 		setTimeout(() => {
 			const mockJoinCode = Math.random().toString(36).substring(2, 7).toUpperCase();
-			Toast.show(`Match created! Code: ${mockJoinCode}`, 'success');
+			Toast.show(ToastMessages.matches.created(mockJoinCode), 'success');
 		}, 800);
 	});
 
@@ -117,12 +126,12 @@
 	document.getElementById('btn-join-code').addEventListener('click', () => {
 		const code = document.getElementById('input-match-code').value.trim();
 		if (!code) {
-			Toast.show('Enter a match code first.', 'warning');
+			Toast.show(ToastMessages.matches.codeRequired(), 'warning');
 			return;
 		}
 
 		console.log(`Join By Code Requested: POST ${LOBBY_SETTINGS.endpoints.matches.joinByCode}`, { code });
-		Toast.show(`Seeking match "${code}"...`, 'info');
+		Toast.show(ToastMessages.matches.seeking(code), 'info');
 	});
 
 	// Mock session browser data (no backend yet, see settings.js contract).
@@ -182,7 +191,7 @@
 		if (filtered.length === 0) {
 			const empty = document.createElement('li');
 			empty.className = 'match-list-empty';
-			empty.textContent = 'No matches found. Try widening your filters.';
+			empty.textContent = ToastMessages.matches.noMatchesFound();
 			matchListEl.appendChild(empty);
 			return;
 		}
@@ -192,7 +201,7 @@
 			item.className = 'match-list-item';
 			item.innerHTML = `
 				<div class="match-info">
-					<span class="match-host">${m.name}${m.visibility === 'private' ? ' <span class="match-lock" title="Private lobby">🔒</span>' : ''}</span>
+					<span class="match-host">${m.name}${m.visibility === 'private' ? `<span class="match-lock" title="Private lobby">${LOCK_ICON_SVG}</span>` : ''}</span>
 					<span class="match-meta">Hosted by ${m.host_name} · ${m.player_count}/${m.max_players} players${m.reformation ? ' · Reformation' : ''}</span>
 				</div>
 				<div class="match-join-area"></div>
@@ -238,7 +247,7 @@
 			if (input.value === m.password) {
 				requestJoinById(m, input.value);
 			} else {
-				Toast.show('Incorrect passphrase.', 'warning');
+				Toast.show(ToastMessages.matches.wrongPassword(), 'warning');
 				input.value = '';
 				input.focus();
 			}
@@ -253,7 +262,7 @@
 
 	function requestJoinById(m, password = null) {
 		console.log(`Join By Id Requested: POST ${LOBBY_SETTINGS.endpoints.matches.joinById(m.match_id)}`, { password });
-		Toast.show(`Joining "${m.name}"...`, 'info');
+		Toast.show(ToastMessages.matches.joining(m.name), 'info');
 	}
 
 	filterPlayers.addEventListener('change', renderMatchList);

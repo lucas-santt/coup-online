@@ -151,47 +151,102 @@ const AuthOverlay = (() => {
 	});
 
 	// Guest
-	btnGuest.addEventListener('click', () => {
-		console.log(`Guest Auth Requested: POST ${LOBBY_SETTINGS.endpoints.auth.guest}`);
-		Toast.show('Welcome, Traveller! Entering the court as Guest...', 'success');
-		resolve({ authenticated: true, isGuest: true, username: 'Guest' });
+	btnGuest.addEventListener('click', async () => {
+		btnGuest.disabled = true;
+
+		try {
+			const res = await fetch(LOBBY_SETTINGS.endpoints.auth.guest, {
+				method: 'POST',
+				credentials: 'same-origin',
+			});
+
+			if (!res.ok) {
+				Toast.show(await ToastMessages.fromResponse(res), 'error');
+				return;
+			}
+
+			const data = await res.json();
+			Toast.show(ToastMessages.auth.guestGranted(), 'success');
+			resolve({ authenticated: true, isGuest: true, username: data.username });
+		} catch (err) {
+			Toast.show(ToastMessages.connectionLost(), 'network');
+		} finally {
+			btnGuest.disabled = false;
+		}
 	});
 
 	// Login / Signup submit
-	authForm.addEventListener('submit', (e) => {
+	authForm.addEventListener('submit', async (e) => {
 		e.preventDefault();
 
 		const username = document.getElementById('auth-username').value.trim();
 		const password = document.getElementById('auth-password').value;
 
 		if (!username || !password) {
-			Toast.show('Moniker and passphrase must not be blank!', 'warning');
+			Toast.show(ToastMessages.auth.missingFields(), 'warning');
 			return;
 		}
 
-		if (currentMode === 'login') {
-			console.log(`Log In Requested: POST ${LOBBY_SETTINGS.endpoints.auth.login} | Username: "${username}"`);
-			Toast.show(`Verifying credentials for "${username}"...`, 'info');
+		btnSubmit.disabled = true;
 
-			setTimeout(() => {
-				Toast.show('Access granted! Entering the realm...', 'success');
+		if (currentMode === 'login') {
+			Toast.show(ToastMessages.auth.verifying(username), 'info');
+
+			try {
+				const res = await fetch(LOBBY_SETTINGS.endpoints.auth.login, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username, password }),
+				});
+
+				if (!res.ok) {
+					Toast.show(await ToastMessages.fromResponse(res), 'warning');
+					return;
+				}
+
+				Toast.show(ToastMessages.auth.loginSuccess(), 'success');
 				resolve({ authenticated: true, isGuest: false, username });
-			}, 1200);
+			} catch (err) {
+				Toast.show(ToastMessages.connectionLost(), 'network');
+			} finally {
+				btnSubmit.disabled = false;
+			}
 		} else {
 			const confirmPassword = confirmPasswordInput.value;
 			if (password !== confirmPassword) {
-				Toast.show('Verily, thy passphrases do not match!', 'warning');
+				Toast.show(ToastMessages.auth.passwordsMismatch(), 'warning');
 				confirmPasswordInput.focus();
+				btnSubmit.disabled = false;
 				return;
 			}
 
-			console.log(`Sign Up Requested: POST ${LOBBY_SETTINGS.endpoints.auth.signup} | Username: "${username}"`);
-			Toast.show(`Pledging allegiance for "${username}"...`, 'info');
+			Toast.show(ToastMessages.auth.filing(username), 'info');
 
-			setTimeout(() => {
-				Toast.show('Allegiance sworn! Logging you in...', 'success');
+			try {
+				const res = await fetch(LOBBY_SETTINGS.endpoints.auth.signup, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						username,
+						password,
+						password_confirmation: confirmPassword,
+					}),
+				});
+
+				if (!res.ok) {
+					Toast.show(await ToastMessages.fromResponse(res), 'warning');
+					return;
+				}
+
+				Toast.show(ToastMessages.auth.signupSuccess(), 'success');
 				resolve({ authenticated: true, isGuest: false, username });
-			}, 1200);
+			} catch (err) {
+				Toast.show(ToastMessages.connectionLost(), 'network');
+			} finally {
+				btnSubmit.disabled = false;
+			}
 		}
 	});
 

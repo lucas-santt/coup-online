@@ -14,6 +14,7 @@ from backend.models.match import (
     MatchGameMode,
     MatchStatus,
 )
+from backend.errors import ErrorCode, api_error
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
 
@@ -92,8 +93,10 @@ async def join_match(
     match: Match | None = session.exec(query).first()
 
     if not match:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Match not found."
+        raise api_error(
+            status.HTTP_404_NOT_FOUND,
+            ErrorCode.MATCH_NOT_FOUND,
+            "Match not found.",
         )
 
     if session_player not in match.players:
@@ -126,8 +129,10 @@ async def join_match_by_id(
         )
 
     if match.visibility == MatchVisibility.PRIVATE and match.password != password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong password."
+        raise api_error(
+            status.HTTP_401_UNAUTHORIZED,
+            ErrorCode.WRONG_PASSWORD,
+            "Wrong password.",
         )
 
     if session_player not in match.players:
