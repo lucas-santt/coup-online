@@ -7,6 +7,9 @@ __*
 # VSCode
 .vscode/
 
+# Pycharm
+*.idea
+
 # Git
 *.git
 
@@ -20,6 +23,12 @@ venv/
 .coverage
 .pytest_cache/
 htmlcov/
+
+# Pytest
+.coverage
+
+# Setuptools
+*.egg-info
 
 # MacOS
 .DS_Store

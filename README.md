@@ -29,18 +29,63 @@ src/
 
 ## Running locally
 
+### Install dependencies and run
+
+#### With uv
+
+If you have ``uv`` installed, simply do:
 ```sh
-uv venv
-uv pip install -r requirements.txt
-uv run uvicorn src.backend.main:app --reload
+uv run coup
 ```
 
-Then open `http://localhost:8000`.
+#### Without uv
+
+If you don't have ``uv``, you will need to manage the virtual environment manually.
+
+<details>
+<summary>Linux</summary>
+
+```sh
+# Create venv
+python -m venv .venv   
+
+# Activate venv
+source .venv/bin/activate
+
+# Install dependencies in venv
+python -m pip install -e .
+```
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+```sh
+# Create venv
+python -m venv .venv
+
+# Activate venv
+.venv\Scripts\Activate.ps1
+
+# Install dependencies in venv
+python -m pip install -e .
+```
+
+</details>
+
+Finally, with the venv activated, run with:
+```sh
+coup
+```
+
+### Open server
+Open in `http://localhost:8000`.
 
 ## Flow
 
 - **Out of match**: single page (`index.html`). On first load, an auth overlay (login/signup/guest) sits modally on top; dismissing it reveals the lobby underneath, no page reload. The lobby has Play, Rules, Customization, Settings, and Friends tabs, plus a profile block (avatar with crop/zoom editor, editable display name) and a persistent music control. Play covers creating a match (Reformation toggle, max players, public/private, bot fill options) and joining one (by code or by browsing open rooms), capped at 4 players for now.
-- **In match**: WebGL game view, turn-based action selection, challenge/counter screens, turn timeout with decay (30s -> 20s -> 10s -> 5s) and poker-style time bank tokens.
+- **In match**: WebGL game view, turn-based action selection, challenge/counter screens, turn timeout with decay (30s → 20s → 10s → 5s) and poker-style time bank tokens.
 
 ## Current status
 
