@@ -15,15 +15,16 @@ import AssetManager from './assetManager.js';
  * @typedef {RenderableObject}
  */
 export default class RenderableObject {
-    position; rotation; scale;
     animator;
-
+    
+    #position; #rotation; #scale;
     #mesh; #material;
+    #isDirty = true; #cachedModelMatrix = null;
 
     constructor(name, initPos, initRotation, initScale) {
-        this.position = initPos;
-        this.scale = initScale;
-        this.rotation = initRotation;
+        this.#position = this.#bindVector(initPos);
+        this.#scale    = this.#bindVector(initScale);
+        this.#rotation = this.#bindVector(initRotation);
         
         const [ mesh, material ] = AssetManager.getAssets(name);
         this.#mesh = mesh;
@@ -31,6 +32,15 @@ export default class RenderableObject {
 
         this.animator = new Animator(this);
     }
+    
+    get position()  { return this.#position };
+    set position(v) { this.#position = this.#bindVector(v); this.#isDirty = true; }
+
+    get scale()  { return this.#scale };
+    set scale(v) { this.#scale = this.#bindVector(v); this.#isDirty = true; }
+
+    get rotation()  { return this.#rotation };
+    set rotation(v) { this.#rotation = this.#bindVector(v); this.#isDirty = true; }
 
     update(dt) {
         this.animator.update(dt);
@@ -40,7 +50,6 @@ export default class RenderableObject {
         this.#material.shader.setMat4("model", this.#getModelTransform());
         this.#mesh.draw();
     }
-    
     
     /**
      * Check if an ray intersects this object
@@ -56,14 +65,14 @@ export default class RenderableObject {
         const unscaledD = Mat4.multVector3(worldToLocalMatrix, worldRay.direction, 0.0);
 
         const origin = new Vector3(
-            unscaledO.x / this.scale.x,
-            unscaledO.y / this.scale.y,
-            unscaledO.z / this.scale.z
+            unscaledO.x / this.#scale.x,
+            unscaledO.y / this.#scale.y,
+            unscaledO.z / this.#scale.z
         )
         const direction = new Vector3(
-            unscaledD.x / this.scale.x,
-            unscaledD.y / this.scale.y,
-            unscaledD.z / this.scale.z
+            unscaledD.x / this.#scale.x,
+            unscaledD.y / this.#scale.y,
+            unscaledD.z / this.#scale.z
         )
 
         const ray = new Ray(origin, direction);
@@ -86,16 +95,21 @@ export default class RenderableObject {
      * @returns {Float32Array} 
      */
     #getModelTransform(config = {}) {
-        const  { scalable = true, flattened = true } = config;
+        const { scalable = true, flattened = true } = config;
 
-        let scale = this.scale;
+        if(!this.#isDirty && scalable) {
+            if(flattened) return this.#cachedModelMatrix.flatten();
+            else return this.#cachedModelMatrix;
+        } 
+
+        let scale = this.#scale;
         if(!scalable) scale = new Vector3(1.0, 1.0, 1.0);
 
         const mat = new Mat4(0);
 
-        const rx = wglm.radians(this.rotation.x);
-        const ry = wglm.radians(this.rotation.y);
-        const rz = wglm.radians(this.rotation.z);
+        const rx = wglm.radians(this.#rotation.x);
+        const ry = wglm.radians(this.#rotation.y);
+        const rz = wglm.radians(this.#rotation.z);
 
         const cx = Math.cos(rx);
         const sx = Math.sin(rx);
@@ -118,12 +132,32 @@ export default class RenderableObject {
         mat[2][1] = (cx * sy * sz - sx * cz) * scale.z;
         mat[2][2] = (cx * cy) * scale.z;
 
-        mat[3][0] = this.position.x;
-        mat[3][1] = this.position.y;
-        mat[3][2] = this.position.z;
+        mat[3][0] = this.#position.x;
+        mat[3][1] = this.#position.y;
+        mat[3][2] = this.#position.z;
         mat[3][3] = 1;
+
+        if(scalable) {
+            this.#cachedModelMatrix = mat;
+            this.#isDirty = false;
+        }
 
         if(flattened) return mat.flatten();
         else return mat;
+    }
+
+    /**
+     * Bind a callback function to a vector.
+     *  The callback function make the object dirty
+     *  if any of the vector properties (x,y,z) are altered
+     *
+     * Needed only for position, scale and rotation vectors
+     * 
+     * @param {Vector3} v 
+     * @returns {Vector3} 
+     */
+    #bindVector(v) {
+        v.onChangeCallback = () => { this.#isDirty = true; };
+        return v; 
     }
 }

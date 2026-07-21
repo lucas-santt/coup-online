@@ -5,10 +5,10 @@ export class Vector2 extends Array{
     }
 
     get x()    { return this[0]; }
-    set x(val) { this[0] = val; }
+    set x(val) { this[0] = val; if(this.onChangeCallback) this.onChangeCallback(); }
 
     get y()    { return this[1] }
-    set y(val) { this[1] = val; }
+    set y(val) { this[1] = val; if(this.onChangeCallback) this.onChangeCallback(); }
 
     mag() {
         return Math.hypot(this.x, this.y);
@@ -32,18 +32,20 @@ export class Vector3 extends Array{
         Could be optimized by not creating a Vector3
             on every return in static functions
     */
+    onChangeCallback = () => {};
+
     constructor(x=0, y=0, z=0) {
         super(x, y, z);
     }
 
     get x()    { return this[0]; }
-    set x(val) { this[0] = val; }
+    set x(val) { this[0] = val; this.onChangeCallback() }
 
     get y()    { return this[1] }
-    set y(val) { this[1] = val; }
+    set y(val) { this[1] = val; this.onChangeCallback() }
 
     get z()    { return this[2] }
-    set z(val) { this[2] = val; }
+    set z(val) { this[2] = val; this.onChangeCallback() }
 
     mag() {
         return Math.hypot(this.x, this.y, this.z);
