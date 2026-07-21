@@ -1,7 +1,8 @@
-import { Vector3, Mat4 } from '../../utils/wglm-classes.js'
-import * as wglm from '../../utils/wglm.js'
+import { Vector3, Mat4 } from '../utils/wglm-classes.js'
+import * as wglm from '../utils/wglm.js'
 
-import Animator from '../animation.js';
+import Animator from './animation.js';
+import AssetManager from './assetManager.js';
 
 /**
  * Scene Object that need to be rendered.
@@ -17,16 +18,27 @@ export default class RenderableObject {
     position; rotation; scale;
     animator;
 
-    constructor(initPos, initRotation, initScale) {
+    #mesh; #material;
+
+    constructor(name, initPos, initRotation, initScale) {
         this.position = initPos;
         this.scale = initScale;
         this.rotation = initRotation || new Vector3(0, 0, 0);
         
+        const [ mesh, material ] = AssetManager.getAssets(name);
+        this.#mesh = mesh;
+        this.#material = material;
+
         this.animator = new Animator(this);
     }
 
     update(dt) {
         this.animator.update(dt);
+    }
+
+    draw() {
+        this.#material.shader.setMat4("model", this.#getModelTransform());
+        this.#mesh.draw();
     }
     
     /**
@@ -36,7 +48,7 @@ export default class RenderableObject {
      *
      * @returns {Float32Array} 
      */
-    getModelTransform() {
+    #getModelTransform() {
         const mat = new Mat4(0);
 
         const rx = wglm.radians(this.rotation.x);

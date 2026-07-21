@@ -1,18 +1,24 @@
 import Shader from './shader.js'
 import ImageLoader from './imageLoader.js';
+import Renderer from './renderer.js';
 
 export default class Material {
     shader; texture; textureTarget;
 
-    constructor(gl, vertexSource, fragmentSource, texturePaths = null) {
-        this.shader = new Shader(gl, vertexSource, fragmentSource);
+    constructor(vertexSource, fragmentSource, texturePaths = null) {
+        const gl = Renderer.gl;
+        this.shader = new Shader(vertexSource, fragmentSource);
         if(texturePaths) this.#generateTexture(gl, texturePaths);
     }
 
-    bind(gl = null) {
+    bind(projection = null, view = null) {
         this.shader.use();
 
+        if(projection) this.shader.setMat4("projection", projection);
+        if(view) this.shader.setMat4("view", view);
+
         if(this.texture) {
+            const gl = Renderer.gl;
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(this.textureTarget, this.texture);
             this.shader.setInt("uTextureMap", 0);
