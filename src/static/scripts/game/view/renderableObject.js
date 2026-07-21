@@ -1,4 +1,4 @@
-import { Vector3, Mat4 } from '../utils/wglm-classes.js'
+import { Mat4 } from '../utils/wglm-classes.js'
 import * as wglm from '../utils/wglm.js'
 
 import Animator from './animation.js';
@@ -23,7 +23,7 @@ export default class RenderableObject {
     constructor(name, initPos, initRotation, initScale) {
         this.position = initPos;
         this.scale = initScale;
-        this.rotation = initRotation || new Vector3(0, 0, 0);
+        this.rotation = initRotation;
         
         const [ mesh, material ] = AssetManager.getAssets(name);
         this.#mesh = mesh;

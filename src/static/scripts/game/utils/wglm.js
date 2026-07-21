@@ -36,17 +36,6 @@ export function radians(degreesAngle) {
 
 // ------------- Vectors -------------
 
-export function normalize(v) {
-    let mag = v.mag();
-    if(mag==0) return new Vector3(0.0, 0.0, 0.0);
-
-    return new Vector3(v.x/mag, v.y/mag, v.z/mag);
-}
-
-export function dot(a, b) {
-    return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
-}
-
 /**
  * Calculates the distance between two points
  * 
@@ -73,13 +62,13 @@ export function distance(p1, p2) {
 export function lookAt(eye, center, up) {
     let lam = new Mat4(0);
 
-    let forward = normalize(Vector3.subtract(eye, center));
-    let right   = normalize(Vector3.cross(up, forward));
+    let forward = Vector3.normalize(Vector3.subtract(eye, center));
+    let right   = Vector3.normalize(Vector3.cross(up, forward));
     let trueUp  = Vector3.cross(forward, right);
 
-    let translationX = -dot(right, eye);
-    let translationY = -dot(trueUp, eye);
-    let translationZ = -dot(forward, eye);
+    let translationX = -Vector3.dot(right, eye);
+    let translationY = -Vector3.dot(trueUp, eye);
+    let translationZ = -Vector3.dot(forward, eye);
 
     for(let i=0; i<3; i++) {
         lam[i][0] = right[i];

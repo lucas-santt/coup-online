@@ -44,14 +44,6 @@ export default class AssetManager {
         }
     }
 
-    static getAllMaterials() {
-        return this.#materials;
-    }
-
-    static getAllMeshes() {
-        return this.#meshes;
-    }
-
     /** 
      * Generates circle vertices, indices and uv coordinates
      * 

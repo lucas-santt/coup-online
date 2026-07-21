@@ -1,5 +1,3 @@
-import { Vector3 } from '../../utils/wglm-classes.js'
-import * as wglm from '../../utils/wglm.js'
 import { OBJ } from '../../settings.js';
 
 import RenderableObject from '../../view/renderableObject.js';

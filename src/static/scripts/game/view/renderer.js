@@ -1,8 +1,6 @@
 import * as wglm from '../utils/wglm.js'
 import { GAME } from '../settings.js'
 
-import Mesh from './mesh.js'
-import Material from './material.js'
 import AssetManager from './assetManager.js'
 
 export default class Renderer {
