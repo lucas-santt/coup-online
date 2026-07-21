@@ -4,6 +4,8 @@
   */
 import { Mat4, Vector3 } from "./wglm-classes.js"
 
+// ------------- Math functions -------------
+
 /**
  * Linear interpolation of a constant
  * 
@@ -46,17 +48,6 @@ export function dot(a, b) {
 }
 
 /**
- * Cross product between two vectors a and b
- * 
- * @param {Vector3} a 
- * @param {Vector3} b 
- * @returns {Vector3}
- */
-export function cross(a, b) {
-    return new Vector3(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x);
-}
-
-/**
  * Calculates the distance between two points
  * 
  * @param {Vector3} p1 
@@ -83,8 +74,8 @@ export function lookAt(eye, center, up) {
     let lam = new Mat4(0);
 
     let forward = normalize(Vector3.subtract(eye, center));
-    let right   = normalize(cross(up, forward));
-    let trueUp  = cross(forward, right);
+    let right   = normalize(Vector3.cross(up, forward));
+    let trueUp  = Vector3.cross(forward, right);
 
     let translationX = -dot(right, eye);
     let translationY = -dot(trueUp, eye);

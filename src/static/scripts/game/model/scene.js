@@ -1,5 +1,5 @@
 import { INIT_CAM } from '../settings.js'
-import { Vector3 } from '../utils/wglm-classes.js'
+import { Vector2, Vector3 } from '../utils/wglm-classes.js'
 
 import Camera, { CameraMovement } from "./camera.js";
 import SceneBuilder from './sceneBuilder.js';

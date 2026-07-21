@@ -1,5 +1,5 @@
 import { INIT_CAM } from '../settings.js';
-import { Vector3, Ray } from '../utils/wglm-classes.js'
+import { Vector2, Vector3, Ray } from '../utils/wglm-classes.js'
 import * as wglm from "../utils/wglm.js"
 
 export const CameraMovement = {
@@ -110,7 +110,7 @@ export default class Camera {
         newFront.z = Math.sin(yawRadians) * Math.cos(pitchRadians);
 
         this.#front = wglm.normalize(newFront);
-        this.#right = wglm.normalize(wglm.cross(this.#front, this.#worldUp));
-        this.#up    = wglm.normalize(wglm.cross(this.#right, this.#front));
+        this.#right = wglm.normalize(Vector3.cross(this.#front, this.#worldUp));
+        this.#up    = wglm.normalize(Vector3.cross(this.#right, this.#front));
     }
 }

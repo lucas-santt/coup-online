@@ -79,7 +79,7 @@ export default class App {
 
         const mouseX_norm = (2.0 * mouseX) / this.#canvas.width - 1.0;
         const mouseY_norm = 1.0 - (2.0 * mouseY) / this.#canvas.height; // Y Inverted
-        const aspectRatio = this.canvas.width / this.canvas.height; 
+        const aspectRatio = this.#canvas.width / this.#canvas.height; 
         this.#scene.processHover(mouseX_norm, mouseY_norm, aspectRatio);
     }
 
