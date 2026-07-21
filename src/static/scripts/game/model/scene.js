@@ -1,5 +1,6 @@
 import { INIT_CAM } from '../settings.js'
 import { Vector2, Vector3 } from '../utils/wglm-classes.js'
+import * as wglm from '../utils/wglm.js'
 
 import Camera, { CameraMovement } from "./camera.js";
 import SceneBuilder from './sceneBuilder.js';
@@ -16,6 +17,8 @@ import SceneBuilder from './sceneBuilder.js';
 export default class Scene {
     camera; players;
     drawPile; coinBank;
+
+    #hoveredObject = null;
     
     constructor() {
         this.camera = new Camera(INIT_CAM.position, new Vector3(0, 1, 0), INIT_CAM.yaw, INIT_CAM.pitch, INIT_CAM.zoom);
@@ -42,10 +45,35 @@ export default class Scene {
         if(keys['KeyV']) this.players[0].coinStack.buy();   keys['KeyV'] = false;
     }
 
-    processHover(mouseX, mouseY, aspectRatio) {
+    processMouseOver(mouseX, mouseY, aspectRatio) {
         // Assumes mouse coords are ndc
         const screenPoint = new Vector2(mouseX, mouseY);
-        const ray = this.camera.rayCast(SceneBuilder, aspectRatio);
+        const ray = this.camera.rayCast(screenPoint, aspectRatio);
+        
+        const iterableObjects = this.players[0].cards; // For now...
+
+        let closestObj = null;
+        let closestHit = null;
+        let minDist = Infinity;
+        for(const ro of iterableObjects) {
+            const hit = ro.intersectRay(ray);
+
+            if(hit) {
+                const dist = wglm.distanceSquared(hit, ray.origin);
+
+                if(dist < minDist) {
+                    minDist = dist;
+                    closestObj = ro;
+                    closestHit = hit;
+                }
+            }
+        }
+
+        if(this.#hoveredObject != closestObj) {
+            if(this.#hoveredObject) this.#hoveredObject.onMouseExit();
+            if(closestObj) closestObj.onMouseEnter(closestHit);
+            this.#hoveredObject = closestObj;
+        }
     }
 
     getAllObjects() {

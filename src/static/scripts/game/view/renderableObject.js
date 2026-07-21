@@ -1,4 +1,4 @@
-import { Mat4 } from '../utils/wglm-classes.js'
+import { Vector3, Mat4, Ray } from '../utils/wglm-classes.js'
 import * as wglm from '../utils/wglm.js'
 
 import Animator from './animation.js';
@@ -41,6 +41,36 @@ export default class RenderableObject {
         this.#mesh.draw();
     }
     
+    intersectRay(worldRay) {
+        const modelMatrix = this.#getModelTransform({ scalable: false, flattened: false});
+        const worldToLocalMatrix = Mat4.invertModelMatrix(modelMatrix);
+
+        const unscaledO = Mat4.multVector3(worldToLocalMatrix, worldRay.origin, 1.0);
+        const unscaledD = Mat4.multVector3(worldToLocalMatrix, worldRay.direction, 0.0);
+
+        const origin = new Vector3(
+            unscaledO.x / this.scale.x,
+            unscaledO.y / this.scale.y,
+            unscaledO.z / this.scale.z
+        )
+        const direction = new Vector3(
+            unscaledD.x / this.scale.x,
+            unscaledD.y / this.scale.y,
+            unscaledD.z / this.scale.z
+        )
+
+        const ray = new Ray(origin, direction);
+        const localHit = this.#mesh.intersectRay(ray);
+
+        if(!localHit) return null;
+
+        // Return the point into worldCoordinates
+        return Mat4.multVector3(modelMatrix, localHit, 1.0);
+    }
+
+    onMouseEnter(point) { }
+    onMouseExit() { }
+
     /**
      * Generates the model transform matrix, wich is
      *  the transformation matrix that applies a rotation,
@@ -48,7 +78,12 @@ export default class RenderableObject {
      *
      * @returns {Float32Array} 
      */
-    #getModelTransform() {
+    #getModelTransform(config = {}) {
+        const  { scalable = true, flattened = true } = config;
+
+        let scale = this.scale;
+        if(!scalable) scale = new Vector3(1.0, 1.0, 1.0);
+
         const mat = new Mat4(0);
 
         const rx = wglm.radians(this.rotation.x);
@@ -64,23 +99,24 @@ export default class RenderableObject {
         const cz = Math.cos(rz);
         const sz = Math.sin(rz);
 
-        mat[0][0] = (cy * cz) * this.scale.x;
-        mat[0][1] = (cy * sz) * this.scale.x;
-        mat[0][2] = (-sy) * this.scale.x;
+        mat[0][0] = (cy * cz) * scale.x;
+        mat[0][1] = (cy * sz) * scale.x;
+        mat[0][2] = (-sy) * scale.x;
 
-        mat[1][0] = (sx * sy * cz - cx * sz) * this.scale.y;
-        mat[1][1] = (sx * sy * sz + cx * cz) * this.scale.y;
-        mat[1][2] = (sx * cy) * this.scale.y;
+        mat[1][0] = (sx * sy * cz - cx * sz) * scale.y;
+        mat[1][1] = (sx * sy * sz + cx * cz) * scale.y;
+        mat[1][2] = (sx * cy) * scale.y;
 
-        mat[2][0] = (cx * sy * cz + sx * sz) * this.scale.z;
-        mat[2][1] = (cx * sy * sz - sx * cz) * this.scale.z;
-        mat[2][2] = (cx * cy) * this.scale.z;
+        mat[2][0] = (cx * sy * cz + sx * sz) * scale.z;
+        mat[2][1] = (cx * sy * sz - sx * cz) * scale.z;
+        mat[2][2] = (cx * cy) * scale.z;
 
         mat[3][0] = this.position.x;
         mat[3][1] = this.position.y;
         mat[3][2] = this.position.z;
         mat[3][3] = 1;
 
-        return mat.flatten();
+        if(flattened) return mat.flatten();
+        else return mat;
     }
 }

@@ -122,6 +122,42 @@ export class Mat4 extends Array{
         */
         return new Float32Array(this.flat());
     } 
+
+    static multVector3(mat, v, w) {
+        return new Vector3(
+            (v.x * mat[0][0]) + (v.y * mat[1][0]) + (v.z * mat[2][0]) + (w * mat[3][0]),
+            (v.x * mat[0][1]) + (v.y * mat[1][1]) + (v.z * mat[2][1]) + (w * mat[3][1]),
+            (v.x * mat[0][2]) + (v.y * mat[1][2]) + (v.z * mat[2][2]) + (w * mat[3][2])
+        );
+    }
+
+    static invertModelMatrix(mat) {
+        // Assumes there aren't scale factors involved
+        const u = new Vector3(mat[0][0], mat[0][1], mat[0][2]);
+        const v = new Vector3(mat[1][0], mat[1][1], mat[1][2]);
+        const w = new Vector3(mat[2][0], mat[2][1], mat[2][2]);
+        const t = new Vector3(mat[3][0], mat[3][1], mat[3][2]);
+
+        let inverse = new Mat4(0.0);
+        inverse[0][0] = u.x;
+        inverse[0][1] = v.x;
+        inverse[0][2] = w.x;
+
+        inverse[1][0] = u.y;
+        inverse[1][1] = v.y;
+        inverse[1][2] = w.y;
+        
+        inverse[2][0] = u.z;
+        inverse[2][1] = v.z;
+        inverse[2][2] = w.z;
+
+        inverse[3][0] = -Vector3.dot(u, t);
+        inverse[3][1] = -Vector3.dot(v, t);
+        inverse[3][2] = -Vector3.dot(w, t);
+        inverse[3][3] = 1;
+
+        return inverse;
+    }
 }
 
 export class Ray {

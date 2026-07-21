@@ -13,4 +13,12 @@ export default class Card extends RenderableObject {
     update(dt) {
         super.update(dt);
     }
+
+    onMouseEnter(point) {
+        console.log("Mouse Entered!");
+    }
+
+    onMouseExit() {
+        console.log("Mouse Exitted");
+    }
 }

@@ -48,6 +48,13 @@ export function distance(p1, p2) {
     return Math.hypot(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 
+export function distanceSquared(p1, p2) {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    const dz = p1.z - p2.z;
+    return (dx * dx) + (dy * dy) + (dz * dz);
+}
+
 // ------------- Transformation Matrices -------------
 
 /**
