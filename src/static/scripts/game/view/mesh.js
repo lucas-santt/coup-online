@@ -1,4 +1,6 @@
 import { Vector3 } from "../utils/wglm-classes.js";
+import * as wglm from "../utils/wglm.js"
+
 import Renderer from "./renderer.js";
 
 export default class Mesh {
@@ -27,7 +29,13 @@ export default class Mesh {
         
         gl.bindVertexArray(null);
     }
-
+     
+    /**
+     * Checks if an ray intersects this mesh
+     *
+     * @param {Ray} ray 
+     * @returns {Vector3|null} 
+     */
     intersectRay(ray) {
         let closestHit = null;
         let minT = Infinity;
@@ -48,7 +56,7 @@ export default class Mesh {
             const v1 = getVertex(i1);
             const v2 = getVertex(i2);
             
-            const hit = this.checkRayTriangleCollision(ray, v0, v1, v2);
+            const hit = wglm.checkRayTriangleCollision(ray, v0, v1, v2);
             if(hit && hit < minT) {
                 closestHit = ray.point(hit);
                 minT = hit;
@@ -61,50 +69,6 @@ export default class Mesh {
         }
 
         return closestHit;
-    }
-    
-    /**
-     * Möller-Trumbore intersection algorithm.
-     * Checks if there any intersection point
-     *  of a ray into a triangle with vertices
-     *  v1, v2 and v3
-     *
-     * @param {Ray} ray 
-     * @param {Vector3} v1 
-     * @param {Vector3} v2 
-     * @param {Vector3} v3 
-     * @returns {Number|null} 
-     */
-    checkRayTriangleCollision(ray, v1, v2, v3) {
-        const EPSILON = 1e-6;
-        
-        const edge1 = Vector3.subtract(v2, v1);
-        const edge2 = Vector3.subtract(v3, v1);
-        const solution = Vector3.subtract(ray.origin, v1);
-
-        const DCrossE2 = Vector3.cross(ray.direction, edge2);
-
-        const det = Vector3.dot(edge1, DCrossE2);
-        if(Math.abs(det) < EPSILON) return null ; // Ray is parallel to plane
-
-        const inv_det = 1.0 / det;
-        const detU = Vector3.dot(solution, DCrossE2);
-        const u = inv_det * detU;
-
-        if(u < -EPSILON || u-1 > EPSILON) return null; // Ray passes outside edge2
-
-        const SCrossE1 = Vector3.cross(solution, edge1);
-        const detV = Vector3.dot(ray.direction, SCrossE1);
-        const v = inv_det * detV;
-
-        if(v < -EPSILON || u+v-1 > EPSILON) return null; // Ray passes outside edge1
-        // Ray intersects!
-        const t = inv_det * Vector3.dot(edge2, SCrossE1);
-
-        if(t > EPSILON)
-            return t; 
-        else
-            return null; // Line intersection but not ray intersection
     }
 
     /**

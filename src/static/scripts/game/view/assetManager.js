@@ -2,6 +2,16 @@ import { GEOMETRY, ASSETS } from "../settings.js";
 import Material from "./material.js";
 import Mesh from "./mesh.js";
 
+
+/**
+ * Manages every asset with support for
+ *  resource sharing. An asset is either an
+ *  object's mesh or material.
+ *
+ * @export
+ * @class AssetManager
+ * @typedef {AssetManager}
+ */
 export default class AssetManager {
     static #meshes = new Map();
     static #materials = new Map();
@@ -34,6 +44,12 @@ export default class AssetManager {
         return [this.getMesh(name), this.getMaterial(name)];
     }
 
+    
+    /**
+     * Loads every asset needed, declared in settings.js
+     *
+     * @static
+     */
     static loadAssets() {
         for(const key in ASSETS) {
             const a = ASSETS[key];

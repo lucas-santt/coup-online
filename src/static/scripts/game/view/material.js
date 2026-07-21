@@ -37,6 +37,13 @@ export default class Material {
         this.#bindTex(gl, images);
     }
 
+    
+    /**
+     * Bind a texture, either if is 2D or 3D
+     *
+     * @param {WebGL2RenderingContext} gl 
+     * @param {ImageData[]} images 
+     */
     #bindTex(gl, images) {
         if(this.texture) gl.deleteTexture(this.texture);
 

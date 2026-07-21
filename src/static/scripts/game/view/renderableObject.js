@@ -41,6 +41,13 @@ export default class RenderableObject {
         this.#mesh.draw();
     }
     
+    
+    /**
+     * Check if an ray intersects this object
+     *
+     * @param {Ray} worldRay 
+     * @returns {Vector3|null} 
+     */
     intersectRay(worldRay) {
         const modelMatrix = this.#getModelTransform({ scalable: false, flattened: false});
         const worldToLocalMatrix = Mat4.invertModelMatrix(modelMatrix);

@@ -41,6 +41,15 @@ export default class Camera {
         return wglm.lookAt(this.position, Vector3.add(this.position, this.#front), this.#up).flatten();
     }
 
+     
+    /**
+     * Creates a ray wich originates from the camera
+     *  and points into a screen point (transformed into 3D)
+     *
+     * @param {Vector2} ndcPoint 
+     * @param {Number} aspectRatio 
+     * @returns {Ray} 
+     */
     rayCast(ndcPoint, aspectRatio) {
         const fovy = wglm.radians(this.zoom);
         const tanHalfFovy = Math.tan(fovy / 2.0); // Equals to half of the near plane height

@@ -45,8 +45,22 @@ export default class Scene {
         if(keys['KeyV']) this.players[0].coinStack.buy();   keys['KeyV'] = false;
     }
 
+    
+    /**
+     * Checks if mouse is hovering an object
+     * Only works for renderable objects
+     * 
+     * Assumes mouse coords are already in
+     *  normalized device coordinates (ndc)
+     *
+     * If hovering an object, calls respective
+     *  onMouseEnter and onMouseExit functions
+     * 
+     * @param {Number} mouseX 
+     * @param {Number} mouseY 
+     * @param {Number} aspectRatio 
+     */
     processMouseOver(mouseX, mouseY, aspectRatio) {
-        // Assumes mouse coords are ndc
         const screenPoint = new Vector2(mouseX, mouseY);
         const ray = this.camera.rayCast(screenPoint, aspectRatio);
         
