@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/profile", tags=["profile"])
 async def me(player: RequiredRegisteredOrGuestDep) -> dict[str, str | bool | None]:
     return {
         "username": player.username,
-        "displayname": player.displayname,
+        "displayname": player.displayname or player.username,
         "avatar_url": player.avatar_url,
         "is_guest": player.is_guest,
     }

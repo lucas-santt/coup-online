@@ -18,15 +18,40 @@ from backend.errors import ErrorCode, api_error
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
+_GUEST_ADJECTIVES = [
+    "Loyal", "Dutiful", "Obedient", "Vigilant", "Compliant", "Faithful",
+    "Diligent", "Steadfast", "Exemplary", "Model", "Grateful", "Devoted",
+    "Unwavering", "Orderly", "Disciplined", "Patriotic", "Correct",
+    "Approved", "Sanctioned", "Registered", "Cooperative", "Watchful",
+    "Industrious", "Uniform",
+]
+
+_GUEST_NOUNS = [
+    "Citizen", "Comrade", "Worker", "Subject", "Informant", "Inspector",
+    "Clerk", "Laborer", "Patriot", "Servant", "Cog", "Unit", "Operative",
+    "Functionary", "Registrant", "Applicant", "Denizen", "Cadre",
+]
+
+
 def _generate_guest_username(session: SessionDep) -> str:
     while True:
-        candidate = f"Guest-{random.randint(0, 999999):06d}"
+        adjective = random.choice(_GUEST_ADJECTIVES)
+        noun = random.choice(_GUEST_NOUNS)
+        candidate = f"{adjective}{noun}"
+
         taken = session.exec(
             select(Player).where(Player.username == candidate)
         ).first()
         if not taken:
             return candidate
 
+        # Collision (or repeat visitor): append a ministry-issued number
+        candidate = f"{adjective}{noun} Nº{random.randint(0, 9999):04d}"
+        taken = session.exec(
+            select(Player).where(Player.username == candidate)
+        ).first()
+        if not taken:
+            return candidate
 
 @router.post("/guest")
 async def guest(

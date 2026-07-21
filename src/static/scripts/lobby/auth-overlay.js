@@ -50,7 +50,8 @@ const AuthOverlay = (() => {
 		const overlayHeight = overlayScroll.offsetHeight;
 		const screenHeight = window.innerHeight;
 		const marginTop = (screenHeight - overlayHeight) * 0.5 - overlayHeight * 0.07;
-		overlayScroll.style.marginTop = `${marginTop}px`;
+		// overlayScroll.style.marginTop = `${marginTop}px`;
+		overlayScroll.style.marginTop = `100px`;
 		overlay.classList.add('pinned-top');
 	}
 
@@ -59,6 +60,15 @@ const AuthOverlay = (() => {
 	window.addEventListener('resize', () => {
 		if (overlay.classList.contains('visible')) pinTop();
 	});
+
+	function updateConvertSubtitle() {
+		if (context !== 'convert') return;
+		if (currentMode === 'signup') {
+			overlaySubtitle.textContent = 'Create an account to keep this character between sessions.';
+		} else {
+			overlaySubtitle.textContent = 'Logging in to another account will discard your guest progress!';
+		}
+	}
 
 	function setAuthMode(mode) {
 		if (currentMode === mode) return;
@@ -95,6 +105,8 @@ const AuthOverlay = (() => {
 			toggleHintText.innerHTML = `Already have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Log in</a>`;
 		}
 
+		updateConvertSubtitle();
+
 		document.getElementById('link-toggle-auth-inner').addEventListener('click', (e) => {
 			e.preventDefault();
 			setAuthMode(currentMode === 'login' ? 'signup' : 'login');
@@ -117,13 +129,16 @@ const AuthOverlay = (() => {
 	function open({ context: ctx = 'gate', onDone: callback = null } = {}) {
 		context = ctx;
 		onDone = callback;
-
 		if (context === 'convert') {
 			overlayTitle.textContent = 'Secure Your Progress';
-			overlaySubtitle.textContent = 'Create an account to keep this character between sessions.';
 			guestSection.classList.add('hidden');
+			// Default to signup so the user is nudged to keep their progress.
+			// We bypass the setAuthMode guard (currentMode may already be 'login'
+			// from the last close) by forcing currentMode first.
+			currentMode = 'login';
+			setAuthMode('signup');
 		} else {
-			overlayTitle.textContent = 'Enter the Court';
+			overlayTitle.textContent = 'Join the Regime';
 			overlaySubtitle.textContent = 'Log in, sign up, or slip in as a guest.';
 			guestSection.classList.remove('hidden');
 		}
@@ -169,7 +184,7 @@ const AuthOverlay = (() => {
 			}
 
 			const data = await res.json();
-			Toast.show(ToastMessages.auth.guestGranted(), 'success');
+			//Toast.show(ToastMessages.auth.guestGranted(), 'success');
 			resolve({ authenticated: true, isGuest: true, username: data.username });
 		} catch (err) {
 			Toast.show(ToastMessages.connectionLost(), 'network');
@@ -193,7 +208,7 @@ const AuthOverlay = (() => {
 		btnSubmit.disabled = true;
 
 		if (currentMode === 'login') {
-			Toast.show(ToastMessages.auth.verifying(username), 'info');
+			//Toast.show(ToastMessages.auth.verifying(username), 'info');
 
 			try {
 				const res = await fetch(LOBBY_SETTINGS.endpoints.auth.login, {
@@ -202,13 +217,13 @@ const AuthOverlay = (() => {
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ username, password }),
 				});
-
+				console.log(res);
 				if (!res.ok) {
 					Toast.show(await ToastMessages.fromResponse(res), 'warning');
 					return;
 				}
 
-				Toast.show(ToastMessages.auth.loginSuccess(), 'success');
+				//Toast.show(ToastMessages.auth.loginSuccess(), 'success');
 				resolve({ authenticated: true, isGuest: false, username });
 			} catch (err) {
 				Toast.show(ToastMessages.connectionLost(), 'network');
@@ -224,7 +239,7 @@ const AuthOverlay = (() => {
 				return;
 			}
 
-			Toast.show(ToastMessages.auth.filing(username), 'info');
+			//Toast.show(ToastMessages.auth.filing(username), 'info');
 
 			try {
 				const res = await fetch(LOBBY_SETTINGS.endpoints.auth.signup, {
@@ -243,7 +258,7 @@ const AuthOverlay = (() => {
 					return;
 				}
 
-				Toast.show(ToastMessages.auth.signupSuccess(), 'success');
+				//Toast.show(ToastMessages.auth.signupSuccess(), 'success');
 				resolve({ authenticated: true, isGuest: false, username });
 			} catch (err) {
 				Toast.show(ToastMessages.connectionLost(), 'network');

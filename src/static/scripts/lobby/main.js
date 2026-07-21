@@ -61,8 +61,8 @@
 				},
 			});
 		} else {
-			console.log(`Logout Requested: POST ${LOBBY_SETTINGS.endpoints.auth.logout}`);
-			Toast.show(ToastMessages.session.loggedOut(), 'info');
+			// console.log(`Logout Requested: POST ${LOBBY_SETTINGS.endpoints.auth.logout}`);
+			// Toast.show(ToastMessages.session.loggedOut(), 'info');
 			LobbySession.set(null);
 			lobbyContainer.classList.add('hidden');
 			AuthOverlay.open({ context: 'gate', onDone: revealLobby });
