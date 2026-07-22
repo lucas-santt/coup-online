@@ -8,6 +8,26 @@
 	const btnAuthAction = document.getElementById('btn-auth-action');
 	const tabFriends = document.getElementById('tab-friends');
 
+	function bindTouchFriendlyClick(element, handler) {
+		if (!element) return;
+		let suppressNextClick = false;
+		element.addEventListener('touchend', (event) => {
+			suppressNextClick = true;
+			event.preventDefault();
+			handler(event);
+			window.setTimeout(() => {
+				suppressNextClick = false;
+			}, 0);
+		}, { passive: false });
+		element.addEventListener('click', (event) => {
+			if (suppressNextClick) {
+				suppressNextClick = false;
+				return;
+			}
+			handler(event);
+		});
+	}
+
 	async function revealLobby(result) {
 		let profile;
 		try {
@@ -39,6 +59,9 @@
 		tabFriends.disabled = currentUser.isGuest;
 
 		lobbyContainer.classList.remove('hidden');
+
+		// Rejoin an in-progress tribunal session (sidebar) if one was stored.
+		TribunalLobby.checkForActiveSession();
 	}
 
 	// First gate: blocking, must resolve to guest/login/signup
@@ -63,6 +86,7 @@
 		} else {
 			// console.log(`Logout Requested: POST ${LOBBY_SETTINGS.endpoints.auth.logout}`);
 			// Toast.show(ToastMessages.session.loggedOut(), 'info');
+			if (TribunalLobby.isActive()) TribunalLobby.leave();
 			LobbySession.set(null);
 			lobbyContainer.classList.add('hidden');
 			AuthOverlay.open({ context: 'gate', onDone: revealLobby });

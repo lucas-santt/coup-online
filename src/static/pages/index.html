@@ -22,6 +22,7 @@
 	<link rel="stylesheet" href="/static/styles/lobby/avatar-editor.css">
 	<link rel="stylesheet" href="/static/styles/lobby/lobby-shell.css">
 	<link rel="stylesheet" href="/static/styles/lobby/match-panels.css">
+	<link rel="stylesheet" href="/static/styles/lobby/lobby-sidebar.css">
 	<link rel="stylesheet" href="/static/styles/lobby/misc-panels.css">
 </head>
 <body>
@@ -229,6 +230,7 @@
 			</div>
 
 			<button type="button" class="medieval-btn secondary-btn small-btn" id="btn-auth-action">Sign In / Register</button>
+			<button type="button" class="medieval-btn secondary-btn small-btn hidden" id="btn-leave-tribunal">Leave Tribunal</button>
 		</header>
 
 		<div class="lobby-body">
@@ -242,10 +244,14 @@
 
 			<!-- Play -->
 			<section class="lobby-panel active" id="panel-play" role="tabpanel">
-				<div class="primary-actions">
-					<button class="medieval-btn primary-btn" id="btn-open-create">Open Tribunal</button>
-					<button class="medieval-btn primary-btn" id="btn-open-join">Join Tribunal</button>
+				<div class="primary-actions" id="primary-actions">
+					<button type="button" class="medieval-btn primary-btn" id="btn-open-create">Open Tribunal</button>
+					<button type="button" class="medieval-btn primary-btn" id="btn-open-join">Join Tribunal</button>
 				</div>
+
+				<p class="in-tribunal-notice hidden" id="in-tribunal-notice">
+					You are seated in an active tribunal. Leave it before opening or joining another.
+				</p>
 
 				<div class="config-panel hidden" id="create-match-panel">
 					<h3 class="panel-heading">Open a New Tribunal</h3>
@@ -253,19 +259,6 @@
 					<div class="input-group" id="group-lobby-name">
 						<label for="input-lobby-name" class="input-label">Tribunal Name</label>
 						<input type="text" id="input-lobby-name" placeholder="Name this tribunal" required>
-					</div>
-
-					<div class="config-row">
-						<label class="switch-label" for="toggle-reformation">Reformation DLC</label>
-						<label class="toggle-switch">
-							<input type="checkbox" id="toggle-reformation">
-							<span class="toggle-track"></span>
-						</label>
-					</div>
-
-					<div class="config-row">
-						<label for="select-max-players">Max Players</label>
-						<select id="select-max-players"></select>
 					</div>
 
 					<div class="config-row">
@@ -282,12 +275,8 @@
 					</div>
 
 					<div class="config-row">
-						<label for="select-bot-fill">Add Bots</label>
-						<select id="select-bot-fill">
-							<option value="none">None</option>
-							<option value="fill">Fill Empty Seats</option>
-							<option value="solo">Solo Practice (Full Bots)</option>
-						</select>
+						<label for="select-max-players">Max Players</label>
+						<select id="select-max-players"></select>
 					</div>
 
 					<button class="medieval-btn primary-btn" id="btn-create-match">Open the Tribunal</button>
@@ -370,18 +359,189 @@
 		</div>
 	</main>
 
+	<!-- ============================================================
+	     Tribunal Lobby Sidebar — persistent overlay while seated in a
+	     match. Collapsed shows avatar slots; hover (desktop) / tap
+	     (mobile) expands names and host controls. See tribunal-lobby.js.
+	     ============================================================ -->
+	<div class="tribunal-sidebar-backdrop hidden" id="tribunal-sidebar-backdrop" aria-hidden="true"></div>
+
+	<aside class="tribunal-sidebar hidden" id="tribunal-sidebar" aria-hidden="true" aria-label="Tribunal lobby">
+		<div class="tribunal-sidebar-chrome corner-brackets">
+			<header class="tribunal-sidebar-header">
+				<div class="tribunal-code-block">
+					<span class="tribunal-join-code" id="tribunal-join-code">Code: —————</span>
+					<button type="button" class="tribunal-icon-btn" id="btn-copy-join-code" title="Copy join code" aria-label="Copy join code">
+						<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<rect x="8" y="8" width="11" height="11" stroke="currentColor" stroke-width="1.5"/>
+							<path d="M5 16V5h11" stroke="currentColor" stroke-width="1.5"/>
+						</svg>
+					</button>
+				</div>
+				<button type="button" class="tribunal-expand-toggle" id="btn-tribunal-expand" aria-expanded="false" aria-controls="tribunal-player-list" title="Expand lobby">
+					<span class="tribunal-expand-label">Lobby</span>
+				</button>
+			</header>
+
+			<ul class="tribunal-player-list" id="tribunal-player-list"></ul>
+
+			<div class="tribunal-sidebar-footer" id="tribunal-pregame-controls">
+				<div class="tribunal-ready-group" id="tribunal-ready-group">
+					<button type="button" class="medieval-btn secondary-btn small-btn tribunal-ready-btn" id="btn-ready-up" aria-pressed="false">Ready Up</button>
+					<button type="button" class="medieval-btn secondary-btn small-btn tribunal-ready-caret" id="btn-ready-caret" aria-haspopup="true" aria-expanded="false" aria-controls="ready-forever-menu" title="More ready options" aria-label="More ready options">
+						<svg viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+							<path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
+						</svg>
+					</button>
+					<div class="tribunal-ready-menu hidden" id="ready-forever-menu" role="menu">
+						<button type="button" class="medieval-btn secondary-btn small-btn tribunal-ready-menu-item" id="btn-ready-forever" role="menuitem"
+							title="Ready Forever stays ready even when the host changes the rules">
+							Ready Forever
+						</button>
+					</div>
+				</div>
+				<button type="button" class="medieval-btn secondary-btn small-btn hidden" id="btn-ping-unready">Ping Unready</button>
+				<button type="button" class="medieval-btn secondary-btn small-btn" id="btn-open-match-settings">Rules / Settings</button>
+				<button type="button" class="medieval-btn primary-btn small-btn hidden" id="btn-start-match">Start Match</button>
+			</div>
+		</div>
+	</aside>
+
+	<!-- ============================================================
+	     Match Rules / Settings — opened from the tribunal sidebar.
+	     Hosts/co-hosts edit; others read-only. Locked once the match
+	     has started. Reformation + bot fill live here (stage 2).
+	     ============================================================ -->
+	<div class="overlay-backdrop" id="match-settings-overlay" aria-hidden="true">
+		<div class="overlay-scroll scroll-container match-settings-scroll corner-brackets" id="match-settings-scroll">
+			<header class="scroll-header">
+				<h2 class="overlay-title">Tribunal Statutes</h2>
+				<p class="overlay-subtitle" id="match-settings-subtitle">Rules for this assembly</p>
+				<button type="button" class="rules-close-btn" id="btn-match-settings-close" aria-label="Close settings">&times;</button>
+				<div class="gold-divider mini"></div>
+			</header>
+
+			<form id="match-settings-form" class="match-settings-form">
+				<section class="match-settings-section">
+					<h4 class="match-settings-heading">Mode</h4>
+					<div class="config-row match-settings-slider-row">
+						<label for="setting-max-players">Players <span id="setting-max-players-value">4</span></label>
+						<input type="range" id="setting-max-players" class="volume-slider match-settings-slider" data-setting="max_players" min="2" max="10" value="4" aria-label="Maximum players">
+					</div>
+					<div class="config-row">
+						<label class="switch-label" for="setting-reformation">Reformation DLC</label>
+						<label class="toggle-switch">
+							<input type="checkbox" id="setting-reformation" data-setting="reformation">
+							<span class="toggle-track"></span>
+						</label>
+					</div>
+					<div class="config-row">
+						<label for="setting-bot-fill">Add Bots</label>
+						<select id="setting-bot-fill" data-setting="bot_fill">
+							<option value="none">None</option>
+							<option value="fill">Fill Empty Seats</option>
+							<option value="solo">Solo Practice (Full Bots)</option>
+						</select>
+					</div>
+				</section>
+
+				<section class="match-settings-section">
+					<h4 class="match-settings-heading">Timers</h4>
+					<div class="config-row">
+						<label for="setting-time-bank">Time Bank (sec)</label>
+						<input type="number" id="setting-time-bank" data-setting="time_bank" min="0" max="300" step="5" value="60">
+					</div>
+					<div class="config-row">
+						<label for="setting-turn-timer">Turn Timer (sec)</label>
+						<input type="number" id="setting-turn-timer" data-setting="turn_timer" min="5" max="120" step="5" value="30">
+					</div>
+					<div class="config-row">
+						<label for="setting-challenge-timer">Challenge Window (sec)</label>
+						<input type="number" id="setting-challenge-timer" data-setting="challenge_timer" min="3" max="30" step="1" value="5">
+					</div>
+				</section>
+
+				<section class="match-settings-section">
+					<h4 class="match-settings-heading">Deck</h4>
+					<div class="config-row">
+						<label for="setting-char-copies">Copies per Character</label>
+						<select id="setting-char-copies" data-setting="character_copies">
+							<option value="3">3 (standard)</option>
+							<option value="4">4</option>
+							<option value="5">5</option>
+							<option value="inf">∞ (unlimited)</option>
+						</select>
+					</div>
+				</section>
+
+				<section class="match-settings-section">
+					<h4 class="match-settings-heading">Declarations</h4>
+					<div class="config-row">
+						<label class="switch-label" for="setting-declared-coup">Declared Coup</label>
+						<label class="toggle-switch">
+							<input type="checkbox" id="setting-declared-coup" data-setting="declared_coup">
+							<span class="toggle-track"></span>
+						</label>
+					</div>
+					<div class="config-row">
+						<label class="switch-label" for="setting-declared-assassinate">Declared Assassinate</label>
+						<label class="toggle-switch">
+							<input type="checkbox" id="setting-declared-assassinate" data-setting="declared_assassinate">
+							<span class="toggle-track"></span>
+						</label>
+					</div>
+				</section>
+
+				<section class="match-settings-section">
+					<button type="button" class="renaissance-link match-advanced-toggle" id="btn-toggle-advanced-rules" aria-expanded="false">
+						Advanced / House Rules
+					</button>
+					<div class="match-advanced-rules hidden" id="match-advanced-rules">
+						<p class="match-advanced-rules-note">These settings affect game balance, so straying far from the defaults may make matches unfun or hard to finish.</p>
+						<div class="config-row config-row-numeric">
+							<label for="setting-starting-coins">Starting Coins</label>
+							<input type="number" id="setting-starting-coins" data-setting="starting_coins" min="0" max="20" step="1" value="2">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-coup-cost">Cost of Coup</label>
+							<input type="number" id="setting-coup-cost" data-setting="coup_cost" min="1" max="20" step="1" value="7">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-forced-coup-threshold">Forced-coup Threshold</label>
+							<input type="number" id="setting-forced-coup-threshold" data-setting="forced_coup_threshold" min="1" max="20" step="1" value="10">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-income-coins">Income Coins</label>
+							<input type="number" id="setting-income-coins" data-setting="income_coins" min="0" max="10" step="1" value="1">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-foreign-aid-coins">Foreign Aid Coins</label>
+							<input type="number" id="setting-foreign-aid-coins" data-setting="foreign_aid_coins" min="0" max="10" step="1" value="2">
+						</div>
+					</div>
+				</section>
+
+				<p class="match-settings-locked-note hidden" id="match-settings-locked-note">
+					The match is underway. Statutes are sealed.
+				</p>
+			</form>
+		</div>
+	</div>
+
 	<audio id="bg-music" src="/static/assets/theme.mp3" loop preload="auto"></audio>
+	<audio id="ping-cue" preload="auto"></audio>
 	<div class="toast-container" id="toast-container"></div>
 
 	<script src="/static/scripts/lobby/settings.js"></script>
-	<script src="/static/scripts/lobby/toast.js"></script>
-	<script src="/static/scripts/lobby/toast-messages.js"></script>
+	<script src="/static/scripts/lobby/toast.js?v=3"></script>
+	<script src="/static/scripts/lobby/toast-messages.js?v=3"></script>
 	<script src="/static/scripts/lobby/auth-overlay.js"></script>
 	<script src="/static/scripts/lobby/rules-overlay.js"></script>
 	<!-- Split from a single main.js. session.js/friends.js must load
 	     before main.js: it calls LobbySession and Friends.load(). -->
 	<script src="/static/scripts/lobby/session.js"></script>
 	<script src="/static/scripts/lobby/profile.js"></script>
+	<script src="/static/scripts/lobby/tribunal-lobby.js?v=4"></script>
 	<script src="/static/scripts/lobby/matches.js"></script>
 	<script src="/static/scripts/lobby/friends.js"></script>
 	<script src="/static/scripts/lobby/music.js"></script>

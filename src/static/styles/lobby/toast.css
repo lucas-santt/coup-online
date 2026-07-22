@@ -11,9 +11,13 @@
 	gap: 12px;
 	max-width: 320px;
 	width: calc(100vw - 50px);
+	/* Let taps pass through the empty container on mobile — only toasts
+	   themselves should capture pointer events. */
+	pointer-events: none;
 }
 
 .medieval-toast {
+	pointer-events: auto;
 	background-color: var(--color-panel);
 	border: 1px solid var(--color-ink);
 	box-shadow: var(--shadow-stamp-sm);
@@ -39,6 +43,13 @@
 	width: 100%;
 	transform-origin: left;
 	animation: toast-progress 4.5s linear forwards;
+}
+
+/* Toggled off/on in toast.js to restart the dismiss progress bar when
+   an aggregating toast (e.g. rules changes) is updated in place. */
+.medieval-toast.toast-progress-paused::after {
+	animation: none;
+	transform: scaleX(1);
 }
 
 .medieval-toast.toast-exit {

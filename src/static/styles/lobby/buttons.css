@@ -119,6 +119,19 @@
 	flex-shrink: 0;
 }
 
+/* Reliable taps on touch devices (iOS Safari in particular). */
+@media (hover: none), (max-width: 720px) {
+	.medieval-btn,
+	.lobby-tab,
+	.tribunal-expand-toggle,
+	.tribunal-icon-btn,
+	.tribunal-kick-btn,
+	.tribunal-promote-btn {
+		touch-action: manipulation;
+		-webkit-tap-highlight-color: transparent;
+	}
+}
+
 .renaissance-link {
 	color: var(--color-navy);
 	text-decoration: none;

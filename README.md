@@ -79,6 +79,11 @@ Finally, with the venv activated, run with:
 coup
 ```
 
+Or:
+```sh
+uvicorn backend.main:app --app-dir src --host 0.0.0.0 --port 8000 --reload
+```
+
 ### Open server
 Open in `http://localhost:8000`.
 

@@ -1,18 +1,22 @@
 /* match-panels.css
-   Contents of the Play tab: Create Tribunal panel (including the
-   lobby name/password fields) and Join Tribunal panel (code entry +
-   browse list, including the inline private-match password prompt). */
+   Contents of the Play tab: Stage-1 Create Tribunal panel (name,
+   visibility/password, max players) and Join Tribunal panel (code
+   entry + browse list). Stage-2 lobby lives in lobby-sidebar.css. */
 
 .primary-actions {
 	display: flex;
 	gap: 1rem;
 	flex-wrap: wrap;
+	position: relative;
+	z-index: 1;
 }
 
 .primary-actions .medieval-btn {
 	flex: 1;
 	min-width: 180px;
 	margin-top: 0;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
 }
 
 .config-panel {

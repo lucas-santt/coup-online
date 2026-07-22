@@ -5,7 +5,7 @@
 .music-controls {
 	position: fixed;
 	bottom: 22px;
-	right: 22px;
+	left: 22px;
 	z-index: 100;
 	display: flex;
 	align-items: center;
@@ -84,10 +84,23 @@
 	cursor: pointer;
 }
 
+/* Mobile: hide the floating widget while seated in a tribunal lobby —
+   the bottom-sheet sidebar already consumes that edge; desktop keeps it. */
+@media (max-width: 720px) {
+	body.in-tribunal .music-controls {
+		display: none;
+	}
+
+	/* Stay below the lobby shell so taps reach primary/header controls. */
+	.music-controls {
+		z-index: 30;
+	}
+}
+
 /* Responsiveness */
 @media (max-width: 480px) {
 	.music-controls {
 		bottom: 12px;
-		right: 12px;
+		left: 12px;
 	}
 }

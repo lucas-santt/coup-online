@@ -6,6 +6,26 @@
 //   - By browsing: public matches join immediately; private matches
 //     require the lobby's password, entered inline in the list item.
 (() => {
+	function bindTouchFriendlyClick(element, handler) {
+		if (!element) return;
+		let suppressNextClick = false;
+		element.addEventListener('touchend', (event) => {
+			suppressNextClick = true;
+			event.preventDefault();
+			handler(event);
+			window.setTimeout(() => {
+				suppressNextClick = false;
+			}, 0);
+		}, { passive: false });
+		element.addEventListener('click', (event) => {
+			if (suppressNextClick) {
+				suppressNextClick = false;
+				return;
+			}
+			handler(event);
+		});
+	}
+
 	// Small inline icon, kept local since it's a UI marker rather than
 	// a toast — if it ends up reused elsewhere, move it into settings.js
 	// alongside the toast icon set.
@@ -30,13 +50,15 @@
 
 	function populateMaxPlayers() {
 		const { minPlayers, maxPlayers, defaultMaxPlayers } = LOBBY_SETTINGS.match;
-		for (let n = minPlayers; n <= maxPlayers; n++) {
+		const minimumPlayers = Math.max(2, minPlayers);
+		for (let n = minimumPlayers; n <= maxPlayers; n++) {
 			const opt = document.createElement('option');
 			opt.value = String(n);
 			opt.textContent = `${n} Players`;
-			if (n === defaultMaxPlayers) opt.selected = true;
+			if (n === Math.max(minimumPlayers, defaultMaxPlayers)) opt.selected = true;
 			selectMaxPlayers.appendChild(opt);
 		}
+		selectMaxPlayers.value = String(Math.max(minimumPlayers, defaultMaxPlayers));
 	}
 	populateMaxPlayers();
 
@@ -59,21 +81,30 @@
 		});
 	}
 
+	function tribunalBlocksMatchFlow() {
+		return typeof TribunalLobby !== 'undefined' && TribunalLobby.isActive();
+	}
+
 	btnOpenCreate.addEventListener('click', () => {
+		if (tribunalBlocksMatchFlow()) return;
 		const isOpen = !createMatchPanel.classList.contains('hidden');
 		togglePanel(isOpen ? null : createMatchPanel);
 	});
 
 	btnOpenJoin.addEventListener('click', () => {
+		if (tribunalBlocksMatchFlow()) return;
 		const isOpen = !joinMatchPanel.classList.contains('hidden');
 		togglePanel(isOpen ? null : joinMatchPanel);
 		if (!isOpen) renderMatchList();
 	});
 
 	document.getElementById('btn-create-match').addEventListener('click', () => {
+		if (tribunalBlocksMatchFlow()) return;
+
 		const name = inputLobbyName.value.trim();
 		const visibility = document.querySelector('input[name="visibility"]:checked').value;
 		const password = inputLobbyPassword.value;
+		const maxPlayers = Number(selectMaxPlayers.value);
 
 		if (!name) {
 			Toast.show(ToastMessages.matches.nameRequired(), 'warning');
@@ -87,13 +118,15 @@
 			return;
 		}
 
+		// Stage 1 only: name, visibility/password, max players.
+		// Reformation + bot fill move into stage-2 match settings.
 		const body = {
-			name,
-			reformation: document.getElementById('toggle-reformation').checked,
-			max_players: Number(selectMaxPlayers.value),
+			lobby_name: name,
+			max_players: maxPlayers,
 			visibility,
 			password: visibility === 'private' ? password : null,
-			bot_fill: document.getElementById('select-bot-fill').value,
+			gamemode: 'classic',
+			bot_fill: 'none',
 		};
 
 		console.log(`Create Match Requested: POST ${LOBBY_SETTINGS.endpoints.matches.create}`, body);
@@ -101,10 +134,31 @@
 
 		setTimeout(() => {
 			const mockJoinCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+			const mockMatchId = `m-${Date.now().toString(36)}`;
 			Toast.show(ToastMessages.matches.created(mockJoinCode), 'success');
+			togglePanel(null);
+
+			const user = LobbySession.get() || {};
+			const localId = user.username || `host-${Date.now()}`;
+			TribunalLobby.enter({
+				matchId: mockMatchId,
+				joinCode: mockJoinCode,
+				name,
+				maxPlayers,
+				localPlayerId: localId,
+				players: [{
+					id: localId,
+					displayName: user.displayName || user.username || 'Citizen',
+					avatarUrl: user.avatarUrl || null,
+					isHost: true,
+					ready: false,
+					readyForever: false,
+					isSpectator: false,
+					joinOrder: 0,
+				}],
+			}, { silent: true });
 		}, 800);
 	});
-
 	// =============================================
 	//  Join Match: Code vs Browse
 	// =============================================
@@ -124,6 +178,8 @@
 	});
 
 	document.getElementById('btn-join-code').addEventListener('click', () => {
+		if (tribunalBlocksMatchFlow()) return;
+
 		const code = document.getElementById('input-match-code').value.trim();
 		if (!code) {
 			Toast.show(ToastMessages.matches.codeRequired(), 'warning');
@@ -132,7 +188,52 @@
 
 		console.log(`Join By Code Requested: POST ${LOBBY_SETTINGS.endpoints.matches.joinByCode}`, { code });
 		Toast.show(ToastMessages.matches.seeking(code), 'info');
+
+		setTimeout(() => {
+			togglePanel(null);
+			enterJoinedLobby({
+				matchId: `m-code-${code.toUpperCase()}`,
+				joinCode: code.toUpperCase(),
+				name: `Tribunal ${code.toUpperCase()}`,
+				maxPlayers: LOBBY_SETTINGS.match.defaultMaxPlayers,
+				hostName: 'Host Officer',
+			});
+		}, 600);
 	});
+
+	function enterJoinedLobby({ matchId, joinCode, name, maxPlayers, hostName }) {
+		const user = LobbySession.get() || {};
+		const localId = user.username || `guest-${Date.now()}`;
+		TribunalLobby.enter({
+			matchId,
+			joinCode,
+			name,
+			maxPlayers,
+			localPlayerId: localId,
+			players: [
+				{
+					id: 'host-stub',
+					displayName: hostName || 'Host Officer',
+					avatarUrl: null,
+					isHost: true,
+					ready: true,
+					readyForever: false,
+					isSpectator: false,
+					joinOrder: 0,
+				},
+				{
+					id: localId,
+					displayName: user.displayName || user.username || 'Citizen',
+					avatarUrl: user.avatarUrl || null,
+					isHost: false,
+					ready: false,
+					readyForever: false,
+					isSpectator: false,
+					joinOrder: 1,
+				},
+			],
+		});
+	}
 
 	// Mock session browser data (no backend yet, see settings.js contract).
 	// `password` is only ever used client-side here to fake the check the
@@ -261,8 +362,21 @@
 	}
 
 	function requestJoinById(m, password = null) {
+		if (tribunalBlocksMatchFlow()) return;
+
 		console.log(`Join By Id Requested: POST ${LOBBY_SETTINGS.endpoints.matches.joinById(m.match_id)}`, { password });
 		Toast.show(ToastMessages.matches.joining(m.name), 'info');
+
+		setTimeout(() => {
+			togglePanel(null);
+			enterJoinedLobby({
+				matchId: m.match_id,
+				joinCode: m.match_id.toUpperCase().slice(0, 5),
+				name: m.name,
+				maxPlayers: m.max_players,
+				hostName: m.host_name,
+			});
+		}, 600);
 	}
 
 	filterPlayers.addEventListener('change', renderMatchList);

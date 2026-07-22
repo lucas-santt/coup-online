@@ -27,6 +27,11 @@
 	box-shadow: var(--shadow-stamp);
 }
 
+.lobby-topbar .medieval-btn.small-btn {
+	margin-top: 0;
+	flex-shrink: 0;
+}
+
 .profile-block {
 	display: flex;
 	align-items: center;
@@ -187,6 +192,19 @@
 }
 
 /* Responsiveness */
+@media (max-width: 720px) {
+	/* Keep interactive lobby chrome above the bottom-sheet sidebar. */
+	.lobby-container {
+		position: relative;
+		z-index: 45;
+	}
+
+	.lobby-topbar {
+		position: relative;
+		z-index: 2;
+	}
+}
+
 @media (max-width: 560px) {
 	.lobby-topbar {
 		flex-wrap: wrap;

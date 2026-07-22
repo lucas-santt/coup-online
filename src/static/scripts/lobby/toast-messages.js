@@ -31,6 +31,22 @@ const ToastMessages = {
 		wrongPassword: () => 'Passcode rejected.',
 		joining: (name) => `Joining "${name}"...`,
 		noMatchesFound: () => 'No assemblies found. Widen your filters.',
+		enteredLobby: (name) => `Seated in "${name}". Standing by.`,
+		leftLobby: () => 'You have left the tribunal.',
+		playerRemoved: () => 'Officer removed from the tribunal.',
+		hostTransferred: (name) => `Host authority transferred to ${name}.`,
+		promotedHost: (name) => `${name} is now the host.`,
+		pingedUnready: () => 'The host requests you ready up.',
+		pingSent: (n) => `Ping dispatched to ${n} unready officer${n === 1 ? '' : 's'}.`,
+		pingOnCooldown: (secs) => `Ping on cooldown — wait ${secs}s.`,
+		settingsUpdated: (n = 1) => n === 1
+			? '1 statute amended. Ready states reset.'
+			: `${n} statutes amended. Ready states reset.`,
+		matchStarted: () => 'The tribunal is now in session.',
+		cannotStartNotReady: () => 'Cannot start — not all officers are ready.',
+		cannotStartTooFew: () => 'Cannot start — need at least two officers seated.',
+		codeCopied: () => 'Join code copied.',
+		codeCopyFailed: () => 'Could not copy the join code.',
 	},
 
 	// Generic, connection-level failure — distinct from the API

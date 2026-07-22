@@ -48,6 +48,15 @@ const LOBBY_SETTINGS = {
 		passwordMaxLength: 50,
 		codeMaxLength: 8,
 		searchMaxLength: 30,
+		pingCooldownMs: 5_000,
+		sessionStorageKey: 'coupe.activeTribunal',
+
+		// Every Nth ping (cumulative, per tribunal session) plays the
+		// louder cue instead of the normal one, e.g. as a nudge once
+		// polite pings keep getting ignored.
+		pingCueSrc: '/static/assets/ping.wav',
+		pingCueLouderSrc: '/static/assets/ping-louder.wav',
+		pingCueLouderEveryNth: 5,
 	},
 	displayName: {
 		maxLength: 20,
@@ -144,6 +153,11 @@ const LOBBY_SETTINGS = {
 			// POST /api/matches/{match_id}/join
 			// body: { password: string | omitted (if public) }
 			// -> { match_id }
+
+			// --- Stage-2 lobby (stubs in tribunal-lobby.js; wire to WS later) ---
+			// removePlayer(playerId), promoteToHost(playerId),
+			// sendPingToUnready(), onSettingsChange(settings),
+			// leave / start / ready toggles, checkForActiveSession()
 		},
 
 		friends: {
