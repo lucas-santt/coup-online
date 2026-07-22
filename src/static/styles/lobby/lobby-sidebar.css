@@ -285,18 +285,36 @@
 	font-size: 0.72rem;
 	font-weight: 600;
 	letter-spacing: 0.2px;
+	text-transform: none;
 	white-space: nowrap;
 	border: 1px solid var(--color-orange);
 	box-shadow: var(--shadow-stamp-sm);
 	opacity: 0;
 	pointer-events: none;
-	z-index: 80;
+	z-index: 500;
 	transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
 .tribunal-tip:hover::after {
 	opacity: 1;
 	transform: translateX(-50%) translateY(0);
+}
+
+/* The settings-diff asterisk and house-rules warning icon both sit near
+   the left edge of the scrollable match-settings form (its overflow-y:
+   auto forces overflow-x to clip too, per spec, whenever it isn't also
+   'visible') — a centered tip would get its left half cut off there.
+   Anchor flush to the marker's own left edge instead so it only ever
+   grows rightward, over content rather than past the container edge. */
+.setting-diff-asterisk.tribunal-tip::after,
+.advanced-rules-warning-icon.tribunal-tip::after {
+	left: 0;
+	transform: translateY(4px);
+}
+
+.setting-diff-asterisk.tribunal-tip:hover::after,
+.advanced-rules-warning-icon.tribunal-tip:hover::after {
+	transform: translateY(0);
 }
 
 .tribunal-host-badge svg,
@@ -492,6 +510,21 @@
 		padding-right: var(--tribunal-edge-hit);
 		box-sizing: content-box;
 		transform: translateY(-50%);
+	}
+
+	/* .tribunal-sidebar itself is pointer-events: none (see base rule), so
+	   the padding-right hit strip above is otherwise dead space — nothing
+	   there can register :hover. This re-enables pointer events just for
+	   that strip so overshooting the cursor past the collapsed avatar
+	   column still keeps the sidebar expanded instead of collapsing it. */
+	.tribunal-sidebar::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: var(--tribunal-edge-hit);
+		pointer-events: auto;
 	}
 
 	.tribunal-sidebar-chrome {
@@ -886,8 +919,9 @@
    from its default (see refreshSettingDiffMarkers() in
    tribunal-lobby.js). Same alert shade as the warning icon above, but
    plain text rather than an icon — small enough not to disrupt a
-   label's line height, with its own native title tooltip carrying the
-   "By default this is set to ..." text. */
+   label's line height. Uses the shared .tribunal-tip custom tooltip
+   (data-tip) carrying the "By default this is set to ..." text, same
+   as everywhere else in this file. */
 .setting-diff-asterisk {
 	color: var(--color-alert-dark);
 	font-weight: 700;

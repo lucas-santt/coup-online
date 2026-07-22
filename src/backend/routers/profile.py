@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, File, UploadFile
 from backend.auth.required import RequiredRegisteredOrGuestDep
 from backend.settings import settings
 from backend.database import SessionDep, add_to_db
+from backend.routers.websockets import broadcast_player_profile_updated
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -30,6 +31,7 @@ async def set_displayname(
 
     player.displayname = displayname
     add_to_db(player, session)
+    await broadcast_player_profile_updated(session, player.id)
     return {"displayname": player.displayname}
 
 
@@ -47,5 +49,6 @@ async def set_avatar(
 
 	player.avatar_url = f"/static/assets/avatars/uploads/{filename}"
 	add_to_db(player, session)
+	await broadcast_player_profile_updated(session, player.id)
 
 	return {"avatar_url": player.avatar_url}

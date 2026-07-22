@@ -82,9 +82,9 @@ const TribunalLobby = (() => {
 
 	// ---- Per-setting "differs from default" markers ---------------------
 	// A small asterisk after any settings label whose value has been
-	// pushed off the standard ruleset, title-tooltipped with what that
-	// default actually is — a folded "Advanced" section already gets its
-	// own warning icon (hasNonDefaultAdvancedSettings above), but a
+	// pushed off the standard ruleset, tribunal-tip-tooltipped with what
+	// that default actually is — a folded "Advanced" section already gets
+	// its own warning icon (hasNonDefaultAdvancedSettings above), but a
 	// deviation in an always-visible setting (e.g. Turn Timer, Time Bank)
 	// was otherwise just as easy to miss.
 
@@ -111,7 +111,7 @@ const TribunalLobby = (() => {
 			const label = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
 			if (!label || label.querySelector('.setting-diff-asterisk')) return;
 			const marker = document.createElement('span');
-			marker.className = 'setting-diff-asterisk hidden';
+			marker.className = 'setting-diff-asterisk tribunal-tip hidden';
 			marker.setAttribute('aria-hidden', 'true');
 			marker.textContent = '*';
 			label.appendChild(marker);
@@ -137,7 +137,7 @@ const TribunalLobby = (() => {
 			marker.classList.toggle('hidden', !differs);
 			marker.setAttribute('aria-hidden', String(!differs));
 			if (differs) {
-				marker.title = `By default this is set to ${formatSettingDefaultForDisplay(key, defaultValue)}`;
+				marker.dataset.tip = `By default this is set to ${formatSettingDefaultForDisplay(key, defaultValue)}`;
 			}
 		});
 	}
@@ -861,8 +861,8 @@ const TribunalLobby = (() => {
 					<span class="tribunal-player-name">${escapeHtml(player.displayName)}</span>
 					${!matchLive ? `<span class="tribunal-tip tribunal-ready-badge ${effectivelyReady ? 'is-ready' : 'is-unready'}" data-tip="${escapeAttr(readyTitle)}">${effectivelyReady ? READY_SVG : PENDING_SVG}</span>` : ''}
 					${player.readyForever && !matchLive ? `<span class="tribunal-tip tribunal-forever-badge" data-tip="This player is ready forever">${FOREVER_SVG}</span>` : ''}
-					${showPromote ? `<button type="button" class="tribunal-promote-btn is-visible" data-promote-id="${escapeAttr(player.id)}" title="Promote to host">Host</button>` : ''}
-					${showKick ? `<button type="button" class="tribunal-kick-btn is-visible" data-kick-id="${escapeAttr(player.id)}" title="Remove player" aria-label="Remove ${escapeAttr(player.displayName)}">${KICK_SVG}</button>` : ''}
+					${showPromote ? `<button type="button" class="tribunal-tip tribunal-promote-btn is-visible" data-promote-id="${escapeAttr(player.id)}" data-tip="Promote to host">Host</button>` : ''}
+					${showKick ? `<button type="button" class="tribunal-tip tribunal-kick-btn is-visible" data-kick-id="${escapeAttr(player.id)}" data-tip="Remove player" aria-label="Remove ${escapeAttr(player.displayName)}">${KICK_SVG}</button>` : ''}
 				</div>
 			`;
 			playerListEl.appendChild(li);

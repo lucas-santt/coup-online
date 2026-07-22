@@ -370,8 +370,8 @@
 		<div class="tribunal-sidebar-chrome corner-brackets">
 			<header class="tribunal-sidebar-header">
 				<div class="tribunal-code-block">
-					<span class="tribunal-join-code" id="tribunal-join-code">Code: ——————</span>
-					<button type="button" class="tribunal-icon-btn" id="btn-copy-join-code" title="Copy join code" aria-label="Copy join code">
+					<span class="tribunal-join-code tribunal-tip" id="tribunal-join-code" data-tip="Copy join code">Code: ——————</span>
+					<button type="button" class="tribunal-icon-btn tribunal-tip" id="btn-copy-join-code" data-tip="Copy invite link" aria-label="Copy invite link">
 						<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 							<rect x="8" y="8" width="11" height="11" stroke="currentColor" stroke-width="1.5"/>
 							<path d="M5 16V5h11" stroke="currentColor" stroke-width="1.5"/>
@@ -495,7 +495,7 @@
 				<section class="match-settings-section">
 					<button type="button" class="renaissance-link match-advanced-toggle" id="btn-toggle-advanced-rules" aria-expanded="false">
 						Advanced / House Rules
-						<span class="advanced-rules-warning-icon hidden" id="advanced-rules-warning-icon" title="This lobby has house rules in play, this might affect game balance." aria-hidden="true">
+						<span class="advanced-rules-warning-icon tribunal-tip hidden" id="advanced-rules-warning-icon" data-tip="This lobby has house rules in play, this might affect game balance." aria-hidden="true">
 							<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 								<path d="M12 3L21 20H3L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/>
 								<line x1="12" y1="9" x2="12" y2="14.5" stroke="currentColor" stroke-width="1.8"/>
