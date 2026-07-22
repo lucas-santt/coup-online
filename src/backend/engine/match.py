@@ -143,10 +143,10 @@ class Match:
             options = player.get_action_options()
             # Gets state of players
             players = {}
-            for player in self.players.values():
-                players[player.id] = {"coins": player.coins,
-                                    "alive": player.alive,
-                                    "num_cards": len(player.cards)}
+            for player2 in self.players.values():
+                players[player2.id] = {"coins": player2.coins,
+                                    "alive": player2.alive,
+                                    "num_cards": len(player2.cards)}
                 
             return {"event": "new_turn",
                     "player": player.id,
@@ -189,6 +189,7 @@ class Match:
         # If the current block was challenged
         elif current_state_match == "block_challenge_confirmed":
             pass
+        
     # Processes the action while the state is "waiting_action"
     def process_event_while_waiting_action(self, player_id: str, data: dict):
         event = data.get("event")
@@ -228,6 +229,8 @@ class Match:
         # Collects the coins for the assassination
         if action == "assassinate":
             self.add_coins_to_player(player_id, -3)
+        if action == "coup":
+            self.add_coins_to_player(player_id, -7)
         return {"event": self.status["current_match_state"],
                 "action": action,
                 "player_id": player_id,
@@ -353,7 +356,7 @@ class Match:
         # Catch errors
         if player_id != target_id:
             raise ValueError("It is not your turn.")
-        if event != "chosen_card":
+        if event != "selected_card":
             raise ValueError("You must choose one card to lose.")
         
         selected_card = data.get("selected_card")
@@ -426,7 +429,6 @@ class Match:
                     "lost_card": None}
     
         elif action == "coup":
-            self.add_coins_to_player(source_id, -7)
             cards = self.players[target_id].cards
             if len(cards) == 1:
                 lost_card = cards.pop()

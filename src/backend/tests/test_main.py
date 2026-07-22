@@ -106,3 +106,29 @@ def test_websocket_disconnect():
         disconnect_msg = WebSocket1.receive_json()
         assert disconnect_msg["event"] == "player_disconnected"
         assert disconnect_msg["player"] == "PLAYER_2"
+
+def test_websocket_action_flow():
+    # Tests processing a valid action
+    client.post("/api/new_match", json={"id": "MATCH_0350"})
+    client.post("/api/matches/MATCH_0350/join", json={"id": "PLAYER_1", "name": "João"})
+    client.post("/api/matches/MATCH_0350/join", json={"id": "PLAYER_2", "name": "Maria"})
+    
+    with client.websocket_connect("/ws/MATCH_0350/PLAYER_1") as ws1, \
+         client.websocket_connect("/ws/MATCH_0350/PLAYER_2") as ws2:
+        ws1.receive_json()
+        ws1.receive_json()
+        ws2.receive_json()
+        client.post("/api/match/MATCH_0350/start")
+        start_event = ws1.receive_json()
+        ws2.receive_json()
+        ws1.receive_json()
+        ws2.receive_json()
+        current_turn = start_event["current_turn"]
+        if current_turn == "PLAYER_1":
+            ws1.send_json({"event": "chosen_action", "action": "income"})
+            response = ws1.receive_json()
+            assert "event" in response
+        elif current_turn == "PLAYER_2":
+            ws2.send_json({"event": "chosen_action", "action": "income"})
+            response = ws2.receive_json()
+            assert "event" in response
