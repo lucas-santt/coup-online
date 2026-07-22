@@ -72,14 +72,34 @@ const TribunalLobby = (() => {
 	 *   }>,
 	 *   settings: ReturnType<typeof DEFAULT_SETTINGS>,
 	 *   pingCooldownUntil: number | null,
+	 *   connected: boolean,
 	 * }} */
 	let state = null;
 	let pingCountdownTimer = null;
-	let namePollTimer = null;
 	let mobileExpanded = false;
 	let settingsChangeCount = 0;
-	const NAME_POLL_MS = 2000;
 	const MOBILE_MQ = window.matchMedia('(max-width: 720px)');
+
+	// ---- WebSocket connection state -------------------------------------------
+	// One socket per tribunal session, opened by enter() right after a
+	// successful create/join, closed by leave(). Server pushes a full
+	// state_snapshot immediately on connect/reconnect — every render before
+	// that snapshot arrives is necessarily a "connecting..." placeholder,
+	// never fabricated roster data (see connectSocket()/_applySnapshot()).
+	let socket = null;
+	let socketMatchId = null;
+	let intentionalClose = false;
+	let reconnectTimer = null;
+	let reconnectAttempts = 0;
+	const RECONNECT_BASE_DELAY_MS = 1000;
+	const RECONNECT_MAX_DELAY_MS = 8000;
+
+	// request_id -> { resolve, reject, timeout }, for client messages that
+	// expect a definite ack/error per the WS contract (update_settings,
+	// set_ready, promote_host, kick_player, start_match, ping_unready).
+	const pendingRequests = new Map();
+	let requestCounter = 0;
+	const REQUEST_TIMEOUT_MS = 8000;
 
 	const sidebar = document.getElementById('tribunal-sidebar');
 	const sidebarChrome = sidebar?.querySelector('.tribunal-sidebar-chrome');
@@ -169,7 +189,11 @@ const TribunalLobby = (() => {
 	function matchCanStart() {
 		if (!state || state.status !== 'waiting') return false;
 		const required = state.players.filter((p) => !p.isSpectator);
-		if (required.length < (LOBBY_SETTINGS.match?.minPlayers ?? 2)) return false;
+		// No minimum-headcount gate: per the project owner's explicit
+		// override, the host can start with as few players as are seated —
+		// the backend (handle_start_match) enforces the same rule, this just
+		// mirrors it for responsive button state.
+		if (required.length === 0) return false;
 		return required.every(playerIsEffectivelyReady);
 	}
 
@@ -186,6 +210,345 @@ const TribunalLobby = (() => {
 			localPlayerId: state.localPlayerId,
 			status: state.status,
 		}));
+	}
+
+	// ---- WebSocket engine ------------------------------------------------------
+
+	function wsUrl(matchId) {
+		const scheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+		return `${scheme}${window.location.host}/api/ws/matches/${encodeURIComponent(matchId)}`;
+	}
+
+	/** Opens (or re-opens, on reconnect) the tribunal socket for matchId. */
+	function connectSocket(matchId) {
+		clearTimeout(reconnectTimer);
+		reconnectTimer = null;
+		intentionalClose = false;
+		socketMatchId = matchId;
+
+		let ws;
+		try {
+			ws = new WebSocket(wsUrl(matchId));
+		} catch (err) {
+			scheduleReconnect();
+			return;
+		}
+		socket = ws;
+
+		ws.addEventListener('open', () => {
+			reconnectAttempts = 0;
+			if (state) {
+				state.connected = true;
+				renderControls();
+			}
+		});
+
+		ws.addEventListener('message', (event) => {
+			let message;
+			try {
+				message = JSON.parse(event.data);
+			} catch (err) {
+				return;
+			}
+			handleServerMessage(message);
+		});
+
+		ws.addEventListener('close', (event) => {
+			if (socket !== ws) return; // a newer socket has already replaced this one
+			socket = null;
+			if (state) {
+				state.connected = false;
+				renderControls();
+			}
+			rejectAllPending({ error_code: 'CONNECTION_LOST', detail: 'Connection to the tribunal was lost.' });
+
+			if (intentionalClose) return;
+
+			// Policy-violation close (1008): the server refused the connection
+			// outright (match doesn't exist, or we're not seated in it). No
+			// point reconnecting into the same refusal.
+			if (event.code === 1008) {
+				Toast.show(ToastMessages.connectionLost(), 'error');
+				leave();
+				return;
+			}
+
+			scheduleReconnect();
+		});
+
+		ws.addEventListener('error', () => {
+			// The close handler above fires right after this and does the
+			// actual reconnect scheduling — nothing additional to do here.
+		});
+	}
+
+	function scheduleReconnect() {
+		if (!socketMatchId || intentionalClose) return;
+		clearTimeout(reconnectTimer);
+		const delay = Math.min(RECONNECT_MAX_DELAY_MS, RECONNECT_BASE_DELAY_MS * 2 ** reconnectAttempts);
+		reconnectAttempts += 1;
+		if (reconnectAttempts === 1) {
+			Toast.show(ToastMessages.connectionLost(), 'network');
+		}
+		reconnectTimer = window.setTimeout(() => {
+			if (socketMatchId) connectSocket(socketMatchId);
+		}, delay);
+	}
+
+	function closeSocket() {
+		intentionalClose = true;
+		clearTimeout(reconnectTimer);
+		reconnectTimer = null;
+		socketMatchId = null;
+		reconnectAttempts = 0;
+		rejectAllPending({ error_code: 'CONNECTION_CLOSED', detail: 'Left the tribunal.' });
+		if (socket) {
+			try { socket.close(1000); } catch (_) { /* already closing */ }
+			socket = null;
+		}
+	}
+
+	function rejectAllPending(errorPayload) {
+		for (const { reject, timeout } of pendingRequests.values()) {
+			clearTimeout(timeout);
+			reject(errorPayload);
+		}
+		pendingRequests.clear();
+	}
+
+	/** Fire a client->server message that expects a definite ack/error back. */
+	function sendRequest(type, payload = {}) {
+		if (!socket || socket.readyState !== WebSocket.OPEN) {
+			return Promise.reject({ error_code: 'NOT_CONNECTED', detail: 'Not connected to the tribunal.' });
+		}
+		requestCounter += 1;
+		const requestId = `req-${Date.now()}-${requestCounter}`;
+
+		return new Promise((resolve, reject) => {
+			const timeout = window.setTimeout(() => {
+				pendingRequests.delete(requestId);
+				reject({ error_code: 'TIMEOUT', detail: 'The tribunal did not respond in time.' });
+			}, REQUEST_TIMEOUT_MS);
+
+			pendingRequests.set(requestId, { resolve, reject, timeout });
+			socket.send(JSON.stringify({ type, request_id: requestId, payload }));
+		});
+	}
+
+	/** Fire a client->server message with no ack expected (just `leave`). */
+	function sendMessage(type, payload = {}) {
+		if (!socket || socket.readyState !== WebSocket.OPEN) return;
+		socket.send(JSON.stringify({ type, payload }));
+	}
+
+	function handleServerMessage(message) {
+		const { type, request_id: requestId, payload = {} } = message;
+
+		if (type === 'ack' && requestId && pendingRequests.has(requestId)) {
+			const { resolve, timeout } = pendingRequests.get(requestId);
+			clearTimeout(timeout);
+			pendingRequests.delete(requestId);
+			resolve(payload);
+			return;
+		}
+
+		if (type === 'error') {
+			if (requestId && pendingRequests.has(requestId)) {
+				const { reject, timeout } = pendingRequests.get(requestId);
+				clearTimeout(timeout);
+				pendingRequests.delete(requestId);
+				reject(payload);
+			} else {
+				// Connection-level error, not tied to a specific request.
+				Toast.show(payload.detail || ToastMessages.connectionLost(), 'error');
+			}
+			return;
+		}
+
+		switch (type) {
+			case 'state_snapshot': return handleStateSnapshot(payload);
+			case 'player_joined': return handlePlayerJoined(payload);
+			case 'player_left': return handlePlayerLeftMsg(payload);
+			case 'player_kicked': return handlePlayerKicked(payload);
+			case 'kicked': return handleKicked(payload);
+			case 'player_ready_changed': return handlePlayerReadyChanged(payload);
+			case 'settings_updated': return handleSettingsUpdated(payload);
+			case 'host_changed': return handleHostChanged(payload);
+			case 'start_availability_changed': return; // matchCanStart() derives this locally; nothing to apply.
+			case 'ping_received': return handlePingReceived(payload);
+			case 'player_connection_changed': return handlePlayerConnectionChanged(payload);
+			case 'match_starting': return; // purely cosmetic countdown, starts_in_ms is always 0 today
+			case 'match_started': return handleMatchStarted(payload);
+			default:
+				console.log(`Unhandled WS message type '${type}'`, payload);
+		}
+	}
+
+	function _playerFromWire(p) {
+		return {
+			id: p.id,
+			displayName: p.display_name,
+			avatarUrl: p.avatar_url,
+			isHost: Boolean(p.is_host),
+			ready: Boolean(p.ready),
+			readyForever: Boolean(p.ready_forever),
+			isSpectator: Boolean(p.is_spectator),
+			joinOrder: p.join_order,
+			connectionStatus: p.connection_status,
+			gracePeriodEndsAt: p.grace_period_ends_at,
+		};
+	}
+
+	function handleStateSnapshot(payload) {
+		state = {
+			matchId: payload.match_id,
+			joinCode: payload.join_code,
+			name: payload.lobby_name,
+			maxPlayers: payload.max_players,
+			status: payload.status,
+			localPlayerId: payload.local_player_id,
+			players: (payload.players || []).map(_playerFromWire),
+			settings: { ...DEFAULT_SETTINGS(), ...(payload.settings || {}) },
+			pingCooldownUntil: payload.ping_cooldown_until ? Date.parse(payload.ping_cooldown_until) : null,
+			pingCount: payload.ping_count || 0,
+			connected: true,
+		};
+		persistSession();
+		render();
+	}
+
+	function handlePlayerJoined(payload) {
+		if (!state || !payload.player) return;
+		const incoming = _playerFromWire(payload.player);
+		if (!state.players.some((p) => p.id === incoming.id)) {
+			state.players.push(incoming);
+		}
+		render();
+	}
+
+	function handlePlayerLeftMsg(payload) {
+		if (!state) return;
+		state.players = state.players.filter((p) => p.id !== payload.player_id);
+		if (payload.new_host_id) {
+			state.players.forEach((p) => { p.isHost = p.id === payload.new_host_id; });
+		}
+		render();
+	}
+
+	function handlePlayerKicked(payload) {
+		if (!state) return;
+		const wasMe = payload.player_id === state.localPlayerId;
+		state.players = state.players.filter((p) => p.id !== payload.player_id);
+		if (payload.new_host_id) {
+			state.players.forEach((p) => { p.isHost = p.id === payload.new_host_id; });
+		}
+		if (!wasMe) render();
+		// If it was me, the dedicated `kicked` message (below) drives the exit —
+		// don't also render a lobby view for a seat we no longer hold.
+	}
+
+	function handleKicked(payload) {
+		Toast.show(payload.detail || ToastMessages.matches.playerRemoved(), 'warning');
+		leave({ silent: true, alreadyClosedByServer: true });
+	}
+
+	function handlePlayerReadyChanged(payload) {
+		if (!state) return;
+		const player = state.players.find((p) => p.id === payload.player_id);
+		if (!player) return;
+		player.ready = Boolean(payload.ready);
+		player.readyForever = Boolean(payload.ready_forever);
+		render();
+	}
+
+	function handleSettingsUpdated(payload) {
+		if (!state) return;
+		state.settings = { ...DEFAULT_SETTINGS(), ...(payload.settings || {}) };
+		if (payload.max_players !== undefined) state.maxPlayers = payload.max_players;
+		// Mirrors the server's own reset rule (handle_update_settings resets
+		// ready for everyone whose ready_forever is false) — the server
+		// doesn't broadcast a player_ready_changed per player for this, this
+		// message is the only signal, so the reset has to be applied here too.
+		state.players.forEach((p) => { if (!p.readyForever) p.ready = false; });
+		persistSession();
+		render();
+		bumpSettingsToast();
+	}
+
+	function handleHostChanged(payload) {
+		if (!state) return;
+		state.players.forEach((p) => { p.isHost = p.id === payload.host_id; });
+		const newHost = state.players.find((p) => p.id === payload.host_id);
+		if (newHost && payload.reason !== 'promoted') {
+			// "promoted" already gets an explicit toast from promoteToHost()'s
+			// own success path; the other reasons (left/kicked/disconnect
+			// timeout) only ever surface through this broadcast.
+			Toast.show(ToastMessages.matches.hostTransferred(newHost.displayName), 'info');
+		}
+		render();
+	}
+
+	function handlePingReceived(payload) {
+		if (!state) return;
+		state.pingCount = payload.ping_count;
+		// The contract's ping_received payload doesn't carry a cooldown-until
+		// timestamp, only ping_count/target list/louder — so the button's
+		// countdown here is a best-effort local estimate for display only.
+		// Actual enforcement is server-side regardless of what this shows
+		// (an early click just comes back as a PING_ON_COOLDOWN error).
+		state.pingCooldownUntil = Date.now() + PING_COOLDOWN_MS();
+
+		const targets = new Set(payload.target_player_ids || []);
+		if (targets.has(state.localPlayerId)) {
+			try {
+				if (pingAudio) {
+					pingAudio.src = payload.louder ? PING_CUE_LOUDER_SRC() : PING_CUE_SRC();
+					pingAudio.currentTime = 0;
+					pingAudio.play();
+				}
+			} catch (_) { /* autoplay may be blocked */ }
+			Toast.show(ToastMessages.matches.pingedUnready(), 'warning');
+		}
+
+		renderControls();
+		restartPingCountdown();
+	}
+
+	function handlePlayerConnectionChanged(payload) {
+		if (!state) return;
+		const player = state.players.find((p) => p.id === payload.player_id);
+		if (!player) return;
+		player.connectionStatus = payload.connected ? 'connected' : 'disconnected';
+		player.gracePeriodEndsAt = payload.grace_period_ends_at || null;
+		render();
+	}
+
+	function handleMatchStarted(payload) {
+		if (!state) return;
+		state.status = 'in_progress';
+		persistSession();
+		closeMatchSettings();
+		render();
+		Toast.show(ToastMessages.matches.matchStarted(), 'success');
+		// Client's contract per the WS spec: navigate to game.html here.
+		// game.html doesn't exist yet (explicitly out of scope for this
+		// task), so this is left as the integration point rather than a
+		// guessed navigation call:
+		// window.location.href = `/static/pages/game.html?match=${state.matchId}`;
+	}
+
+	function restartPingCountdown() {
+		clearInterval(pingCountdownTimer);
+		pingCountdownTimer = setInterval(() => {
+			if (!state?.pingCooldownUntil || Date.now() >= state.pingCooldownUntil) {
+				clearInterval(pingCountdownTimer);
+				pingCountdownTimer = null;
+				if (state) state.pingCooldownUntil = null;
+				renderControls();
+				return;
+			}
+			renderControls();
+		}, 250);
 	}
 
 	function isMobileLayout() {
@@ -430,108 +793,98 @@ const TribunalLobby = (() => {
 		syncSettingsForm();
 	}
 
+	/**
+	 * Called right after a successful create/join REST call (or from
+	 * checkForActiveSession() on reconnect). payload only needs matchId —
+	 * everything else about the lobby (roster, settings, host, ready
+	 * states) comes from the server's state_snapshot once the socket opens,
+	 * never fabricated here. Until that snapshot arrives, `state` holds a
+	 * minimal placeholder so the sidebar can render a "connecting" shell
+	 * instead of staying hidden.
+	 */
 	function enter(payload, opts = {}) {
 		const user = LobbySession.get() || {};
-		const localId = payload.localPlayerId || user.username || `local-${Date.now()}`;
-		const existingPlayers = payload.players || [{
-			id: localId,
-			displayName: user.displayName || user.username || 'Citizen',
-			avatarUrl: user.avatarUrl || null,
-			isHost: true,
-			ready: false,
-			readyForever: false,
-			isSpectator: false,
-			joinOrder: 0,
-		}];
 
 		state = {
 			matchId: payload.matchId,
-			joinCode: payload.joinCode,
+			joinCode: payload.joinCode || '',
 			name: payload.name || 'Tribunal',
 			maxPlayers: payload.maxPlayers || LOBBY_SETTINGS.match.defaultMaxPlayers,
 			status: payload.status || 'waiting',
-			localPlayerId: localId,
-			players: existingPlayers,
+			localPlayerId: payload.localPlayerId || user.username || '',
+			players: [],
 			settings: { ...DEFAULT_SETTINGS(), ...(payload.settings || {}) },
 			pingCooldownUntil: null,
 			pingCount: 0,
+			connected: false,
 		};
 
 		persistSession();
 		setMobileExpanded(false);
 		settingsChangeCount = 0;
-		startNamePolling();
 		render();
+		connectSocket(payload.matchId);
 		if (!opts.silent) {
 			Toast.show(ToastMessages.matches.enteredLobby(state.name), 'success');
 		}
 	}
 
-	function leave() {
+	function leave(opts = {}) {
 		if (!state) return;
-		console.log(`Leave Tribunal stub: match=${state.matchId}`);
+		if (!opts.alreadyClosedByServer) {
+			sendMessage('leave', {});
+		}
+		closeSocket();
 		state = null;
 		persistSession();
 		closeMatchSettings();
 		closeReadyMenu();
-		stopNamePolling();
 		clearInterval(pingCountdownTimer);
 		pingCountdownTimer = null;
 		setMobileExpanded(false);
 		settingsChangeCount = 0;
 		render();
-		Toast.show(ToastMessages.matches.leftLobby(), 'info');
-	}
-
-	// ---- Stubs / API surface -------------------------------------------------
-
-	function removePlayer(playerId) {
-		if (!state || !viewerHasHostPowers()) return;
-		console.log(`removePlayer(${playerId}) stub`);
-		state.players = state.players.filter((p) => p.id !== playerId);
-		// Host succession: if the primary host left, promote next by join order.
-		ensureHostExists();
-		render();
-		Toast.show(ToastMessages.matches.playerRemoved(), 'info');
-	}
-
-	function ensureHostExists() {
-		if (!state) return;
-		const hasHost = state.players.some((p) => p.isHost);
-		if (hasHost || state.players.length === 0) return;
-		const next = [...state.players].sort((a, b) => a.joinOrder - b.joinOrder)[0];
-		next.isHost = true;
-		Toast.show(ToastMessages.matches.hostTransferred(next.displayName), 'info');
-	}
-
-	/** Called when the local user (or a simulated peer) leaves; triggers host handoff. */
-	function handlePlayerLeave(playerId) {
-		if (!state) return;
-		const leaving = state.players.find((p) => p.id === playerId);
-		state.players = state.players.filter((p) => p.id !== playerId);
-		if (leaving?.isHost) ensureHostExists();
-		if (playerId === state.localPlayerId) {
-			leave();
-			return;
+		if (!opts.silent) {
+			Toast.show(ToastMessages.matches.leftLobby(), 'info');
 		}
-		render();
 	}
 
-	/** Transfer sole host to another player; former host becomes a regular player. */
-	function promoteToHost(playerId) {
+	// ---- Host actions / player-facing actions, all real WS calls now --------
+
+	/** Host kicks a player. Roster update comes back via the player_kicked
+	 * broadcast (and, for the kicked player's own tab, the dedicated
+	 * `kicked` message) — this function doesn't mutate state.players itself. */
+	async function removePlayer(playerId) {
+		if (!state || !viewerHasHostPowers()) return;
+		try {
+			await sendRequest('kick_player', { target_player_id: playerId });
+			Toast.show(ToastMessages.matches.playerRemoved(), 'info');
+		} catch (err) {
+			Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
+		}
+	}
+
+	/** Transfer sole host to another player. Roster update comes back via
+	 * the host_changed broadcast. */
+	async function promoteToHost(playerId) {
 		if (!state || !viewerHasHostPowers()) return;
 		const target = state.players.find((p) => p.id === playerId);
 		if (!target || target.isHost) return;
-		console.log(`promoteToHost(${playerId}) stub`);
-		state.players.forEach((p) => { p.isHost = false; });
-		target.isHost = true;
-		render();
-		Toast.show(ToastMessages.matches.promotedHost(target.displayName), 'success');
+		try {
+			await sendRequest('promote_host', { target_player_id: playerId });
+			Toast.show(ToastMessages.matches.promotedHost(target.displayName), 'success');
+		} catch (err) {
+			Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
+		}
 	}
 
-	function sendPingToUnready() {
+	async function sendPingToUnready() {
 		if (!state || !viewerHasHostPowers()) return;
 
+		// Best-effort local pre-check so an obviously-on-cooldown click
+		// doesn't even round-trip — the server is still the one that
+		// actually enforces this (see PING_ON_COOLDOWN handling below), this
+		// is purely to avoid a pointless request.
 		if (state.pingCooldownUntil && Date.now() < state.pingCooldownUntil) {
 			const secs = Math.ceil((state.pingCooldownUntil - Date.now()) / 1000);
 			Toast.show(ToastMessages.matches.pingOnCooldown(secs), 'warning');
@@ -541,69 +894,54 @@ const TribunalLobby = (() => {
 		const unready = state.players.filter((p) => !p.isSpectator && !playerIsEffectivelyReady(p));
 		if (unready.length === 0) return;
 
-		console.log('sendPingToUnready() stub', unready.map((p) => p.id));
-
-		state.pingCount = (state.pingCount || 0) + 1;
-		const isLouderPing = state.pingCount % PING_CUE_LOUDER_EVERY_NTH() === 0;
-
-		// Local simulation: if *we* are unready, play cue + toast.
-		const me = localPlayer();
-		if (me && !playerIsEffectivelyReady(me)) {
-			try {
-				if (pingAudio) {
-					pingAudio.src = isLouderPing ? PING_CUE_LOUDER_SRC() : PING_CUE_SRC();
-					pingAudio.currentTime = 0;
-					pingAudio.play();
-				}
-			} catch (_) { /* autoplay may block */ }
-			Toast.show(ToastMessages.matches.pingedUnready(), 'warning');
-		} else {
+		try {
+			await sendRequest('ping_unready', {});
 			Toast.show(ToastMessages.matches.pingSent(unready.length), 'info');
-		}
-
-		state.pingCooldownUntil = Date.now() + PING_COOLDOWN_MS();
-		renderControls();
-		clearInterval(pingCountdownTimer);
-		pingCountdownTimer = setInterval(() => {
-			if (!state?.pingCooldownUntil || Date.now() >= state.pingCooldownUntil) {
-				clearInterval(pingCountdownTimer);
-				pingCountdownTimer = null;
-				if (state) state.pingCooldownUntil = null;
-				renderControls();
-				return;
+			// Audio/toast for whoever's actually targeted (possibly including
+			// us) plays from the ping_received broadcast handler, not here —
+			// that's the one server-confirmed signal, and it reaches every
+			// open tab, not just the one that clicked the button.
+		} catch (err) {
+			if (err?.error_code === 'PING_ON_COOLDOWN') {
+				Toast.show(err.detail, 'warning');
+			} else if (err?.error_code === 'NO_UNREADY_PLAYERS') {
+				Toast.show(err.detail, 'info');
+			} else {
+				Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
 			}
-			renderControls();
-		}, 250);
+		}
 	}
 
-	function onSettingsChange(newSettings) {
-		if (!state) return;
+	/** Host changes settings. Sends only the changed subset (a partial patch,
+	 * per the contract) — actual applied state comes back via the
+	 * settings_updated broadcast, this doesn't mutate state.settings itself. */
+	async function onSettingsChange(newSettings) {
+		if (!state || !viewerHasHostPowers() || state.status !== 'waiting') return;
 
-		const prevSettings = JSON.stringify(state.settings);
-		const prevMaxPlayers = state.maxPlayers;
 		const { max_players: maxPlayersRaw, ...restSettings } = newSettings;
-		const nextSettings = { ...state.settings, ...restSettings };
+
+		const patch = {};
+		for (const [key, value] of Object.entries(restSettings)) {
+			if (state.settings[key] !== value) patch[key] = value;
+		}
+
 		const nextMaxPlayers = maxPlayersRaw !== undefined ? Number(maxPlayersRaw) : state.maxPlayers;
 		const minCap = state.players.length;
 		const maxCap = LOBBY_SETTINGS.match?.maxPlayers ?? 10;
 		const clampedMaxPlayers = Math.min(maxCap, Math.max(minCap, nextMaxPlayers));
+		const maxPlayersChanged = clampedMaxPlayers !== state.maxPlayers;
 
-		if (JSON.stringify(nextSettings) === prevSettings && clampedMaxPlayers === prevMaxPlayers) return;
+		if (Object.keys(patch).length === 0 && !maxPlayersChanged) return;
+		if (maxPlayersChanged) patch.max_players = clampedMaxPlayers;
 
-		console.log('onSettingsChange stub', { ...restSettings, max_players: clampedMaxPlayers });
-		state.settings = nextSettings;
-		if (clampedMaxPlayers !== prevMaxPlayers) {
-			state.maxPlayers = clampedMaxPlayers;
-			persistSession();
+		try {
+			await sendRequest('update_settings', { settings: patch });
+			// settings_updated broadcast (which also reaches this tab) applies
+			// the change and fires bumpSettingsToast() — nothing more to do here.
+		} catch (err) {
+			Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
+			syncSettingsForm(); // snap the form back to the last known-good values
 		}
-
-		// Ready resets for everyone except Ready Forever.
-		state.players.forEach((p) => {
-			if (!p.readyForever) p.ready = false;
-		});
-
-		render();
-		bumpSettingsToast();
 	}
 
 	/** One aggregating toast for statute edits — never stacks duplicates. */
@@ -627,62 +965,59 @@ const TribunalLobby = (() => {
 		}
 	}
 
-	/** Pull latest display names (local from LobbySession; remotes via stubbed request). */
+	/**
+	 * Mirrors the local player's own profile edits into the sidebar. Remote
+	 * players' display names/avatars now arrive from the server itself (the
+	 * state_snapshot on connect, plus player_joined for anyone who joins
+	 * afterward) — there's no "watch someone else's profile" endpoint in the
+	 * contract, so the polling this used to stub out doesn't have anything
+	 * real to call. Kept as a named function (rather than inlined into the
+	 * LobbySession.subscribe callback below) since it's still a reasonable
+	 * public API surface if something else wants to force a re-sync.
+	 */
 	function refreshPlayerNames() {
 		if (!state) return;
-		let changed = false;
-
 		const user = LobbySession.get();
 		const me = localPlayer();
-		if (me && user) {
-			if (user.displayName && me.displayName !== user.displayName) {
-				me.displayName = user.displayName;
-				changed = true;
-			}
-			if (user.avatarUrl !== undefined && me.avatarUrl !== user.avatarUrl) {
-				me.avatarUrl = user.avatarUrl || null;
-				changed = true;
-			}
+		if (!me || !user) return;
+		let changed = false;
+		if (user.displayName && me.displayName !== user.displayName) {
+			me.displayName = user.displayName;
+			changed = true;
 		}
-
-		// Stub: request each remote player's current display name from the server/WS.
-		state.players.forEach((p) => {
-			if (p.id === state.localPlayerId) return;
-			console.log(`refreshPlayerNames stub: GET display name for ${p.id}`);
-			// Real implementation would apply the response here.
-		});
-
+		if (user.avatarUrl !== undefined && me.avatarUrl !== user.avatarUrl) {
+			me.avatarUrl = user.avatarUrl || null;
+			changed = true;
+		}
 		if (changed) renderPlayers();
 	}
 
-	function startNamePolling() {
-		stopNamePolling();
-		refreshPlayerNames();
-		namePollTimer = setInterval(refreshPlayerNames, NAME_POLL_MS);
-	}
-
-	function stopNamePolling() {
-		if (namePollTimer) {
-			clearInterval(namePollTimer);
-			namePollTimer = null;
-		}
-	}
-
-	function toggleReady(opts = {}) {
+	async function toggleReady(opts = {}) {
 		const me = localPlayer();
 		if (!me || !state || state.status !== 'waiting') return;
 
+		// forever=false intentionally does NOT clear ready by itself, mirrors
+		// the pre-existing UX rule: turning off "ready forever" drops back to
+		// whatever the manual ready state already was.
+		let nextForever = me.readyForever;
+		let nextReady = me.ready;
 		if (opts.forever) {
-			me.readyForever = !me.readyForever;
-			if (me.readyForever) me.ready = true;
+			nextForever = !me.readyForever;
+			nextReady = nextForever ? true : me.ready;
 		} else {
-			me.readyForever = false;
-			me.ready = !me.ready;
+			nextForever = false;
+			nextReady = !me.ready;
 		}
 
-		console.log(`readyState -> ${me.ready ? 'ready' : 'unready'} (readyForever=${me.readyForever})`);
 		closeReadyMenu();
-		render();
+		try {
+			await sendRequest('set_ready', { ready: nextReady, forever: nextForever });
+			// player_ready_changed broadcasts back to this tab too, applying
+			// the change — no local mutation here to avoid a double-update
+			// racing the broadcast.
+		} catch (err) {
+			Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
+		}
 	}
 
 	function openReadyMenu() {
@@ -701,25 +1036,28 @@ const TribunalLobby = (() => {
 		else closeReadyMenu();
 	}
 
-	function startMatch() {
+	async function startMatch() {
 		if (!state || !viewerHasHostPowers()) return;
 
 		if (!matchCanStart()) {
-			const seated = state.players.filter((p) => !p.isSpectator);
-			if (seated.length < (LOBBY_SETTINGS.match?.minPlayers ?? 2)) {
-				Toast.show(ToastMessages.matches.cannotStartTooFew(), 'warning');
-			} else {
-				Toast.show(ToastMessages.matches.cannotStartNotReady(), 'warning');
-			}
+			Toast.show(ToastMessages.matches.cannotStartNotReady(), 'warning');
 			return;
 		}
 
-		console.log(`startMatch stub: match=${state.matchId}`);
-		state.status = 'in_progress';
-		persistSession();
-		closeMatchSettings();
-		render();
-		Toast.show(ToastMessages.matches.matchStarted(), 'success');
+		try {
+			await sendRequest('start_match', {});
+			// The actual status flip happens in handleMatchStarted(), driven by
+			// the match_starting/match_started broadcasts — the server
+			// re-validates readiness independently of matchCanStart() above,
+			// so a NOT_ALL_READY here (roster changed a beat ago) is possible
+			// and handled below rather than assumed impossible.
+		} catch (err) {
+			if (err?.error_code === 'NOT_ALL_READY') {
+				Toast.show(ToastMessages.matches.cannotStartNotReady(), 'warning');
+			} else {
+				Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
+			}
+		}
 	}
 
 	function openMatchSettings() {
@@ -765,51 +1103,34 @@ const TribunalLobby = (() => {
 		};
 	}
 
-	/** On app init: restore sidebar if a stored tribunal session exists. */
-	function checkForActiveSession() {
-		let stored;
+	/**
+	 * On app init: ask the server whether this session is currently seated
+	 * in a waiting-or-in-progress match, rather than trusting whatever
+	 * matchId/joinCode happen to still be sitting in localStorage — a stale
+	 * local copy (match ended, seat freed after a disconnect timeout, etc.)
+	 * would otherwise reopen a socket connection that gets immediately
+	 * refused. GET /api/matches/me/active is server-authoritative for this.
+	 *
+	 * Async now (the old stub was synchronous) — callers need to await it.
+	 */
+	async function checkForActiveSession() {
+		let res;
 		try {
-			stored = JSON.parse(localStorage.getItem(STORAGE_KEY()) || 'null');
-		} catch {
-			stored = null;
+			res = await fetch('/api/matches/me/active', { credentials: 'same-origin' });
+		} catch (err) {
+			return false;
 		}
-		if (!stored?.matchId || !stored?.joinCode) return false;
+		if (!res.ok) return false;
 
-		console.log('checkForActiveSession() — rejoining', stored.matchId);
-		const user = LobbySession.get() || {};
-		const localId = stored.localPlayerId || user.username || 'local-rejoin';
+		let data;
+		try {
+			data = await res.json();
+		} catch (err) {
+			return false;
+		}
+		if (!data?.match_id) return false;
 
-		// Stubbed rejoin payload — real flow would fetch lobby state over WS/REST.
-		enter({
-			matchId: stored.matchId,
-			joinCode: stored.joinCode,
-			name: stored.name || 'Tribunal',
-			maxPlayers: stored.maxPlayers || LOBBY_SETTINGS.match.defaultMaxPlayers,
-			status: stored.status || 'waiting',
-			localPlayerId: localId,
-			players: [
-				{
-					id: localId,
-					displayName: user.displayName || user.username || 'Citizen',
-					avatarUrl: user.avatarUrl || null,
-					isHost: true,
-					ready: false,
-					readyForever: false,
-					isSpectator: false,
-					joinOrder: 0,
-				},
-				{
-					id: 'peer-stub-1',
-					displayName: 'Awaiting Officer',
-					avatarUrl: null,
-					isHost: false,
-					ready: false,
-					readyForever: false,
-					isSpectator: false,
-					joinOrder: 1,
-				},
-			],
-		}, { silent: true });
+		enter({ matchId: data.match_id, joinCode: data.join_code }, { silent: true });
 		return true;
 	}
 
@@ -949,9 +1270,6 @@ const TribunalLobby = (() => {
 		if (changed) renderPlayers();
 	});
 
-	// Simulate host leave → succession for local testing:
-	// window.TribunalLobby.handlePlayerLeave(hostId)
-
 	return {
 		isActive,
 		getState,
@@ -962,7 +1280,6 @@ const TribunalLobby = (() => {
 		promoteToHost,
 		sendPingToUnready,
 		onSettingsChange,
-		handlePlayerLeave,
 		matchCanStart,
 		startMatch,
 		refreshPlayerNames,

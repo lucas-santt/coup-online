@@ -2,8 +2,30 @@ import random
 from backend.engine.player import Player
 from backend.engine.deck import Deck
 
+
+DEFAULT_BASE_CARDS = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
+ALL_ACTIONS = ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]
+
+# Not currently a lobby-configurable setting (settings.js has no
+# assassinate_cost field), kept as a named constant instead of a bare "3"
+# so it's at least legible, rather than silently invented as a new setting.
+DEFAULT_ASSASSINATE_COST = 3
+
+
 class Match:
-    def __init__(self, id: str, base_cards=["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]):
+    def __init__(
+        self,
+        id: str,
+        base_cards: list[str] | None = None,
+        coup_cost: int = 7,
+        forced_coup_threshold: int = 10,
+        assassinate_cost: int = DEFAULT_ASSASSINATE_COST,
+        income_coins: int = 1,
+        foreign_aid_coins: int = 2,
+        reformation: bool = False,
+        declared_coup: bool = False,
+        declared_assassinate: bool = False,
+    ):
         self.id = id
         self.players = {}
         self.status = {"started": False, # status of the match
@@ -11,8 +33,24 @@ class Match:
                        "current_match_state": None}
         self.order = [] # player order
         self.turn_id = 0 # indicates whose turn it is to play (order[turn_id])
-        self.base_cards = base_cards
+        self.base_cards = base_cards if base_cards is not None else list(DEFAULT_BASE_CARDS)
         self.last_action = None
+
+        # Ruleset values, provided by the lobby's MatchSettings rather than
+        # hardcoded. coup_cost/forced_coup_threshold/assassinate_cost drive
+        # get_options() below; income_coins/foreign_aid_coins are threaded
+        # through and stored for when action resolution (currently stubbed
+        # out in process_event's "action_declared" branch) actually applies
+        # coin gains — nothing to wire them into yet, but they shouldn't
+        # need to be re-threaded later either.
+        self.coup_cost = coup_cost
+        self.forced_coup_threshold = forced_coup_threshold
+        self.assassinate_cost = assassinate_cost
+        self.income_coins = income_coins
+        self.foreign_aid_coins = foreign_aid_coins
+        self.reformation = reformation
+        self.declared_coup = declared_coup
+        self.declared_assassinate = declared_assassinate
 
     # Adds a player to the match
     def add_player(self, id: str, name: str):
@@ -35,8 +73,13 @@ class Match:
     # Adjusts match states and distributes resources (cards and coins) to the players
     def start_match(self, copies_by_card=None, starting_coins=2):
         num_players = len(self.order)
-        if num_players < 2:
-            raise ValueError("At least 2 players are required.")
+        # Per explicit product direction (not a hard-coded engine opinion):
+        # player count is never a reason to refuse a start. A lobby with
+        # bot_fill=none and a single human is a legitimate (if degenerate)
+        # match. Only a genuinely empty lobby can't start, there's no one
+        # to take a turn.
+        if num_players < 1:
+            raise ValueError("At least 1 player is required to start.")
         # If copies_by_card=None, choose default values
         if copies_by_card is not None:
             if copies_by_card > 0 and num_players > 2 * copies_by_card:
@@ -124,7 +167,7 @@ class Match:
             action = data.get("action")
             if player_id != self.order[self.turn_id]:
                 raise ValueError("It is not your turn.")
-            if event == "action" and data.get("action") not in ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]:
+            if event == "action" and action not in ALL_ACTIONS:
                 raise ValueError("This action is not available.")
             target_id = data.get("target_id")
             self.last_action = {"action": action, "player_id": player_id, "target_id": target_id}
@@ -143,14 +186,18 @@ class Match:
                 # implement the challenge logic
                 pass
     
-    # Returns a player's possible options given their number of coins
+    # Returns a player's possible options given their number of coins.
+    # Thresholds come from this match's own ruleset (self.coup_cost,
+    # self.forced_coup_threshold, self.assassinate_cost) instead of the
+    # previous hardcoded 10 / 7 / 3, so a lobby with a custom coup cost or
+    # forced-coup threshold actually changes what's playable.
     def get_options(self, player_id: str):
         player = self.players[player_id]
-        if player.coins >= 10:
+        if player.coins >= self.forced_coup_threshold:
             return ["coup"]
-        elif player.coins >= 7:
-            return ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]
-        elif player.coins >= 3:
-            return ["income", "foreing_aid", "tax", "assassinate", "steal", "exchange"]
+        elif player.coins >= self.coup_cost:
+            return list(ALL_ACTIONS)
+        elif player.coins >= self.assassinate_cost:
+            return [action for action in ALL_ACTIONS if action != "coup"]
         else:
-            return ["income", "foreing_aid", "tax", "steal", "exchange"]
+            return [action for action in ALL_ACTIONS if action not in ("coup", "assassinate")]
