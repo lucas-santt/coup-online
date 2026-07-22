@@ -138,9 +138,22 @@
 }
 
 .match-lock {
+	display: inline-flex;
+	align-items: center;
 	margin-left: 0.3rem;
 	font-size: 0.85rem;
 	color: var(--color-orange);
+}
+
+/* The inline SVG has no width/height attributes of its own (by design,
+   so it scales via CSS instead of being baked into markup) — without
+   this rule it falls back to the browser's intrinsic replaced-element
+   default (300x150), which is why it was rendering enormous. Sized off
+   font-size so it scales with .match-lock like a text icon would. */
+.match-lock-icon {
+	width: 1em;
+	height: 1em;
+	flex-shrink: 0;
 }
 
 .match-meta {

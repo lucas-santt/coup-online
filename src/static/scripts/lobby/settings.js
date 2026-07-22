@@ -46,7 +46,10 @@ const LOBBY_SETTINGS = {
 		defaultMaxPlayers: 4,
 		nameMaxLength: 30,
 		passwordMaxLength: 50,
-		codeMaxLength: 8,
+		// backend generates join codes as 6 chars from a disambiguated
+		// 32-symbol alphabet (digits + uppercase, minus I/L/O/U) — see
+		// backend/constants.py JOIN_CODE_ALPHABET / JOIN_CODE_LENGTH.
+		codeMaxLength: 6,
 		searchMaxLength: 30,
 		pingCooldownMs: 5_000,
 		sessionStorageKey: 'coupe.activeTribunal',

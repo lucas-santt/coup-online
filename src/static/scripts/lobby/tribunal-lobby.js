@@ -49,9 +49,100 @@ const TribunalLobby = (() => {
 		starting_coins: 2,
 		coup_cost: 7,
 		forced_coup_threshold: 10,
+		assassinate_cost: 3,
 		income_coins: 1,
 		foreign_aid_coins: 2,
+		extort_coins: 2,
+		tax_coins: 3,
+		exchange_draw_cards: 2,
 	});
+
+	// The fields tucked away inside the "Advanced / House Rules" fold. If
+	// any of these has been pushed off its standard value, a warning icon
+	// is shown next to the toggle (see hasNonDefaultAdvancedSettings()
+	// below, applied in syncSettingsForm() and the form's 'input' handler)
+	// so a folded panel can't quietly hide a wild rule from someone who
+	// hasn't opened it yet.
+	const ADVANCED_SETTINGS_KEYS = [
+		'starting_coins',
+		'coup_cost',
+		'forced_coup_threshold',
+		'income_coins',
+		'foreign_aid_coins',
+		'tax_coins',
+		'assassinate_cost',
+		'extort_coins',
+		'exchange_draw_cards',
+	];
+
+	function hasNonDefaultAdvancedSettings(settings) {
+		const defaults = DEFAULT_SETTINGS();
+		return ADVANCED_SETTINGS_KEYS.some((key) => settings[key] !== defaults[key]);
+	}
+
+	// ---- Per-setting "differs from default" markers ---------------------
+	// A small asterisk after any settings label whose value has been
+	// pushed off the standard ruleset, title-tooltipped with what that
+	// default actually is — a folded "Advanced" section already gets its
+	// own warning icon (hasNonDefaultAdvancedSettings above), but a
+	// deviation in an always-visible setting (e.g. Turn Timer, Time Bank)
+	// was otherwise just as easy to miss.
+
+	const BOT_FILL_LABELS = {
+		none: 'None',
+		fill: 'Fill Empty Seats',
+		solo: 'Solo Practice (Full Bots)',
+	};
+
+	function formatSettingDefaultForDisplay(key, value) {
+		if (key === 'character_copies') return value === -1 ? '∞ (unlimited)' : String(value);
+		if (key === 'bot_fill') return BOT_FILL_LABELS[value] || String(value);
+		if (typeof value === 'boolean') return value ? 'On' : 'Off';
+		return String(value);
+	}
+
+	/** Builds the (initially hidden) asterisk markup once per settings
+	 * input, right inside that input's <label for="...">. Idempotent —
+	 * safe to call more than once, though it only ever needs to run at
+	 * module init since the form's inputs are static markup. */
+	function ensureSettingDiffMarkers() {
+		document.querySelectorAll('#match-settings-form [data-setting]').forEach((input) => {
+			if (!input.id) return;
+			const label = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
+			if (!label || label.querySelector('.setting-diff-asterisk')) return;
+			const marker = document.createElement('span');
+			marker.className = 'setting-diff-asterisk hidden';
+			marker.setAttribute('aria-hidden', 'true');
+			marker.textContent = '*';
+			label.appendChild(marker);
+		});
+	}
+
+	/** settingsSource is either state.settings (committed) or the live
+	 * output of readSettingsFromForm() (mid-edit) — either way, everything
+	 * except max_players lives there; max_players itself is tracked
+	 * separately (state.maxPlayers / the max-players input), hence the
+	 * dedicated maxPlayersValue param. */
+	function refreshSettingDiffMarkers(settingsSource, maxPlayersValue) {
+		const defaults = { ...DEFAULT_SETTINGS(), max_players: LOBBY_SETTINGS.match?.defaultMaxPlayers ?? 4 };
+		document.querySelectorAll('#match-settings-form [data-setting]').forEach((input) => {
+			const key = input.dataset.setting;
+			const defaultValue = defaults[key];
+			if (defaultValue === undefined || !input.id) return;
+			const marker = document.querySelector(`label[for="${CSS.escape(input.id)}"] .setting-diff-asterisk`);
+			if (!marker) return;
+
+			const currentValue = key === 'max_players' ? maxPlayersValue : settingsSource[key];
+			const differs = currentValue !== undefined && currentValue !== defaultValue;
+			marker.classList.toggle('hidden', !differs);
+			marker.setAttribute('aria-hidden', String(!differs));
+			if (differs) {
+				marker.title = `By default this is set to ${formatSettingDefaultForDisplay(key, defaultValue)}`;
+			}
+		});
+	}
+
+	ensureSettingDiffMarkers();
 
 	/** @type {null | {
 	 *   matchId: string,
@@ -79,6 +170,26 @@ const TribunalLobby = (() => {
 	let mobileExpanded = false;
 	let settingsChangeCount = 0;
 	const MOBILE_MQ = window.matchMedia('(max-width: 720px)');
+
+	// ---- Settings form debounce / retry ---------------------------------------
+	// Native number-input spinner arrows fire a 'change' event per tick, and
+	// holding one down can fire dozens in under a second — each used to hit
+	// the wire immediately, tripping the server's spam-floor cooldown
+	// (SETTINGS_ON_COOLDOWN) and resetting everyone's ready state on every
+	// tick. Instead: accumulate for SETTINGS_DEBOUNCE_MS of silence, then send
+	// one full read of the form — onSettingsChange() already diffs that
+	// against state.settings and no-ops if nothing actually changed (e.g. a
+	// toggle flipped on and back off inside the debounce window).
+	const SETTINGS_DEBOUNCE_MS = 300;
+	let settingsDebounceTimer = null;
+	let settingsRetryTimer = null;
+
+	function clearSettingsTimers() {
+		clearTimeout(settingsDebounceTimer);
+		clearTimeout(settingsRetryTimer);
+		settingsDebounceTimer = null;
+		settingsRetryTimer = null;
+	}
 
 	// ---- WebSocket connection state -------------------------------------------
 	// One socket per tribunal session, opened by enter() right after a
@@ -372,6 +483,7 @@ const TribunalLobby = (() => {
 			case 'player_kicked': return handlePlayerKicked(payload);
 			case 'kicked': return handleKicked(payload);
 			case 'player_ready_changed': return handlePlayerReadyChanged(payload);
+			case 'player_profile_updated': return handlePlayerProfileUpdated(payload);
 			case 'settings_updated': return handleSettingsUpdated(payload);
 			case 'host_changed': return handleHostChanged(payload);
 			case 'start_availability_changed': return; // matchCanStart() derives this locally; nothing to apply.
@@ -458,6 +570,22 @@ const TribunalLobby = (() => {
 		if (!player) return;
 		player.ready = Boolean(payload.ready);
 		player.readyForever = Boolean(payload.ready_forever);
+		render();
+	}
+
+	/** A seated player (possibly us, possibly on another tab) changed their
+	 * display name or avatar via the profile endpoints — see
+	 * broadcast_player_profile_updated in routers/websockets.py. Not
+	 * excluded for the acting player's own sockets, so this is also what
+	 * keeps a second open tab of the same account in sync; the
+	 * LobbySession.subscribe mirror below handles the acting tab's own
+	 * instant feedback ahead of this round trip. */
+	function handlePlayerProfileUpdated(payload) {
+		if (!state) return;
+		const player = state.players.find((p) => p.id === payload.player_id);
+		if (!player) return;
+		if (payload.display_name !== undefined) player.displayName = payload.display_name;
+		if (payload.avatar_url !== undefined) player.avatarUrl = payload.avatar_url || null;
 		render();
 	}
 
@@ -642,8 +770,12 @@ const TribunalLobby = (() => {
 			starting_coins: 'setting-starting-coins',
 			coup_cost: 'setting-coup-cost',
 			forced_coup_threshold: 'setting-forced-coup-threshold',
+			assassinate_cost: 'setting-assassinate-cost',
 			income_coins: 'setting-income-coins',
 			foreign_aid_coins: 'setting-foreign-aid-coins',
+			extort_coins: 'setting-extort-coins',
+			tax_coins: 'setting-tax-coins',
+			exchange_draw_cards: 'setting-exchange-cards',
 		};
 
 		Object.entries(map).forEach(([key, id]) => {
@@ -651,11 +783,33 @@ const TribunalLobby = (() => {
 			if (!el) return;
 			if (el.type === 'checkbox') {
 				el.checked = Boolean(s[key]);
+			} else if (key === 'character_copies') {
+				// Reverse of the -1 <-> 'inf' mapping in readSettingsFromForm —
+				// the <select> only has an 'inf' option, no '-1' one.
+				el.value = s[key] === -1 ? 'inf' : String(s[key]);
 			} else {
 				el.value = String(s[key]);
 			}
 			el.disabled = !canEdit;
 		});
+
+		// Forced-coup threshold can never sit below the cost of a coup (the
+		// backend rejects it — see validate_settings_patch's cross-field
+		// check). Pin the input's own min to the current coup cost here so
+		// that's visible/enforced natively, on top of the live nudge in the
+		// 'input' listener below and the belt-and-suspenders clamp in
+		// readSettingsFromForm().
+		const forcedCoupEl = document.getElementById('setting-forced-coup-threshold');
+		if (forcedCoupEl) forcedCoupEl.min = String(s.coup_cost);
+
+		const advancedWarningIcon = document.getElementById('advanced-rules-warning-icon');
+		if (advancedWarningIcon) {
+			const showWarning = hasNonDefaultAdvancedSettings(s);
+			advancedWarningIcon.classList.toggle('hidden', !showWarning);
+			advancedWarningIcon.setAttribute('aria-hidden', String(!showWarning));
+		}
+
+		refreshSettingDiffMarkers(s, state.maxPlayers);
 	}
 
 	function renderPlayers() {
@@ -839,6 +993,7 @@ const TribunalLobby = (() => {
 		persistSession();
 		closeMatchSettings();
 		closeReadyMenu();
+		clearSettingsTimers();
 		clearInterval(pingCountdownTimer);
 		pingCountdownTimer = null;
 		setMobileExpanded(false);
@@ -939,6 +1094,16 @@ const TribunalLobby = (() => {
 			// settings_updated broadcast (which also reaches this tab) applies
 			// the change and fires bumpSettingsToast() — nothing more to do here.
 		} catch (err) {
+			// This is a spam floor, not a real rejection — the host didn't do
+			// anything wrong, so retry once the server's own cooldown clears
+			// instead of alarming them with an error toast. retry_after_ms
+			// comes from the server (see handle_update_settings); if it's
+			// somehow missing, fall back to treating this like any other error.
+			if (err?.error_code === 'SETTINGS_ON_COOLDOWN' && typeof err.retry_after_ms === 'number') {
+				clearTimeout(settingsRetryTimer);
+				settingsRetryTimer = setTimeout(() => onSettingsChange(newSettings), err.retry_after_ms);
+				return;
+			}
 			Toast.show(err?.detail || ToastMessages.connectionLost(), 'error');
 			syncSettingsForm(); // snap the form back to the last known-good values
 		}
@@ -1077,8 +1242,12 @@ const TribunalLobby = (() => {
 
 		const startingCoins = Number(document.getElementById('setting-starting-coins')?.value ?? 2);
 		const coupCost = Number(document.getElementById('setting-coup-cost')?.value ?? 7);
+		const assassinateCost = Number(document.getElementById('setting-assassinate-cost')?.value ?? 3);
 		const incomeCoins = Number(document.getElementById('setting-income-coins')?.value ?? 1);
 		const foreignAidCoins = Number(document.getElementById('setting-foreign-aid-coins')?.value ?? 2);
+		const extortCoins = Number(document.getElementById('setting-extort-coins')?.value ?? 2);
+		const taxCoins = Number(document.getElementById('setting-tax-coins')?.value ?? 3);
+		const exchangeDrawCards = Number(document.getElementById('setting-exchange-cards')?.value ?? 2);
 
 		// Forced-coup threshold must never sit below the cost of a coup,
 		// so clamp here to keep the form from submitting a contradictory pair.
@@ -1091,14 +1260,23 @@ const TribunalLobby = (() => {
 			time_bank: Number(document.getElementById('setting-time-bank')?.value ?? 60),
 			turn_timer: Number(document.getElementById('setting-turn-timer')?.value ?? 30),
 			challenge_timer: Number(document.getElementById('setting-challenge-timer')?.value ?? 5),
-			character_copies: copiesRaw === 'inf' ? 'inf' : Number(copiesRaw),
+			// -1 is the wire/engine representation of "infinite" (see
+			// constants.MATCH_SETTINGS_SCHEMA) — translated right here, at
+			// the DOM boundary, so nothing downstream (diffing against
+			// state.settings, the outgoing patch, validate_settings_patch)
+			// ever sees the string 'inf' and rejects it as a non-integer.
+			character_copies: copiesRaw === 'inf' ? -1 : Number(copiesRaw),
 			declared_coup: document.getElementById('setting-declared-coup')?.checked ?? false,
 			declared_assassinate: document.getElementById('setting-declared-assassinate')?.checked ?? false,
 			starting_coins: startingCoins,
 			coup_cost: coupCost,
 			forced_coup_threshold: forcedCoupThreshold,
+			assassinate_cost: assassinateCost,
 			income_coins: incomeCoins,
 			foreign_aid_coins: foreignAidCoins,
+			extort_coins: extortCoins,
+			tax_coins: taxCoins,
+			exchange_draw_cards: exchangeDrawCards,
 			max_players: maxPlayersRaw !== undefined ? Number(maxPlayersRaw) : undefined,
 		};
 	}
@@ -1181,7 +1359,11 @@ const TribunalLobby = (() => {
 
 	function handleSettingsFormUpdate() {
 		if (!state || !viewerHasHostPowers() || state.status !== 'waiting') return;
-		onSettingsChange(readSettingsFromForm());
+		clearTimeout(settingsDebounceTimer);
+		settingsDebounceTimer = setTimeout(() => {
+			settingsDebounceTimer = null;
+			onSettingsChange(readSettingsFromForm());
+		}, SETTINGS_DEBOUNCE_MS);
 	}
 
 	// Live-sync settings on change (host/co-host only; form is readonly otherwise).
@@ -1202,15 +1384,88 @@ const TribunalLobby = (() => {
 			const pct = maxCap > minCap ? ((val - minCap) / (maxCap - minCap)) * 100 : 100;
 			maxPlayersEl.style.setProperty('--fill', `${pct}%`);
 		}
+
+		// forced_coup_threshold must never sit below coup_cost. Nudge it up
+		// live as soon as coup_cost is raised past it, rather than only
+		// clamping silently at submit time (readSettingsFromForm) or
+		// waiting on a server round trip to correct it.
+		const coupCostEl = document.getElementById('setting-coup-cost');
+		const forcedCoupEl = document.getElementById('setting-forced-coup-threshold');
+		if (e.target === coupCostEl && coupCostEl && forcedCoupEl) {
+			const coupCost = Number(coupCostEl.value);
+			forcedCoupEl.min = String(coupCost);
+			if (Number(forcedCoupEl.value) < coupCost) {
+				forcedCoupEl.value = String(coupCost);
+			}
+		}
+
+		// Instant feedback while the host is actively typing/dragging, ahead
+		// of the debounced commit that would otherwise be the only thing
+		// re-syncing these (see syncSettingsForm()).
+		const formSettings = readSettingsFromForm();
+
+		const advancedWarningIcon = document.getElementById('advanced-rules-warning-icon');
+		if (advancedWarningIcon) {
+			const showWarning = hasNonDefaultAdvancedSettings(formSettings);
+			advancedWarningIcon.classList.toggle('hidden', !showWarning);
+			advancedWarningIcon.setAttribute('aria-hidden', String(!showWarning));
+		}
+
+		refreshSettingDiffMarkers(formSettings, formSettings.max_players);
 	});
+
+	/** navigator.clipboard requires a secure context (https, or localhost) —
+	 * falls back to the legacy execCommand trick anywhere else (e.g. testing
+	 * over a plain-http LAN address) instead of just failing silently. */
+	async function copyText(text) {
+		if (navigator.clipboard?.writeText) {
+			try {
+				await navigator.clipboard.writeText(text);
+				return true;
+			} catch {
+				// fall through to the legacy path below
+			}
+		}
+		try {
+			const scratch = document.createElement('textarea');
+			scratch.value = text;
+			scratch.style.position = 'fixed';
+			scratch.style.opacity = '0';
+			document.body.appendChild(scratch);
+			scratch.focus();
+			scratch.select();
+			const ok = document.execCommand('copy');
+			scratch.remove();
+			return ok;
+		} catch {
+			return false;
+		}
+	}
+
+	/** A link that drops a friend straight into this match: they hit the
+	 * auth gate (login/signup/guest) same as anyone else, then main.js
+	 * auto-joins with this code once that resolves. See main.js. */
+	function inviteLink() {
+		if (!state?.joinCode) return '';
+		return `${window.location.origin}${window.location.pathname}?join=${encodeURIComponent(state.joinCode)}`;
+	}
 
 	bindTouchFriendlyClick(btnCopyCode, async () => {
 		if (!state?.joinCode) return;
-		try {
-			await navigator.clipboard.writeText(state.joinCode);
-			Toast.show(ToastMessages.matches.codeCopied(), 'success');
-		} catch {
-			Toast.show(ToastMessages.matches.codeCopyFailed(), 'warning');
+		const ok = await copyText(inviteLink());
+		Toast.show(ok ? ToastMessages.matches.linkCopied() : ToastMessages.matches.codeCopyFailed(), ok ? 'success' : 'warning');
+	});
+
+	async function copyJoinCode() {
+		if (!state?.joinCode) return;
+		const ok = await copyText(state.joinCode);
+		Toast.show(ok ? ToastMessages.matches.codeCopied() : ToastMessages.matches.codeCopyFailed(), ok ? 'success' : 'warning');
+	}
+	bindTouchFriendlyClick(joinCodeEl, copyJoinCode);
+	joinCodeEl?.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			copyJoinCode();
 		}
 	});
 

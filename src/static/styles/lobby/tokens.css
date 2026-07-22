@@ -139,6 +139,41 @@ body {
 }
 
 /* ============================================================
+   Scrollbar theming (Panopticon Deco: flat, square, no gradients).
+   Applies globally since `body` is what actually scrolls the page —
+   most visible on the settings tab, which is the tallest panel, but
+   this also covers any other panel/overlay that grows a scrollbar.
+   ============================================================ */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-orange) var(--color-panel-dim);
+}
+
+*::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--color-panel-dim);
+	border-left: 1px solid var(--color-ink);
+}
+
+*::-webkit-scrollbar-thumb {
+	background: var(--color-orange);
+	border: 1px solid var(--color-ink);
+	border-radius: 0;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+	background: var(--color-orange-dark);
+}
+
+*::-webkit-scrollbar-corner {
+	background: var(--color-panel-dim);
+}
+
+/* ============================================================
    Utility
    ============================================================ */
 .hidden {

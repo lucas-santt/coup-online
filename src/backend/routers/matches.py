@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, status
 from sqlmodel import select, col
+from sqlalchemy.orm import selectinload
 
 from backend import constants
 from backend.auth.optional import OptionalRegisteredOrGuestDep
@@ -19,6 +20,7 @@ from backend.models.match import (
 )
 from backend.models.player_match_link import PlayerMatchLink
 from backend.errors import ErrorCode, api_error
+from backend.routers.websockets import broadcast_player_joined
 
 router = APIRouter(prefix="/api/matches", tags=["matches"])
 
@@ -38,6 +40,10 @@ def _settings_out(settings: MatchSettings) -> dict:
 		"forced_coup_threshold": settings.forced_coup_threshold,
 		"income_coins": settings.income_coins,
 		"foreign_aid_coins": settings.foreign_aid_coins,
+		"assassinate_cost": settings.assassinate_cost,
+		"extort_coins": settings.extort_coins,
+		"tax_coins": settings.tax_coins,
+		"exchange_draw_cards": settings.exchange_draw_cards,
 	}
 
 
@@ -73,7 +79,7 @@ async def create_match(
 	# not an exception type.
 	for _ in range(5):
 		try:
-			match.join_code = secrets.token_hex(8)
+			match.join_code = "".join(secrets.choice(constants.JOIN_CODE_ALPHABET) for _ in range(constants.JOIN_CODE_LENGTH))
 			add_to_db(match, session)
 			break
 		except HTTPException as e:
@@ -171,7 +177,7 @@ async def get_match(
 		{
 			"match_id": match.id,
 			"lobby_name": match.lobby_name,
-			"host_name": match.host.username,
+			"host_name": match.host.username if match.host else "—",
 			"player_count": match.player_count,
 			"max_players": match.max_players,
 			"visibility": match.visibility,
@@ -189,6 +195,7 @@ async def join_match(
 	session: SessionDep,
 	session_player: RequiredRegisteredOrGuestDep,
 ) -> dict:
+	join_code = join_code.strip().upper()
 
 	query = (
 		select(Match)
@@ -218,6 +225,7 @@ async def join_match(
 
 		add_to_db(match, session)
 		_set_join_order(session, session_player.id, match.id, join_order)
+		await broadcast_player_joined(session, match.id, session_player.id)
 
 	return {"match_id": str(match.id)}
 
@@ -265,5 +273,6 @@ async def join_match_by_id(
 
 		add_to_db(match, session)
 		_set_join_order(session, session_player.id, match.id, join_order)
+		await broadcast_player_joined(session, match.id, session_player.id)
 
 	return {"match_id": str(match.id)}

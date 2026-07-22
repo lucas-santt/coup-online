@@ -39,6 +39,21 @@ MATCH_SETTINGS_SCHEMA: dict[str, dict[str, int]] = {
 	"forced_coup_threshold": {"min": 1, "max": 20, "default": 10},
 	"income_coins": {"min": 1, "max": 5, "default": 1},
 	"foreign_aid_coins": {"min": 1, "max": 5, "default": 2},
+	# Assassin's Assassinate cost, Captain's Extort take, and Duke's Tax
+	# take. Previously hardcoded (assassinate_cost lived only as
+	# engine.match.DEFAULT_ASSASSINATE_COST; extort/tax weren't
+	# configurable anywhere) — now first-class house rules like the ones
+	# above.
+	"assassinate_cost": {"min": 1, "max": 20, "default": 3},
+	"extort_coins": {"min": 0, "max": 10, "default": 2},
+	"tax_coins": {"min": 0, "max": 10, "default": 3},
+	# Ambassador's Exchange: how many cards are drawn from the deck to
+	# choose from before returning two. Deliberately not clamped to "can't
+	# exceed the deck" here — copies_by_card/character_copies is a
+	# separate, independently-configurable setting, so validating that
+	# cross-field interaction belongs with the rest of match-start
+	# validation, not here.
+	"exchange_draw_cards": {"min": 1, "max": 5, "default": 2},
 }
 
 MATCH_SETTINGS_BOOL_FIELDS: tuple[str, ...] = (
@@ -68,3 +83,16 @@ SETTINGS_CHANGE_COOLDOWN_SECONDS: float = 0.5
 # they were host, before succession runs). Same decay-style concept as the
 # in-match turn timeout, just a flat window here rather than tiered.
 PLAYER_DISCONNECT_GRACE_SECONDS: int = 30
+
+# ---------------------------------------------------------------------------
+# Match join codes
+# ---------------------------------------------------------------------------
+
+# Crockford's base32 alphabet: digits + uppercase letters, minus I, L, O, U.
+# I/L and O/0 are the classic mixups when a code is read aloud, texted, or
+# typed from memory; U is dropped too (Crockford drops it to avoid spelling
+# anything crude by accident). 32 symbols, so still a clean power of two.
+JOIN_CODE_ALPHABET: str = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+JOIN_CODE_LENGTH: int = 6
+# 32**6 ≈ 1.07 billion possible codes — comfortably large for a
+# collision-checked-with-retry, human-shareable code.

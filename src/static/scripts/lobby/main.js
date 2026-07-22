@@ -3,6 +3,19 @@
 // editing lives in profile.js, match create/join in matches.js, the
 // friends list in friends.js, and music in music.js.
 (() => {
+	// Invite link support: ?join=CODE drops whoever opens it straight into
+	// that match once they've picked login/signup/guest at the auth gate.
+	// Read + strip immediately (before the overlay even opens) so a reload
+	// mid-auth doesn't re-trigger it, and so the code doesn't linger visibly
+	// in the address bar longer than it needs to.
+	const params = new URLSearchParams(window.location.search);
+	let pendingInviteCode = params.get('join');
+	if (pendingInviteCode) {
+		params.delete('join');
+		const cleanQuery = params.toString();
+		window.history.replaceState(null, '', window.location.pathname + (cleanQuery ? `?${cleanQuery}` : ''));
+	}
+
 	const lobbyContainer = document.getElementById('lobby-container');
 	const displayNameEl = document.getElementById('display-name');
 	const btnAuthAction = document.getElementById('btn-auth-action');
@@ -61,7 +74,22 @@
 		lobbyContainer.classList.remove('hidden');
 
 		// Rejoin an in-progress tribunal session (sidebar) if one was stored.
-		TribunalLobby.checkForActiveSession();
+		// Only fall through to the invite code if the player isn't already
+		// seated somewhere — an existing session always wins.
+		const rejoined = await TribunalLobby.checkForActiveSession();
+		const inviteCode = pendingInviteCode;
+		pendingInviteCode = null;
+		if (!rejoined && inviteCode) {
+			const result = await Matches.joinByCode(inviteCode, { silent: true });
+			if (result.ok) {
+				Toast.show(ToastMessages.matches.joinedViaLink(), 'success');
+			} else if (result.errorCode) {
+				// Bad/expired code, match already started, or it filled up
+				// while they were at the auth gate — land them in the plain
+				// lobby instead of a dead end.
+				Toast.show(ToastMessages.fromErrorCode(result.errorCode), 'warning');
+			}
+		}
 	}
 
 	// First gate: blocking, must resolve to guest/login/signup

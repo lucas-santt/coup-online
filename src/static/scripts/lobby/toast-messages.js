@@ -47,6 +47,8 @@ const ToastMessages = {
 		cannotStartTooFew: () => 'Cannot start — need at least two officers seated.',
 		codeCopied: () => 'Join code copied.',
 		codeCopyFailed: () => 'Could not copy the join code.',
+		linkCopied: () => 'Invite link copied — anyone who opens it joins this match directly.',
+		joinedViaLink: () => 'Invite link accepted. Seated in the tribunal.',
 	},
 
 	// Generic, connection-level failure — distinct from the API

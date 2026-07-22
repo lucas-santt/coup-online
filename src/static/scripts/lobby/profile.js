@@ -268,7 +268,9 @@
 			}
 
 			const data = await res.json();
-			avatarImg.src = `${data.avatar_url}?t=${Date.now()}`;
+			const bustedUrl = `${data.avatar_url}?t=${Date.now()}`;
+			avatarImg.src = bustedUrl;
+			LobbySession.patch({ avatarUrl: bustedUrl });
 			Toast.show('Portrait updated.', 'success');
 		} catch (err) {
 			Toast.show(ToastMessages.connectionLost(), 'network');

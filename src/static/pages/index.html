@@ -293,7 +293,7 @@
 					<div class="join-view active" id="join-view-code">
 						<div class="input-group">
 							<label for="input-match-code" class="input-label">Tribunal Code</label>
-							<input type="text" id="input-match-code" placeholder="e.g. 7F2K9" maxlength="8">
+							<input type="text" id="input-match-code" placeholder="e.g. 7F3K9M" maxlength="6">
 						</div>
 						<button class="medieval-btn primary-btn" id="btn-join-code">Join Tribunal</button>
 					</div>
@@ -370,7 +370,7 @@
 		<div class="tribunal-sidebar-chrome corner-brackets">
 			<header class="tribunal-sidebar-header">
 				<div class="tribunal-code-block">
-					<span class="tribunal-join-code" id="tribunal-join-code">Code: —————</span>
+					<span class="tribunal-join-code" id="tribunal-join-code">Code: ——————</span>
 					<button type="button" class="tribunal-icon-btn" id="btn-copy-join-code" title="Copy join code" aria-label="Copy join code">
 						<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 							<rect x="8" y="8" width="11" height="11" stroke="currentColor" stroke-width="1.5"/>
@@ -495,6 +495,13 @@
 				<section class="match-settings-section">
 					<button type="button" class="renaissance-link match-advanced-toggle" id="btn-toggle-advanced-rules" aria-expanded="false">
 						Advanced / House Rules
+						<span class="advanced-rules-warning-icon hidden" id="advanced-rules-warning-icon" title="This lobby has house rules in play, this might affect game balance." aria-hidden="true">
+							<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 3L21 20H3L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/>
+								<line x1="12" y1="9" x2="12" y2="14.5" stroke="currentColor" stroke-width="1.8"/>
+								<rect x="11.15" y="16" width="1.7" height="1.7" fill="currentColor"/>
+							</svg>
+						</span>
 					</button>
 					<div class="match-advanced-rules hidden" id="match-advanced-rules">
 						<p class="match-advanced-rules-note">These settings affect game balance, so straying far from the defaults may make matches unfun or hard to finish.</p>
@@ -517,6 +524,25 @@
 						<div class="config-row config-row-numeric">
 							<label for="setting-foreign-aid-coins">Foreign Aid Coins</label>
 							<input type="number" id="setting-foreign-aid-coins" data-setting="foreign_aid_coins" min="0" max="10" step="1" value="2">
+						</div>
+						<!-- Character rules, grouped and ordered per the official
+						     game's character order: Duke, Assassin, Captain,
+						     Ambassador (Contessa has no numeric rule to tune). -->
+						<div class="config-row config-row-numeric">
+							<label for="setting-tax-coins">Tax Coins (Duke)</label>
+							<input type="number" id="setting-tax-coins" data-setting="tax_coins" min="0" max="10" step="1" value="3">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-assassinate-cost">Assassinate Cost (Assassin)</label>
+							<input type="number" id="setting-assassinate-cost" data-setting="assassinate_cost" min="1" max="20" step="1" value="3">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-extort-coins">Extort Coins (Captain)</label>
+							<input type="number" id="setting-extort-coins" data-setting="extort_coins" min="0" max="10" step="1" value="2">
+						</div>
+						<div class="config-row config-row-numeric">
+							<label for="setting-exchange-cards">Exchange Cards (Ambassador)</label>
+							<input type="number" id="setting-exchange-cards" data-setting="exchange_draw_cards" min="1" max="5" step="1" value="2">
 						</div>
 					</div>
 				</section>
@@ -541,7 +567,7 @@
 	     before main.js: it calls LobbySession and Friends.load(). -->
 	<script src="/static/scripts/lobby/session.js"></script>
 	<script src="/static/scripts/lobby/profile.js"></script>
-	<script src="/static/scripts/lobby/tribunal-lobby.js?v=4"></script>
+	<script src="/static/scripts/lobby/tribunal-lobby.js?v=5"></script>
 	<script src="/static/scripts/lobby/matches.js"></script>
 	<script src="/static/scripts/lobby/friends.js"></script>
 	<script src="/static/scripts/lobby/music.js"></script>

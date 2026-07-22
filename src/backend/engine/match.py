@@ -6,10 +6,14 @@ from backend.engine.deck import Deck
 DEFAULT_BASE_CARDS = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
 ALL_ACTIONS = ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]
 
-# Not currently a lobby-configurable setting (settings.js has no
-# assassinate_cost field), kept as a named constant instead of a bare "3"
-# so it's at least legible, rather than silently invented as a new setting.
+# Now a lobby-configurable setting (constants.MATCH_SETTINGS_SCHEMA
+# "assassinate_cost"); kept as a named default here too so this constructor
+# still has a sane value if instantiated without going through a lobby's
+# MatchSettings row.
 DEFAULT_ASSASSINATE_COST = 3
+DEFAULT_EXTORT_COINS = 2
+DEFAULT_TAX_COINS = 3
+DEFAULT_EXCHANGE_DRAW_CARDS = 2
 
 
 class Match:
@@ -22,6 +26,9 @@ class Match:
         assassinate_cost: int = DEFAULT_ASSASSINATE_COST,
         income_coins: int = 1,
         foreign_aid_coins: int = 2,
+        extort_coins: int = DEFAULT_EXTORT_COINS,
+        tax_coins: int = DEFAULT_TAX_COINS,
+        exchange_draw_cards: int = DEFAULT_EXCHANGE_DRAW_CARDS,
         reformation: bool = False,
         declared_coup: bool = False,
         declared_assassinate: bool = False,
@@ -38,16 +45,20 @@ class Match:
 
         # Ruleset values, provided by the lobby's MatchSettings rather than
         # hardcoded. coup_cost/forced_coup_threshold/assassinate_cost drive
-        # get_options() below; income_coins/foreign_aid_coins are threaded
-        # through and stored for when action resolution (currently stubbed
-        # out in process_event's "action_declared" branch) actually applies
-        # coin gains — nothing to wire them into yet, but they shouldn't
-        # need to be re-threaded later either.
+        # get_options() below; income_coins/foreign_aid_coins/extort_coins/
+        # tax_coins/exchange_draw_cards are threaded through and stored for
+        # when action resolution (currently stubbed out in process_event's
+        # "action_declared" branch) actually applies coin gains/exchange
+        # draws — nothing to wire them into yet, but they shouldn't need to
+        # be re-threaded later either.
         self.coup_cost = coup_cost
         self.forced_coup_threshold = forced_coup_threshold
         self.assassinate_cost = assassinate_cost
         self.income_coins = income_coins
         self.foreign_aid_coins = foreign_aid_coins
+        self.extort_coins = extort_coins
+        self.tax_coins = tax_coins
+        self.exchange_draw_cards = exchange_draw_cards
         self.reformation = reformation
         self.declared_coup = declared_coup
         self.declared_assassinate = declared_assassinate

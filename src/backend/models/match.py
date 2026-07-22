@@ -117,6 +117,10 @@ class MatchSettings(SQLModel, table=True):
 	forced_coup_threshold: int = constants.MATCH_SETTINGS_SCHEMA["forced_coup_threshold"]["default"]
 	income_coins: int = constants.MATCH_SETTINGS_SCHEMA["income_coins"]["default"]
 	foreign_aid_coins: int = constants.MATCH_SETTINGS_SCHEMA["foreign_aid_coins"]["default"]
+	assassinate_cost: int = constants.MATCH_SETTINGS_SCHEMA["assassinate_cost"]["default"]
+	extort_coins: int = constants.MATCH_SETTINGS_SCHEMA["extort_coins"]["default"]
+	tax_coins: int = constants.MATCH_SETTINGS_SCHEMA["tax_coins"]["default"]
+	exchange_draw_cards: int = constants.MATCH_SETTINGS_SCHEMA["exchange_draw_cards"]["default"]
 
 
 def validate_settings_patch(settings: MatchSettings, patch: dict) -> dict:

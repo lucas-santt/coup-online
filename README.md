@@ -81,7 +81,7 @@ coup
 
 Or:
 ```sh
-uvicorn backend.main:app --app-dir src --host 0.0.0.0 --port 8000 --reload
+uvicorn backend.main:app --app-dir src --host 0.0.0.0 --port 8000 --reload --reload-dir src
 ```
 
 ### Open server

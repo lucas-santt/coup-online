@@ -61,7 +61,7 @@ async def guest(
     if not session_guest:
         name = _generate_guest_username(session)
         session_guest = Player(
-            username=name, password="", is_guest=True
+            username=name, password="", is_guest=True, displayname=name
         )
 
         add_to_db(session_guest, session)

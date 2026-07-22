@@ -209,18 +209,18 @@
 		});
 	});
 
-	btnJoinCode.addEventListener('click', async () => {
-		if (tribunalBlocksMatchFlow()) return;
-
-		const codeInput = document.getElementById('input-match-code');
-		const code = codeInput.value.trim();
+	/** Shared by the manual "join by code" button and the ?join= invite-link
+	 * auto-join in main.js. `silent` suppresses the in-progress/requirement
+	 * toasts (main.js shows its own success/failure toast instead once this
+	 * resolves) but errors are always reported back via errorCode either way. */
+	async function joinByCode(rawCode, { silent = false } = {}) {
+		const code = (rawCode || '').trim().toUpperCase();
 		if (!code) {
-			Toast.show(ToastMessages.matches.codeRequired(), 'warning');
-			return;
+			if (!silent) Toast.show(ToastMessages.matches.codeRequired(), 'warning');
+			return { ok: false, errorCode: null };
 		}
 
-		btnJoinCode.disabled = true;
-		Toast.show(ToastMessages.matches.seeking(code), 'info');
+		if (!silent) Toast.show(ToastMessages.matches.seeking(code), 'info');
 
 		try {
 			const res = await fetch(LOBBY_SETTINGS.endpoints.matches.joinByCode, {
@@ -231,21 +231,31 @@
 			});
 
 			if (!res.ok) {
-				Toast.show(await ToastMessages.fromResponse(res), 'error');
-				return;
+				const errorCode = await readErrorCode(res);
+				if (!silent) Toast.show(ToastMessages.fromErrorCode(errorCode), 'error');
+				return { ok: false, errorCode };
 			}
 
 			const data = await res.json();
 			togglePanel(null);
 			TribunalLobby.enter({
 				matchId: data.match_id,
-				joinCode: code.toUpperCase(),
+				joinCode: code,
 			});
+			return { ok: true, errorCode: null };
 		} catch (err) {
-			Toast.show(ToastMessages.connectionLost(), 'network');
-		} finally {
-			btnJoinCode.disabled = false;
+			if (!silent) Toast.show(ToastMessages.connectionLost(), 'network');
+			return { ok: false, errorCode: null };
 		}
+	}
+
+	btnJoinCode.addEventListener('click', async () => {
+		if (tribunalBlocksMatchFlow()) return;
+
+		const codeInput = document.getElementById('input-match-code');
+		btnJoinCode.disabled = true;
+		await joinByCode(codeInput.value);
+		btnJoinCode.disabled = false;
 	});
 
 	// =============================================
@@ -456,4 +466,6 @@
 	filterPlayers.addEventListener('change', renderMatchList);
 	filterVisibility.addEventListener('change', renderMatchList);
 	filterReformation.addEventListener('change', renderMatchList);
+
+	window.Matches = { joinByCode };
 })();

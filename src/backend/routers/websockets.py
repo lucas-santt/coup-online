@@ -3,7 +3,8 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
+from starlette.websockets import WebSocketState
 
 from backend import constants
 from backend.auth.required import RequiredRegisteredOrGuestDep
@@ -84,10 +85,32 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+def _as_utc(dt: datetime | None) -> datetime | None:
+	"""SQLite doesn't persist tzinfo, so a timezone-aware datetime we store
+	(everything here is written with datetime.now(UTC)) comes back naive
+	the next time it's loaded in a fresh Session — which is every WS
+	message, per _dispatch's `with Session(engine) as session:`. Comparing
+	that naive value against a fresh `datetime.now(UTC)` raises TypeError
+	("can't compare offset-naive and offset-aware datetimes"); reattaching
+	UTC here is safe since nothing in this file ever stores a naive or
+	non-UTC value. Also used when serializing timestamps to the wire, so
+	the ISO string carries an explicit offset instead of being ambiguous
+	to the client's Date parsing.
+	"""
+	if dt is None or dt.tzinfo is not None:
+		return dt
+	return dt.replace(tzinfo=UTC)
+
+
 class _WsError(Exception):
-	def __init__(self, error_code: ErrorCode, detail: str):
+	def __init__(self, error_code: ErrorCode, detail: str, **extra) -> None:
 		self.error_code = error_code
 		self.detail = detail
+		# Extra machine-readable fields merged into the error payload
+		# alongside error_code/detail — e.g. retry_after_ms on
+		# SETTINGS_ON_COOLDOWN, so the client can retry silently instead of
+		# just displaying `detail` as a dead-end error.
+		self.extra = extra
 		super().__init__(detail)
 
 
@@ -110,6 +133,10 @@ def _settings_payload(settings: MatchSettings) -> dict:
 		"forced_coup_threshold": settings.forced_coup_threshold,
 		"income_coins": settings.income_coins,
 		"foreign_aid_coins": settings.foreign_aid_coins,
+		"assassinate_cost": settings.assassinate_cost,
+		"extort_coins": settings.extort_coins,
+		"tax_coins": settings.tax_coins,
+		"exchange_draw_cards": settings.exchange_draw_cards,
 	}
 
 
@@ -117,6 +144,24 @@ def _links_for_match(session: Session, match_id: uuid.UUID) -> list[PlayerMatchL
 	return list(
 		session.exec(select(PlayerMatchLink).where(PlayerMatchLink.match_id == match_id)).all()
 	)
+
+
+def _player_out(match: Match, link: PlayerMatchLink, player: Player) -> dict:
+	grace_ends = None
+	if link.connection_status == PlayerConnectionStatus.DISCONNECTED and link.disconnected_at:
+		grace_ends = _as_utc(link.disconnected_at) + timedelta(seconds=constants.PLAYER_DISCONNECT_GRACE_SECONDS)
+	return {
+		"id": str(player.id),
+		"display_name": player.displayname or player.username,
+		"avatar_url": player.avatar_url,
+		"is_host": match.host_id == player.id,
+		"ready": link.ready,
+		"ready_forever": link.ready_forever,
+		"is_spectator": link.is_spectator,
+		"join_order": link.join_order,
+		"connection_status": link.connection_status,
+		"grace_period_ends_at": grace_ends.isoformat() if grace_ends else None,
+	}
 
 
 async def _send_snapshot(websocket: WebSocket, session: Session, match_id: uuid.UUID, local_player_id: uuid.UUID) -> None:
@@ -129,21 +174,7 @@ async def _send_snapshot(websocket: WebSocket, session: Session, match_id: uuid.
 		player = session.get(Player, link.player_id)
 		if not player:
 			continue
-		grace_ends = None
-		if link.connection_status == PlayerConnectionStatus.DISCONNECTED and link.disconnected_at:
-			grace_ends = link.disconnected_at + timedelta(seconds=constants.PLAYER_DISCONNECT_GRACE_SECONDS)
-		players_out.append({
-			"id": str(player.id),
-			"display_name": player.displayname,
-			"avatar_url": player.avatar_url,
-			"is_host": match.host_id == player.id,
-			"ready": link.ready,
-			"ready_forever": link.ready_forever,
-			"is_spectator": link.is_spectator,
-			"join_order": link.join_order,
-			"connection_status": link.connection_status,
-			"grace_period_ends_at": grace_ends.isoformat() if grace_ends else None,
-		})
+		players_out.append(_player_out(match, link, player))
 
 	await websocket.send_json({
 		"type": "state_snapshot",
@@ -159,10 +190,64 @@ async def _send_snapshot(websocket: WebSocket, session: Session, match_id: uuid.
 			"host_id": str(match.host_id) if match.host_id else None,
 			"players": players_out,
 			"settings": _settings_payload(settings),
-			"ping_cooldown_until": match.ping_cooldown_until.isoformat() if match.ping_cooldown_until else None,
+			"ping_cooldown_until": _as_utc(match.ping_cooldown_until).isoformat() if match.ping_cooldown_until else None,
 			"ping_count": match.ping_count,
 		},
 	})
+
+
+async def broadcast_player_joined(session: Session, match_id: uuid.UUID, player_id: uuid.UUID) -> None:
+	"""Tell everyone already connected that a new player just filled a
+	seat. The REST join endpoints (routers/matches.py, join by code or by
+	browsing) are what actually add the player to the match — they don't
+	open a socket themselves, so without this, nobody already in the
+	lobby ever learns a new player joined until they personally
+	reconnect. That's what was causing each client's roster to be frozen
+	at whatever it looked like the moment *they* connected: the host
+	(first to connect) never sees anyone who joined after; the second
+	player sees the host plus themselves, but not a third; and so on.
+	The frontend already has a handler for this message (tribunal-lobby.js
+	handlePlayerJoined) — it just never received one before now.
+	"""
+	match = session.get(Match, match_id)
+	link = session.get(PlayerMatchLink, (player_id, match_id))
+	player = session.get(Player, player_id)
+	if not match or not link or not player:
+		return
+	await manager.broadcast(match_id, {
+		"type": "player_joined",
+		"payload": {"player": _player_out(match, link, player)},
+	}, exclude_player=player_id)
+
+
+async def broadcast_player_profile_updated(session: Session, player_id: uuid.UUID) -> None:
+	"""Tell every match this player currently belongs to (waiting or
+	in-progress) that their display name/avatar changed.
+
+	Profile edits happen over the REST profile endpoints
+	(routers/profile.py), which have no socket of their own to push
+	through — without this, a display-name or avatar change only ever
+	reached the editing player's own tab (via that endpoint's response),
+	and never anyone else's, nor that tab's own tribunal sidebar (which
+	renders from `state.players`, not from LobbySession directly). See
+	handlePlayerProfileUpdated in tribunal-lobby.js for the client side.
+	"""
+	player = session.get(Player, player_id)
+	if not player:
+		return
+	rows = session.exec(
+		select(PlayerMatchLink, Match)
+		.join(Match, Match.id == PlayerMatchLink.match_id)
+		.where(PlayerMatchLink.player_id == player_id)
+		.where(col(Match.status).in_([MatchStatus.WAITING, MatchStatus.IN_PROGRESS]))
+	).all()
+	payload = {
+		"player_id": str(player_id),
+		"display_name": player.displayname or player.username,
+		"avatar_url": player.avatar_url,
+	}
+	for _, match in rows:
+		await manager.broadcast(match.id, {"type": "player_profile_updated", "payload": payload})
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +277,22 @@ def _reassign_host_if_needed(session: Session, match: Match) -> uuid.UUID | None
 	next_link = min(links, key=lambda l: l.join_order)
 	match.host_id = next_link.player_id
 	return next_link.player_id
+
+
+def _delete_match_if_empty(session: Session, match: Match) -> bool:
+	"""Once the last player leaves, there's nothing left to host — delete
+	the match (and its settings row) rather than leaving an empty,
+	host-less WAITING match sitting around. Previously this was left in
+	place with host_id cleared to None, which crashed the browse-list
+	endpoint (match.host.username on a match with no host) the next time
+	anyone looked for a match. Returns True if the match was deleted."""
+	if match.player_count > 0:
+		return False
+	settings = session.get(MatchSettings, match.id)
+	if settings:
+		session.delete(settings)
+	session.delete(match)
+	return True
 
 
 async def _push_start_availability(session: Session, match_id: uuid.UUID) -> None:
@@ -247,11 +348,13 @@ async def handle_update_settings(session: Session, websocket: WebSocket, match_i
 	# isn't meant to stop a host from making several distinct edits in
 	# quick succession, same cooldown shape as ping's, just much shorter.
 	now = datetime.now(UTC)
-	if match.settings_cooldown_until and now < match.settings_cooldown_until:
-		remaining = max(0.1, (match.settings_cooldown_until - now).total_seconds())
+	cooldown_until = _as_utc(match.settings_cooldown_until)
+	if cooldown_until and now < cooldown_until:
+		remaining = max(0.1, (cooldown_until - now).total_seconds())
 		raise _WsError(
 			ErrorCode.SETTINGS_ON_COOLDOWN,
 			f"Settings changes are on cooldown for {remaining:.1f}s.",
+			retry_after_ms=int(remaining * 1000) + 50,
 		)
 
 	patch = dict(payload.get("settings") or {})
@@ -379,8 +482,9 @@ async def handle_ping_unready(session: Session, websocket: WebSocket, match_id: 
 	_require_match_waiting(match)
 
 	now = datetime.now(UTC)
-	if match.ping_cooldown_until and now < match.ping_cooldown_until:
-		remaining = max(1, int((match.ping_cooldown_until - now).total_seconds()))
+	ping_cooldown_until = _as_utc(match.ping_cooldown_until)
+	if ping_cooldown_until and now < ping_cooldown_until:
+		remaining = max(1, int((ping_cooldown_until - now).total_seconds()))
 		raise _WsError(ErrorCode.PING_ON_COOLDOWN, f"Ping is on cooldown for {remaining}s.")
 
 	unready_ids = [
@@ -467,6 +571,10 @@ async def handle_start_match(session: Session, websocket: WebSocket, match_id: u
 		forced_coup_threshold=settings.forced_coup_threshold,
 		income_coins=settings.income_coins,
 		foreign_aid_coins=settings.foreign_aid_coins,
+		assassinate_cost=settings.assassinate_cost,
+		extort_coins=settings.extort_coins,
+		tax_coins=settings.tax_coins,
+		exchange_draw_cards=settings.exchange_draw_cards,
 		reformation=settings.reformation,
 		declared_coup=settings.declared_coup,
 		declared_assassinate=settings.declared_assassinate,
@@ -495,21 +603,36 @@ async def handle_leave(session: Session, websocket: WebSocket, match_id: uuid.UU
 	session.delete(link)
 	match.player_count = max(0, match.player_count - 1)
 	new_host_id = _reassign_host_if_needed(session, match)
-	session.add(match)
+	deleted = _delete_match_if_empty(session, match)
+	if not deleted:
+		session.add(match)
 	session.commit()
 
 	manager.cancel_grace_timer(match_id, player_id)
-	await manager.broadcast(match_id, {
-		"type": "player_left",
-		"payload": {"player_id": str(player_id), "new_host_id": str(new_host_id) if new_host_id else None},
-	}, exclude_player=player_id)
-	if new_host_id:
+	if not deleted:
 		await manager.broadcast(match_id, {
-			"type": "host_changed",
-			"payload": {"host_id": str(new_host_id), "reason": "left"},
+			"type": "player_left",
+			"payload": {"player_id": str(player_id), "new_host_id": str(new_host_id) if new_host_id else None},
 		}, exclude_player=player_id)
-	await _push_start_availability(session, match_id)
-	await websocket.close(code=1000)
+		if new_host_id:
+			await manager.broadcast(match_id, {
+				"type": "host_changed",
+				"payload": {"host_id": str(new_host_id), "reason": "left"},
+			}, exclude_player=player_id)
+		await _push_start_availability(session, match_id)
+
+	# The client's own leave() fires this same 'leave' message and then
+	# immediately closes its end of the socket without waiting for us —
+	# it doesn't rely on this server-initiated close for its own cleanup.
+	# So if the client already won that race, there's nothing to do here;
+	# attempting to close an already-closed socket raises a RuntimeError
+	# that isn't a normal disconnect and would otherwise crash the ASGI
+	# app after we've already committed the DB change and broadcast it.
+	if websocket.client_state == WebSocketState.CONNECTED:
+		try:
+			await websocket.close(code=1000)
+		except RuntimeError:
+			pass
 
 
 def _parse_target_id(payload: dict) -> uuid.UUID:
@@ -555,7 +678,7 @@ async def _dispatch(websocket: WebSocket, match_id: uuid.UUID, player_id: uuid.U
 			await websocket.send_json({
 				"type": "error",
 				"request_id": request_id,
-				"payload": {"error_code": e.error_code, "detail": e.detail},
+				"payload": {"error_code": e.error_code, "detail": e.detail, **e.extra},
 			})
 
 
@@ -613,8 +736,13 @@ async def _disconnect_grace_timeout(match_id: uuid.UUID, player_id: uuid.UUID) -
 		session.delete(link)
 		match.player_count = max(0, match.player_count - 1)
 		new_host_id = _reassign_host_if_needed(session, match)
-		session.add(match)
+		deleted = _delete_match_if_empty(session, match)
+		if not deleted:
+			session.add(match)
 		session.commit()
+
+	if deleted:
+		return
 
 	await manager.broadcast(match_id, {
 		"type": "player_left",
@@ -670,6 +798,10 @@ async def match_socket(
 		while True:
 			message = await websocket.receive_json()
 			await _dispatch(websocket, match_uuid, player.id, message)
+			if websocket.application_state != WebSocketState.CONNECTED:
+				# A handler (e.g. handle_leave) already closed this socket
+				# from our side — nothing left to receive.
+				break
 	except WebSocketDisconnect:
 		pass
 	finally:
