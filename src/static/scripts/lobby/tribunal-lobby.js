@@ -67,9 +67,17 @@ const TribunalLobby = (() => {
 	// value the server is about to silently override.
 	const BASE_CARD_TYPES = 5;
 
+	// character_copies tops out at 7 finite copies (see
+	// constants.MATCH_SETTINGS_SCHEMA) -- the <select> in index.html only
+	// lists 3-7 + inf. A deck that would need more than that to deal
+	// cards_per_player to every seat plus an exchange draw goes infinite
+	// (-1, drawn with replacement) instead of auto-bumping past 7.
+	const MAX_FINITE_CHARACTER_COPIES = 7;
+
 	function minCharacterCopiesFor(cardsPerPlayer, maxPlayers, exchangeDrawCards) {
 		const required = cardsPerPlayer * maxPlayers + exchangeDrawCards;
-		return Math.floor(required / BASE_CARD_TYPES) + 1;
+		const minCopies = Math.floor(required / BASE_CARD_TYPES) + 1;
+		return minCopies > MAX_FINITE_CHARACTER_COPIES ? -1 : minCopies;
 	}
 
 	// The fields tucked away inside the "Advanced / House Rules" fold. If
@@ -120,7 +128,13 @@ const TribunalLobby = (() => {
 	/** Builds the (initially hidden) asterisk markup once per settings
 	 * input, right inside that input's <label for="...">. Idempotent —
 	 * safe to call more than once, though it only ever needs to run at
-	 * module init since the form's inputs are static markup. */
+	 * module init since the form's inputs are static markup.
+	 *
+	 * Each marker's tooltip is wired to the same fixed-position mechanism
+	 * as #advanced-rules-warning-icon (see showFixedTooltip()/
+	 * hideFixedTooltip() below) rather than the shared .tribunal-tip::after
+	 * pseudo-element — it sits inside the same clipped #match-settings-form
+	 * scrolling container, so it needs to float outside it the same way. */
 	function ensureSettingDiffMarkers() {
 		document.querySelectorAll('#match-settings-form [data-setting]').forEach((input) => {
 			// Any player count is a legitimate choice — there's no "correct"
@@ -132,6 +146,10 @@ const TribunalLobby = (() => {
 			marker.className = 'setting-diff-asterisk tribunal-tip hidden';
 			marker.setAttribute('aria-hidden', 'true');
 			marker.textContent = '*';
+			marker.addEventListener('mouseenter', () => showFixedTooltip(marker));
+			marker.addEventListener('mouseleave', hideFixedTooltip);
+			marker.addEventListener('focus', () => showFixedTooltip(marker));
+			marker.addEventListener('blur', hideFixedTooltip);
 			label.appendChild(marker);
 		});
 	}
@@ -260,17 +278,21 @@ const TribunalLobby = (() => {
 	const pingAudio = document.getElementById('ping-cue');
 	if (pingAudio) pingAudio.src = PING_CUE_SRC();
 
-	// The house-rules warning icon's tooltip is rendered as a real,
-	// body-appended fixed-position element instead of the shared
-	// .tribunal-tip::after pseudo-element (see lobby-sidebar.css) — that
-	// icon sits inside the settings form's scrolling container
-	// (#match-settings-form, overflow-y: auto), and an absolutely-
-	// positioned pseudo-element there counts toward that container's
-	// scrollable overflow, which is exactly what was forcing a horizontal
-	// scrollbar. Positioned via JS on hover/focus so it floats completely
-	// outside that container instead. See #advanced-rules-warning-icon.
-	// tribunal-tip::after { content: none } in lobby-sidebar.css, which
-	// turns off the normal pseudo-element tooltip just for this icon.
+	// The house-rules warning icon's tooltip (and, via
+	// ensureSettingDiffMarkers() above, each settings-diff asterisk's) is
+	// rendered as a real, body-appended fixed-position element instead of
+	// the shared .tribunal-tip::after pseudo-element (see
+	// lobby-sidebar.css) — both sit inside the settings form's scrolling
+	// container (#match-settings-form, overflow-y: auto), and an
+	// absolutely-positioned pseudo-element there counts toward that
+	// container's scrollable overflow, which is what was clipping the
+	// asterisk's tip against the container's top edge and risked forcing a
+	// horizontal scrollbar for either one. Positioned via JS on
+	// hover/focus so it floats completely outside that container instead.
+	// See .setting-diff-asterisk.tribunal-tip::after,
+	// .advanced-rules-warning-icon.tribunal-tip::after { content: none }
+	// in lobby-sidebar.css, which turns off the normal pseudo-element
+	// tooltip for both.
 	let fixedTipEl = null;
 	function showFixedTooltip(anchor) {
 		if (!anchor?.dataset.tip) return;
@@ -853,8 +875,13 @@ const TribunalLobby = (() => {
 				el.checked = Boolean(s[key]);
 			} else if (key === 'character_copies') {
 				// Reverse of the -1 <-> 'inf' mapping in readSettingsFromForm —
-				// the <select> only has an 'inf' option, no '-1' one.
-				el.value = s[key] === -1 ? 'inf' : String(s[key]);
+				// the <select> only has an 'inf' option, no '-1' one. The
+				// <select> only lists 3-7; anything above that — e.g. the
+				// backend's cards_per_player/max_players/exchange_draw_cards
+				// auto-increase deciding a finite deck can't fit everyone,
+				// see constants.MATCH_SETTINGS_CROSS_FIELD_RULES — snaps to
+				// 'inf' rather than leaving the <select> blank.
+				el.value = (s[key] === -1 || s[key] > 7) ? 'inf' : String(s[key]);
 			} else {
 				el.value = String(s[key]);
 			}
@@ -1342,7 +1369,10 @@ const TribunalLobby = (() => {
 		const maxPlayersForCheck = maxPlayersRaw !== undefined ? Number(maxPlayersRaw) : state?.maxPlayers;
 		if (characterCopies > 0 && maxPlayersForCheck !== undefined) {
 			const minCopies = minCharacterCopiesFor(cardsPerPlayer, maxPlayersForCheck, exchangeDrawCards);
-			characterCopies = Math.max(characterCopies, minCopies);
+			// -1 here means "no finite count (up to the max of 7) fits" —
+			// force infinite rather than Math.max-ing against a sentinel
+			// that would otherwise just lose to any positive selection.
+			characterCopies = minCopies === -1 ? -1 : Math.max(characterCopies, minCopies);
 		}
 
 		return {

@@ -304,35 +304,28 @@
 	transform: translateX(-50%) translateY(0);
 }
 
-/* The settings-diff asterisk sits near the left edge of the scrollable
-   match-settings form (its overflow-y: auto forces overflow-x to clip too,
-   per spec, whenever it isn't also 'visible') — a centered tip would get
-   its left half cut off there. Anchor flush to the marker's own left edge
-   instead so it only ever grows rightward, over content rather than past
-   the container edge. */
-.setting-diff-asterisk.tribunal-tip::after {
-	left: 0;
-	transform: translateY(4px);
-}
-
-.setting-diff-asterisk.tribunal-tip:hover::after {
-	transform: translateY(0);
-}
-
-/* The house-rules warning icon's tooltip is rendered as a real,
-   body-appended fixed-position element (see .fixed-tribunal-tip below and
-   showFixedTooltip() in tribunal-lobby.js) instead of this pseudo-element —
-   it needs to float completely outside the settings form's scrolling
-   container so it can never grow that container's scrollable width, which
-   even a wrapped/anchored ::after here still risked doing. */
+/* Both the settings-diff asterisk and the house-rules warning icon sit
+   inside the settings form's scrolling container (#match-settings-form,
+   overflow-y: auto), and an absolutely-positioned ::after there counts
+   toward that container's scrollable overflow — that's what was clipping
+   the asterisk's tip against the container's top edge (and risked forcing
+   a scrollbar for either one). Both render their tooltip as a real,
+   body-appended fixed-position element instead (see .fixed-tribunal-tip
+   below and showFixedTooltip() in tribunal-lobby.js), positioned via JS so
+   it floats completely outside that container. This just turns off the
+   normal pseudo-element tooltip for both. */
+.setting-diff-asterisk.tribunal-tip::after,
 .advanced-rules-warning-icon.tribunal-tip::after {
 	content: none;
 }
 
-/* Fixed-position tooltip for the house-rules warning icon. Same look as
-   .tribunal-tip::after above, just positioned by JS (getBoundingClientRect)
-   instead of anchored via `position: relative` on an ancestor, since it's
-   appended straight to <body>. */
+/* Fixed-position tooltip shared by the settings-diff asterisk and the
+   house-rules warning icon. Same look as .tribunal-tip::after above, just
+   positioned by JS (getBoundingClientRect) instead of anchored via
+   `position: relative` on an ancestor, since it's appended straight to
+   <body>. max-width a bit wider than the ::after version above so short
+   phrases (e.g. "By default this is set to 5") wrap onto two lines
+   instead of four. */
 .fixed-tribunal-tip {
 	position: fixed;
 	transform: translate(-50%, -100%);
@@ -343,7 +336,7 @@
 	font-size: 0.72rem;
 	font-weight: 600;
 	letter-spacing: 0.2px;
-	max-width: 220px;
+	max-width: 260px;
 	white-space: normal;
 	border: 1px solid var(--color-orange);
 	box-shadow: var(--shadow-stamp-sm);
@@ -600,6 +593,14 @@
 		opacity: 1;
 		pointer-events: auto;
 		padding: 0;
+		/* Base .tribunal-sidebar-header above clips with overflow: hidden so
+		   the collapse animation has somewhere to hide the header. Once
+		   expanded, the join-code/copy-code tooltips (.tribunal-tip::after)
+		   pop up above this row and were getting clipped by that same
+		   leftover overflow: hidden -- .tribunal-code-block/.tribunal-
+		   player-meta below already reset this on expand, this one was
+		   just missed. */
+		overflow: visible;
 	}
 
 	.tribunal-sidebar.is-expanded .tribunal-code-block,

@@ -60,6 +60,19 @@
 	pointer-events: auto;
 }
 
+/*
+.primary-btn {
+	background: var(--color-orange);
+	border: 2px solid var(--color-ink);
+	color: var(--color-panel-light);
+}
+
+.primary-btn:hover {
+	background: var(--color-orange-dark);
+	border-color: var(--color-ink);
+}
+*/
+
 .primary-btn {
 	background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-dark) 100%);
 	border: 2px solid var(--color-orange);

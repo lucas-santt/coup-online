@@ -219,7 +219,10 @@ def validate_settings_patch(settings: MatchSettings, patch: dict, current_max_pl
 	# must be strictly bigger than what a match start would draw from it —
 	# cards_per_player to every seat, plus exchange_draw_cards for the first
 	# Ambassador/Inquisitor exchange. Auto-corrected rather than rejected,
-	# same "resulting values" pattern as the forced-coup check above.
+	# same "resulting values" pattern as the forced-coup check above. Past
+	# the schema's finite max (see constants.MATCH_SETTINGS_SCHEMA's
+	# "character_copies" entry), this snaps to -1 (infinite) instead of
+	# bumping past it -- mirrors tribunal-lobby.js's minCharacterCopiesFor().
 	resulting_copies = validated.get("character_copies", settings.character_copies)
 	resulting_cards_per_player = validated.get("cards_per_player", settings.cards_per_player)
 	resulting_exchange_draw = validated.get("exchange_draw_cards", settings.exchange_draw_cards)
@@ -231,6 +234,7 @@ def validate_settings_patch(settings: MatchSettings, patch: dict, current_max_pl
 		required_cards = resulting_cards_per_player * current_max_players + resulting_exchange_draw
 		min_copies = required_cards // BASE_CARD_TYPES + 1
 		if resulting_copies < min_copies:
-			validated["character_copies"] = min_copies
+			max_finite_copies = constants.MATCH_SETTINGS_SCHEMA["character_copies"]["max"]
+			validated["character_copies"] = -1 if min_copies > max_finite_copies else min_copies
 
 	return validated

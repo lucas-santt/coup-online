@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 	<title>Coup — Access Terminal</title>
 	<meta name="description" content="Open a new tribunal or join a rival's. The Coup access terminal.">
 
@@ -12,18 +12,18 @@
 
 	<link rel="icon" href="/static/assets/favicon.ico">
 	<!-- Split from a single lobby.css into per-component stylesheets. -->
-	<link rel="stylesheet" href="/static/styles/lobby/tokens.css">
-	<link rel="stylesheet" href="/static/styles/lobby/scroll.css">
-	<link rel="stylesheet" href="/static/styles/lobby/forms.css">
-	<link rel="stylesheet" href="/static/styles/lobby/buttons.css">
-	<link rel="stylesheet" href="/static/styles/lobby/toast.css">
-	<link rel="stylesheet" href="/static/styles/lobby/music-controls.css">
-	<link rel="stylesheet" href="/static/styles/lobby/auth-overlay.css">
-	<link rel="stylesheet" href="/static/styles/lobby/avatar-editor.css">
-	<link rel="stylesheet" href="/static/styles/lobby/lobby-shell.css">
-	<link rel="stylesheet" href="/static/styles/lobby/match-panels.css">
-	<link rel="stylesheet" href="/static/styles/lobby/lobby-sidebar.css">
-	<link rel="stylesheet" href="/static/styles/lobby/misc-panels.css">
+	<link rel="stylesheet" href="/static/styles/lobby/tokens.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/scroll.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/forms.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/buttons.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/toast.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/music-controls.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/auth-overlay.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/avatar-editor.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/lobby-shell.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/match-panels.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/lobby-sidebar.css?v=1">
+	<link rel="stylesheet" href="/static/styles/lobby/misc-panels.css?v=1">
 </head>
 <body>
 	<div class="surveillance-overlay"></div>
@@ -472,10 +472,8 @@
 							<option value="3">3 (standard)</option>
 							<option value="4">4</option>
 							<option value="5">5</option>
-							<option value="4">6</option>
-							<option value="5">7</option>
-							<option value="4">8</option>
-							<option value="5">9</option>
+							<option value="6">6</option>
+							<option value="7">7</option>
 							<option value="inf">∞ (unlimited)</option>
 						</select>
 					</div>
@@ -579,7 +577,7 @@
 	     before main.js: it calls LobbySession and Friends.load(). -->
 	<script src="/static/scripts/lobby/session.js"></script>
 	<script src="/static/scripts/lobby/profile.js"></script>
-	<script src="/static/scripts/lobby/tribunal-lobby.js?v=5"></script>
+	<script src="/static/scripts/lobby/tribunal-lobby.js?v=7"></script>
 	<script src="/static/scripts/lobby/matches.js"></script>
 	<script src="/static/scripts/lobby/friends.js"></script>
 	<script src="/static/scripts/lobby/music.js"></script>

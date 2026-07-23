@@ -78,11 +78,20 @@ html {
 		background-image:
 			linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%)),
 			url("../../assets/background-mobile.webp");
+		/* background-attachment: fixed is unreliable on mobile browsers --
+		   it can fail to extend across the full scrollable page height
+		   (leaving plain html/body background showing through further
+		   down) and interacts badly with the address bar/safe-area
+		   resizing that caused the white top/bottom bars. scroll behaves
+		   correctly there; the desktop parallax-style fixed attachment
+		   above is untouched. */
+		background-attachment: scroll;
 	}
 }
 
 body {
 	min-height: 100vh;
+	min-height: 100dvh;
 
 	font-family: var(--font-body);
 	font-size: 16px;

@@ -33,10 +33,11 @@ MATCH_SETTINGS_SCHEMA: dict[str, dict[str, int]] = {
 	"turn_timer": {"min": 5, "max": 120, "default": 30},
 	"challenge_timer": {"min": 3, "max": 30, "default": 5},
 	# -1 means "infinite" (frontend's 'inf'), translated at the API boundary.
-	# Max raised 10 -> 12: validate_settings_patch()'s cards_per_player/
-	# max_players/exchange_draw_cards cross-field rule (below) can now need
-	# to auto-bump this higher than 10 to keep the deck big enough.
-	"character_copies": {"min": -1, "max": 12, "default": 3},
+	# Capped at 7 finite copies -- validate_settings_patch()'s
+	# cards_per_player/max_players/exchange_draw_cards cross-field rule
+	# (below) snaps this to -1 (infinite) instead of auto-bumping past 7
+	# when a finite deck that size can't be dealt out.
+	"character_copies": {"min": -1, "max": 7, "default": 3},
 	"starting_coins": {"min": 0, "max": 10, "default": 2},
 	"coup_cost": {"min": 1, "max": 20, "default": 7},
 	"forced_coup_threshold": {"min": 1, "max": 20, "default": 10},
@@ -80,8 +81,9 @@ MATCH_SETTINGS_CROSS_FIELD_RULES: list[str] = [
 	# Not a rejection rule like the one above -- character_copies is
 	# auto-increased (never rejected) if the deck would otherwise be too
 	# small to deal cards_per_player cards to every seat plus cover an
-	# exchange draw. See validate_settings_patch().
-	"character_copies is auto-increased so character_copies * 5 > cards_per_player * max_players + exchange_draw_cards",
+	# exchange draw, up to the finite max of 7; beyond that it snaps to -1
+	# (infinite) instead of climbing past 7. See validate_settings_patch().
+	"character_copies is auto-increased (or set to infinite past 7) so character_copies * 5 > cards_per_player * max_players + exchange_draw_cards",
 ]
 
 # Ping (host -> unready players)

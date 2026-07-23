@@ -91,9 +91,23 @@
 		display: none;
 	}
 
-	/* Stay below the lobby shell so taps reach primary/header controls. */
+	/* Above .lobby-container (z-index: 45, see lobby-shell.css) -- with
+	   enough content in the active panel (e.g. a long match browse list)
+	   the lobby shell was growing tall enough to cover the widget outright,
+	   same underlying issue as the auth-overlay case below. Still well
+	   below the tribunal sidebar/backdrop and settings overlay (119+), so
+	   those still take priority over it as before. */
 	.music-controls {
-		z-index: 30;
+		z-index: 46;
+	}
+
+	/* ...except while the login/signup overlay (#auth-overlay, z-index: 50
+	   -- see .overlay-backdrop in scroll.css) is up: that overlay currently
+	   sits above the widget, so volume can't be touched before logging in.
+	   Scoped to #auth-overlay.visible so the normal below-lobby-shell
+	   stacking above is untouched once logged in / the overlay is closed. */
+	#auth-overlay.visible ~ .music-controls {
+		z-index: 60;
 	}
 }
 
