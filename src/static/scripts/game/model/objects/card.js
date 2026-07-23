@@ -1,6 +1,5 @@
-import { OBJ } from '../../settings.js';
+import { ANIM, OBJ } from '../../settings.js';
 import { Vector3 } from '../../utils/wglm-classes.js';
-import { easeInOutCurve, easeOutBackCurve } from '../../utils/wlgm-animation-curves.js';
 
 import RenderableObject from '../../view/renderableObject.js';
 
@@ -21,17 +20,15 @@ export default class Card extends RenderableObject {
 
     onMouseEnter(point) {
         this.animator.positionAnimation({
-            to: Vector3.add(this.position, new Vector3(0, 0.1, -0.06)),
-            animTime: 0.2,
-            animCurve: easeOutBackCurve
+            to: Vector3.add(this.position, ANIM.userCard.hover.positionOffset),
+            ...ANIM.userCard.hover.animSettings
         })
     }
 
     onMouseExit() {
         this.animator.positionAnimation({
             to: this.ogPos,
-            animTime: 0.2,
-            animCurve: easeOutBackCurve
+            ...ANIM.userCard.hover.animSettings
         })
     }
 }

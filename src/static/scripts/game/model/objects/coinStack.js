@@ -23,27 +23,24 @@ export default class CoinStack {
         this.#spentCoins.forEach(coin => coin.update(dt));
     }
 
-    buy() {
+    buy(numOfCoins = 1) {
         // Assumes caller checks length
-        const newCoin = this.#createCoin(OBJ.coinBank.middlePos, 0);
-        this.coins.push(newCoin);
-        
-        const stackPosition = this.#getCoinPosition(this.position, this.coins.length-1);
-        const animationConfig = {...ANIM.coinStack.buy, to: stackPosition }
-        newCoin.animator.positionAnimation(animationConfig);
+        const delayTime = ANIM.coinStack.delayBetweenCoins * 1000;
+        for(let i=0; i<numOfCoins; i++) {
+            setTimeout(() => {
+                this.#buyCoin();
+            }, delayTime * i);
+        };
     }
 
-    spend() {
+    spend(numOfCoins = 1) {
         // Assumes caller checks length
-        const spentCoin = this.coins.pop();
-        this.#spentCoins.add(spentCoin);
-
-        const animationConfig = {
-            ...ANIM.coinStack.spend,
-            to: OBJ.coinBank.middlePos,
-            callback: () => this.#spentCoins.delete(spentCoin)
+        const delayTime = ANIM.coinStack.delayBetweenCoins * 1000;
+        for(let i=0; i<numOfCoins; i++) {
+            setTimeout(() => {
+                this.#spendCoin();
+            }, delayTime * i)
         }
-        spentCoin.animator.positionAnimation(animationConfig);
     }
 
     getAllCoins() {
@@ -58,5 +55,50 @@ export default class CoinStack {
     #getCoinPosition(position, index) {
         const padding = new Vector3(0, index * this.#heightPadding, 0);
         return Vector3.add(position, padding);
+    }
+
+    #buyCoin() {
+        const newCoin = this.#createCoin(OBJ.coinBank.middlePos, 0);
+        this.coins.push(newCoin);
+        
+        const stackPosition = this.#getCoinPosition(this.position, this.coins.length-1);
+        const levitatePos = Vector3.add(
+            stackPosition, 
+            ANIM.coinStack.levitate.positionOffset
+        );
+
+        const animationConfig = {
+            ...ANIM.coinStack.buy, 
+            to: levitatePos,
+            callback: () => {
+                newCoin.animator.positionAnimation({
+                    ...ANIM.coinStack.levitate.animSettings,
+                    to: stackPosition
+                });
+            }
+        };
+        newCoin.animator.positionAnimation(animationConfig);
+    }
+
+    #spendCoin() {
+        const spentCoin = this.coins.pop();
+        this.#spentCoins.add(spentCoin);
+
+        const levitatePos = Vector3.add(
+            spentCoin.position, 
+            ANIM.coinStack.levitate.positionOffset
+        );
+
+        const animationConfig = {
+            ...ANIM.coinStack.levitate.animSettings,
+            to: levitatePos,
+            callback: () => {
+                spentCoin.animator.positionAnimation({
+                    ...ANIM.coinStack.spend,
+                    to: OBJ.coinBank.middlePos
+                })
+            }
+        }
+        spentCoin.animator.positionAnimation(animationConfig);
     }
 }

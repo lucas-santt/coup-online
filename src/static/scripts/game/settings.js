@@ -94,7 +94,7 @@ export const PLAYERS = {
     user: {
         pos: {
             coinStack: new Vector3( 0.55, -2.4, -1.6),
-            frontCard: new Vector3(-0.15, -2.2, -1.45),
+            frontCard: new Vector3(-0.15, -2.18, -1.45),
             backCard:  new Vector3( 0.15, -2.1, -1.39)
         },
         rot: {
@@ -130,6 +130,14 @@ export const PLAYERS = {
 
 export const ANIM = {
     coinStack: {
+        delayBetweenCoins: 0.2,
+        levitate: {
+            positionOffset: new Vector3(0.0, 0.2, 0.0),
+            animSettings: {
+                animTime: 0.2,
+                animCurve: wglmAnim.easeOutBackCurve
+            }
+        },
         buy: {
             animTime: 1.0,
             animCurve: wglmAnim.easeInOutCurve
@@ -138,5 +146,14 @@ export const ANIM = {
             animTime: 1.0,
             animCurve: wglmAnim.easeInOutCurve
         },
+    },
+    userCard: {
+        hover: {
+            positionOffset: new Vector3(0.0, 0.1, -0.06),
+            animSettings: {
+                animTime: 0.2,
+                animCurve: wglmAnim.easeOutBackCurve
+            }
+        }
     }
 }

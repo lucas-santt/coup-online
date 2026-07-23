@@ -77,6 +77,7 @@ uniform mediump sampler2D uTextureMap;
 out vec4 outColor;
 
 const float MIPMAP_PRECISION = 0.8;
+const float ALPHA_TOLERANCE = 0.6;
 
 void main() {
     // Manually generates mipmap precision by derivatives
@@ -84,6 +85,9 @@ void main() {
     vec2 dy = dFdx(vTexCoord) * MIPMAP_PRECISION;
 
     vec4 texColor = textureGrad(uTextureMap, vTexCoord, dx, dy);
+        
+    // Check alpha tolerance and discard if necessary
+    if(texColor.a < ALPHA_TOLERANCE) discard;
     outColor = texColor;
 }
 `
