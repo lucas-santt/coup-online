@@ -44,6 +44,8 @@ def _settings_out(settings: MatchSettings) -> dict:
 		"extort_coins": settings.extort_coins,
 		"tax_coins": settings.tax_coins,
 		"exchange_draw_cards": settings.exchange_draw_cards,
+		"time_bank_count": settings.time_bank_count,
+		"cards_per_player": settings.cards_per_player,
 	}
 
 

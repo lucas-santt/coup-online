@@ -286,7 +286,11 @@
 	font-weight: 600;
 	letter-spacing: 0.2px;
 	text-transform: none;
-	white-space: nowrap;
+	/* Shrink-to-fit up to max-width: short tips (join code, copy link)
+	   still size to their own content; longer ones wrap onto a second
+	   line here instead of forcing the settings panel wider. */
+	max-width: 220px;
+	white-space: normal;
 	border: 1px solid var(--color-orange);
 	box-shadow: var(--shadow-stamp-sm);
 	opacity: 0;
@@ -300,21 +304,57 @@
 	transform: translateX(-50%) translateY(0);
 }
 
-/* The settings-diff asterisk and house-rules warning icon both sit near
-   the left edge of the scrollable match-settings form (its overflow-y:
-   auto forces overflow-x to clip too, per spec, whenever it isn't also
-   'visible') — a centered tip would get its left half cut off there.
-   Anchor flush to the marker's own left edge instead so it only ever
-   grows rightward, over content rather than past the container edge. */
-.setting-diff-asterisk.tribunal-tip::after,
-.advanced-rules-warning-icon.tribunal-tip::after {
+/* The settings-diff asterisk sits near the left edge of the scrollable
+   match-settings form (its overflow-y: auto forces overflow-x to clip too,
+   per spec, whenever it isn't also 'visible') — a centered tip would get
+   its left half cut off there. Anchor flush to the marker's own left edge
+   instead so it only ever grows rightward, over content rather than past
+   the container edge. */
+.setting-diff-asterisk.tribunal-tip::after {
 	left: 0;
 	transform: translateY(4px);
 }
 
-.setting-diff-asterisk.tribunal-tip:hover::after,
-.advanced-rules-warning-icon.tribunal-tip:hover::after {
+.setting-diff-asterisk.tribunal-tip:hover::after {
 	transform: translateY(0);
+}
+
+/* The house-rules warning icon's tooltip is rendered as a real,
+   body-appended fixed-position element (see .fixed-tribunal-tip below and
+   showFixedTooltip() in tribunal-lobby.js) instead of this pseudo-element —
+   it needs to float completely outside the settings form's scrolling
+   container so it can never grow that container's scrollable width, which
+   even a wrapped/anchored ::after here still risked doing. */
+.advanced-rules-warning-icon.tribunal-tip::after {
+	content: none;
+}
+
+/* Fixed-position tooltip for the house-rules warning icon. Same look as
+   .tribunal-tip::after above, just positioned by JS (getBoundingClientRect)
+   instead of anchored via `position: relative` on an ancestor, since it's
+   appended straight to <body>. */
+.fixed-tribunal-tip {
+	position: fixed;
+	transform: translate(-50%, -100%);
+	padding: 0.35rem 0.55rem;
+	background: var(--color-ink);
+	color: var(--color-panel-light);
+	font-family: var(--font-body);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.2px;
+	max-width: 220px;
+	white-space: normal;
+	border: 1px solid var(--color-orange);
+	box-shadow: var(--shadow-stamp-sm);
+	opacity: 0;
+	pointer-events: none;
+	z-index: 500;
+	transition: opacity 0.12s ease;
+}
+
+.fixed-tribunal-tip.visible {
+	opacity: 1;
 }
 
 .tribunal-host-badge svg,
@@ -568,6 +608,12 @@
 		opacity: 1;
 		pointer-events: auto;
 		transform: translateX(0);
+		/* Base .tribunal-code-block below clips with overflow: hidden so the
+		   collapse animation (driven by max-width/opacity, not overflow) has
+		   somewhere to hide the code when collapsed. Once expanded it's
+		   visible content again, so the join-code/copy-link tooltips
+		   (.tribunal-tip::after) shouldn't still get clipped by it. */
+		overflow: visible;
 	}
 
 	.tribunal-sidebar.is-expanded .tribunal-player-meta,
@@ -742,6 +788,7 @@
 		opacity: 1;
 		pointer-events: auto;
 		transform: translateX(0);
+		overflow: visible;
 	}
 
 	.tribunal-sidebar.is-expanded .tribunal-player-slot {
@@ -863,15 +910,39 @@
 	align-items: center;
 }
 
-.match-settings-slider-row label {
+.match-settings-slider-row label,
+.match-settings-slider-label {
 	flex: 1;
 	min-width: 0;
+}
+
+/* Plain static text standing in for the row's <label> — used where the
+   live value display sits next to the slider itself rather than next to
+   the label text (see #setting-max-players-value / #setting-cards-per-
+   player-value), so there's nothing here for a <label for="..."> to point
+   at. Same typography as .config-row label:first-child (match-panels.css)
+   so it reads identically to every other row's label. */
+.match-settings-slider-label {
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.85rem;
+	letter-spacing: 0.5px;
+	color: var(--color-ink-muted);
 }
 
 .match-settings-slider {
 	flex: 1 1 160px;
 	max-width: 220px;
 	min-width: 120px;
+}
+
+.match-settings-slider-value {
+	flex-shrink: 0;
+	min-width: 1.6em;
+	text-align: right;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	color: var(--color-ink);
 }
 
 .match-settings-form.is-readonly input,

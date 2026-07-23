@@ -12,6 +12,14 @@ if TYPE_CHECKING:
 	from backend.models.player import Player
 
 
+# Number of distinct base character types (Ambassador, Assassin, Captain,
+# Contessa, Duke -- see engine.match.DEFAULT_BASE_CARDS). Duplicated here as
+# a plain int rather than importing engine.match, since it's a fixed
+# game-design constant, not a tunable setting, and models/ has no other
+# reason to depend on engine/.
+BASE_CARD_TYPES: int = 5
+
+
 class MatchStatus(StrEnum):
 	WAITING = "waiting"
 	IN_PROGRESS = "in_progress"
@@ -121,20 +129,34 @@ class MatchSettings(SQLModel, table=True):
 	extort_coins: int = constants.MATCH_SETTINGS_SCHEMA["extort_coins"]["default"]
 	tax_coins: int = constants.MATCH_SETTINGS_SCHEMA["tax_coins"]["default"]
 	exchange_draw_cards: int = constants.MATCH_SETTINGS_SCHEMA["exchange_draw_cards"]["default"]
+	time_bank_count: int = constants.MATCH_SETTINGS_SCHEMA["time_bank_count"]["default"]
+	cards_per_player: int = constants.MATCH_SETTINGS_SCHEMA["cards_per_player"]["default"]
 
 
-def validate_settings_patch(settings: MatchSettings, patch: dict) -> dict:
+def validate_settings_patch(settings: MatchSettings, patch: dict, current_max_players: int) -> dict:
 	"""Validates a partial `update_settings` payload against
 	constants.MATCH_SETTINGS_SCHEMA (min/max ints), the bool fields, and
-	bot_fill's allowed set, plus the forced_coup_threshold >= coup_cost
-	cross-field rule. Never trusts that client-side clamping happened —
-	that's a UX nicety only (see settings.js), this is the real gate.
+	bot_fill's allowed set, plus two cross-field rules: forced_coup_threshold
+	>= coup_cost (rejects the patch), and character_copies large enough to
+	deal cards_per_player cards to every seat plus an exchange draw (silently
+	bumps character_copies instead of rejecting). Never trusts that
+	client-side clamping happened — that's a UX nicety only (see settings.js
+	/ tribunal-lobby.js), this is the real gate.
+
+	current_max_players is the *resulting* max_players value for this patch
+	(the patch's own max_players if that field was touched, otherwise the
+	match's current value) — max_players lives on Match, not MatchSettings,
+	so unlike every other cross-field input here it can't be read off
+	`settings` and has to be passed in by the caller (handle_update_settings
+	in routers/websockets.py), which already has to resolve it separately
+	anyway (it's validated against the seated-player floor there, not here).
 
 	Returns a dict of {field: validated_value} for exactly the keys that
 	were touched (untouched keys are left alone, mirroring the frontend's
-	spread-merge `onSettingsChange` behavior). Raises ValueError naming
-	the offending field(s) on any failure; on failure nothing should be
-	applied by the caller.
+	spread-merge `onSettingsChange` behavior) -- plus character_copies if
+	the deck-size rule above had to bump it, even if it wasn't in the
+	original patch. Raises ValueError naming the offending field(s) on any
+	failure; on failure nothing should be applied by the caller.
 	"""
 	if not patch:
 		return {}
@@ -192,5 +214,23 @@ def validate_settings_patch(settings: MatchSettings, patch: dict) -> dict:
 	)
 	if resulting_forced_coup < resulting_coup_cost:
 		raise ValueError("forced_coup_threshold must be >= coup_cost.")
+
+	# Deck-size rule: the deck (character_copies * BASE_CARD_TYPES cards)
+	# must be strictly bigger than what a match start would draw from it —
+	# cards_per_player to every seat, plus exchange_draw_cards for the first
+	# Ambassador/Inquisitor exchange. Auto-corrected rather than rejected,
+	# same "resulting values" pattern as the forced-coup check above.
+	resulting_copies = validated.get("character_copies", settings.character_copies)
+	resulting_cards_per_player = validated.get("cards_per_player", settings.cards_per_player)
+	resulting_exchange_draw = validated.get("exchange_draw_cards", settings.exchange_draw_cards)
+
+	# <= 0 is "infinite copies" (see engine/deck.py's Deck, and the -1
+	# translation at the API boundary) -- an infinite deck always has
+	# enough cards, so there's nothing to bump.
+	if resulting_copies > 0:
+		required_cards = resulting_cards_per_player * current_max_players + resulting_exchange_draw
+		min_copies = required_cards // BASE_CARD_TYPES + 1
+		if resulting_copies < min_copies:
+			validated["character_copies"] = min_copies
 
 	return validated

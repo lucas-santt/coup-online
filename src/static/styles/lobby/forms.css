@@ -83,6 +83,36 @@ select {
 	cursor: pointer;
 }
 
+/* Custom square radio button. appearance: none drops the native circular
+   control entirely; the box itself (not a separate sibling element, unlike
+   .toggle-switch's track) carries the checked-state fill, since a plain
+   flat square needs no extra layered markup to look right. */
+.radio-group input[type="radio"] {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	margin: 0;
+	background-color: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	border-radius: 0;
+	cursor: pointer;
+}
+
+.radio-group input[type="radio"]:checked {
+	background-color: var(--color-navy);
+	/* Inset ring (not a shadow blur) leaves a flat light square showing at
+	   the center — reads as a filled/selected state without a gradient or
+	   a soft drop shadow. */
+	box-shadow: inset 0 0 0 3px var(--color-panel-light);
+}
+
+.radio-group input[type="radio"]:focus-visible {
+	outline: 2px solid var(--color-orange);
+	outline-offset: 2px;
+}
+
 /* Toggle switch */
 .toggle-switch {
 	position: relative;

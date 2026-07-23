@@ -33,7 +33,10 @@ MATCH_SETTINGS_SCHEMA: dict[str, dict[str, int]] = {
 	"turn_timer": {"min": 5, "max": 120, "default": 30},
 	"challenge_timer": {"min": 3, "max": 30, "default": 5},
 	# -1 means "infinite" (frontend's 'inf'), translated at the API boundary.
-	"character_copies": {"min": -1, "max": 10, "default": 3},
+	# Max raised 10 -> 12: validate_settings_patch()'s cards_per_player/
+	# max_players/exchange_draw_cards cross-field rule (below) can now need
+	# to auto-bump this higher than 10 to keep the deck big enough.
+	"character_copies": {"min": -1, "max": 12, "default": 3},
 	"starting_coins": {"min": 0, "max": 10, "default": 2},
 	"coup_cost": {"min": 1, "max": 20, "default": 7},
 	"forced_coup_threshold": {"min": 1, "max": 20, "default": 10},
@@ -54,6 +57,14 @@ MATCH_SETTINGS_SCHEMA: dict[str, dict[str, int]] = {
 	# cross-field interaction belongs with the rest of match-start
 	# validation, not here.
 	"exchange_draw_cards": {"min": 1, "max": 5, "default": 2},
+	# Poker-style time bank tokens: how many times a player can dip into
+	# time_bank (above) before their per-turn timer just runs out. Distinct
+	# from time_bank itself, which is the duration of each one.
+	"time_bank_count": {"min": 0, "max": 10, "default": 2},
+	# House rule: how many cards make up a player's hand/influence count.
+	# Cross-checked against character_copies/max_players/exchange_draw_cards
+	# below, since a small deck can't necessarily support a bigger hand.
+	"cards_per_player": {"min": 1, "max": 5, "default": 2},
 }
 
 MATCH_SETTINGS_BOOL_FIELDS: tuple[str, ...] = (
@@ -66,6 +77,11 @@ MATCH_BOT_FILL_ALLOWED: tuple[str, ...] = ("none", "fill", "solo")
 
 MATCH_SETTINGS_CROSS_FIELD_RULES: list[str] = [
 	"forced_coup_threshold must be >= coup_cost",
+	# Not a rejection rule like the one above -- character_copies is
+	# auto-increased (never rejected) if the deck would otherwise be too
+	# small to deal cards_per_player cards to every seat plus cover an
+	# exchange draw. See validate_settings_patch().
+	"character_copies is auto-increased so character_copies * 5 > cards_per_player * max_players + exchange_draw_cards",
 ]
 
 # Ping (host -> unready players)

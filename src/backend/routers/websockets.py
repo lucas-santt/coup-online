@@ -137,6 +137,8 @@ def _settings_payload(settings: MatchSettings) -> dict:
 		"extort_coins": settings.extort_coins,
 		"tax_coins": settings.tax_coins,
 		"exchange_draw_cards": settings.exchange_draw_cards,
+		"time_bank_count": settings.time_bank_count,
+		"cards_per_player": settings.cards_per_player,
 	}
 
 
@@ -360,24 +362,32 @@ async def handle_update_settings(session: Session, websocket: WebSocket, match_i
 	patch = dict(payload.get("settings") or {})
 	max_players_patch = patch.pop("max_players", None)
 
-	try:
-		validated = validate_settings_patch(settings, patch)
-	except ValueError as e:
-		raise _WsError(ErrorCode.SETTINGS_INVALID, str(e))
-
+	# Resolved before validate_settings_patch(): its own deck-size
+	# cross-field rule (character_copies vs. cards_per_player * max_players)
+	# needs the *resulting* max_players value, and max_players lives on
+	# Match, not MatchSettings, so it can't be read off `settings` like
+	# every other cross-field input there.
+	resulting_max_players = match.max_players
 	if max_players_patch is not None:
 		seated = len(_links_for_match(session, match_id))
 		try:
-			new_max = int(max_players_patch)
+			resulting_max_players = int(max_players_patch)
 		except (TypeError, ValueError):
 			raise _WsError(ErrorCode.SETTINGS_INVALID, "max_players must be an integer.")
 		floor = max(seated, constants.MAX_PLAYERS_MIN)
-		if new_max < floor or new_max > constants.MAX_PLAYERS_MAX:
+		if resulting_max_players < floor or resulting_max_players > constants.MAX_PLAYERS_MAX:
 			raise _WsError(
 				ErrorCode.SETTINGS_INVALID,
 				f"max_players must be between {floor} and {constants.MAX_PLAYERS_MAX}.",
 			)
-		match.max_players = new_max
+
+	try:
+		validated = validate_settings_patch(settings, patch, resulting_max_players)
+	except ValueError as e:
+		raise _WsError(ErrorCode.SETTINGS_INVALID, str(e))
+
+	if max_players_patch is not None:
+		match.max_players = resulting_max_players
 		session.add(match)
 
 	for key, value in validated.items():

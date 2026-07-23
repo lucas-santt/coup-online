@@ -216,9 +216,7 @@
 		<header class="lobby-topbar corner-brackets">
 			<div class="profile-block">
 				<button class="avatar-btn" id="btn-avatar" title="Change portrait">
-					<!-- NOTE: /static/img/default-avatar.png doesn't exist yet,
-					     add a placeholder asset; CSS falls back to a plain square. -->
-					<img id="avatar-img" src="/static/img/default-avatar.png" alt="Profile picture">
+					<img id="avatar-img" src="/static/assets/avatars/default/placeholder.png" alt="Profile picture">
 				</button>
 				<input type="file" id="avatar-input" accept="image/*" hidden>
 
@@ -425,8 +423,9 @@
 				<section class="match-settings-section">
 					<h4 class="match-settings-heading">Mode</h4>
 					<div class="config-row match-settings-slider-row">
-						<label for="setting-max-players">Players <span id="setting-max-players-value">4</span></label>
+						<label for="setting-max-players" class="match-settings-slider-label">Player Count:</label>
 						<input type="range" id="setting-max-players" class="volume-slider match-settings-slider" data-setting="max_players" min="2" max="10" value="4" aria-label="Maximum players">
+						<span class="match-settings-slider-value" id="setting-max-players-value">4</span>
 					</div>
 					<div class="config-row">
 						<label class="switch-label" for="setting-reformation">Reformation DLC</label>
@@ -448,16 +447,20 @@
 				<section class="match-settings-section">
 					<h4 class="match-settings-heading">Timers</h4>
 					<div class="config-row">
-						<label for="setting-time-bank">Time Bank (sec)</label>
-						<input type="number" id="setting-time-bank" data-setting="time_bank" min="0" max="300" step="5" value="60">
+						<label for="setting-challenge-timer">Challenge Window (sec)</label>
+						<input type="number" id="setting-challenge-timer" data-setting="challenge_timer" min="3" max="30" step="1" value="5">
 					</div>
 					<div class="config-row">
 						<label for="setting-turn-timer">Turn Timer (sec)</label>
 						<input type="number" id="setting-turn-timer" data-setting="turn_timer" min="5" max="120" step="5" value="30">
 					</div>
 					<div class="config-row">
-						<label for="setting-challenge-timer">Challenge Window (sec)</label>
-						<input type="number" id="setting-challenge-timer" data-setting="challenge_timer" min="3" max="30" step="1" value="5">
+						<label for="setting-time-bank-count">Time Banks</label>
+						<input type="number" id="setting-time-bank-count" data-setting="time_bank_count" min="0" max="10" step="1" value="2">
+					</div>
+					<div class="config-row">
+						<label for="setting-time-bank">Time Bank Time (sec)</label>
+						<input type="number" id="setting-time-bank" data-setting="time_bank" min="0" max="300" step="5" value="60">
 					</div>
 				</section>
 
@@ -469,6 +472,10 @@
 							<option value="3">3 (standard)</option>
 							<option value="4">4</option>
 							<option value="5">5</option>
+							<option value="4">6</option>
+							<option value="5">7</option>
+							<option value="4">8</option>
+							<option value="5">9</option>
 							<option value="inf">∞ (unlimited)</option>
 						</select>
 					</div>
@@ -543,6 +550,11 @@
 						<div class="config-row config-row-numeric">
 							<label for="setting-exchange-cards">Exchange Cards (Ambassador)</label>
 							<input type="number" id="setting-exchange-cards" data-setting="exchange_draw_cards" min="1" max="5" step="1" value="2">
+						</div>
+						<div class="config-row match-settings-slider-row">
+							<span class="match-settings-slider-label">Cards per Player:</span>
+							<input type="range" id="setting-cards-per-player" class="volume-slider match-settings-slider" data-setting="cards_per_player" min="1" max="5" value="2" aria-label="Cards per player">
+							<span class="match-settings-slider-value" id="setting-cards-per-player-value">2</span>
 						</div>
 					</div>
 				</section>

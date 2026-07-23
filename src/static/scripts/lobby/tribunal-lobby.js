@@ -55,7 +55,22 @@ const TribunalLobby = (() => {
 		extort_coins: 2,
 		tax_coins: 3,
 		exchange_draw_cards: 2,
+		time_bank_count: 2,
+		cards_per_player: 2,
 	});
+
+	// 5 base character types (Ambassador, Assassin, Captain, Contessa, Duke)
+	// -- mirrors backend/models/match.py's BASE_CARD_TYPES. Used by
+	// minCharacterCopiesFor() below, the frontend's best-effort mirror of
+	// validate_settings_patch()'s deck-size cross-field rule; the backend
+	// check is the real gate, this is only here so the form doesn't show a
+	// value the server is about to silently override.
+	const BASE_CARD_TYPES = 5;
+
+	function minCharacterCopiesFor(cardsPerPlayer, maxPlayers, exchangeDrawCards) {
+		const required = cardsPerPlayer * maxPlayers + exchangeDrawCards;
+		return Math.floor(required / BASE_CARD_TYPES) + 1;
+	}
 
 	// The fields tucked away inside the "Advanced / House Rules" fold. If
 	// any of these has been pushed off its standard value, a warning icon
@@ -73,6 +88,7 @@ const TribunalLobby = (() => {
 		'assassinate_cost',
 		'extort_coins',
 		'exchange_draw_cards',
+		'cards_per_player',
 	];
 
 	function hasNonDefaultAdvancedSettings(settings) {
@@ -107,7 +123,9 @@ const TribunalLobby = (() => {
 	 * module init since the form's inputs are static markup. */
 	function ensureSettingDiffMarkers() {
 		document.querySelectorAll('#match-settings-form [data-setting]').forEach((input) => {
-			if (!input.id) return;
+			// Any player count is a legitimate choice — there's no "correct"
+			// default to flag, so max_players never gets a marker at all.
+			if (!input.id || input.dataset.setting === 'max_players') return;
 			const label = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
 			if (!label || label.querySelector('.setting-diff-asterisk')) return;
 			const marker = document.createElement('span');
@@ -119,20 +137,20 @@ const TribunalLobby = (() => {
 	}
 
 	/** settingsSource is either state.settings (committed) or the live
-	 * output of readSettingsFromForm() (mid-edit) — either way, everything
-	 * except max_players lives there; max_players itself is tracked
-	 * separately (state.maxPlayers / the max-players input), hence the
-	 * dedicated maxPlayersValue param. */
-	function refreshSettingDiffMarkers(settingsSource, maxPlayersValue) {
-		const defaults = { ...DEFAULT_SETTINGS(), max_players: LOBBY_SETTINGS.match?.defaultMaxPlayers ?? 4 };
+	 * output of readSettingsFromForm() (mid-edit). max_players is excluded
+	 * entirely (see ensureSettingDiffMarkers above) — there's no marker for
+	 * it to refresh. */
+	function refreshSettingDiffMarkers(settingsSource) {
+		const defaults = DEFAULT_SETTINGS();
 		document.querySelectorAll('#match-settings-form [data-setting]').forEach((input) => {
 			const key = input.dataset.setting;
+			if (key === 'max_players') return;
 			const defaultValue = defaults[key];
 			if (defaultValue === undefined || !input.id) return;
 			const marker = document.querySelector(`label[for="${CSS.escape(input.id)}"] .setting-diff-asterisk`);
 			if (!marker) return;
 
-			const currentValue = key === 'max_players' ? maxPlayersValue : settingsSource[key];
+			const currentValue = settingsSource[key];
 			const differs = currentValue !== undefined && currentValue !== defaultValue;
 			marker.classList.toggle('hidden', !differs);
 			marker.setAttribute('aria-hidden', String(!differs));
@@ -238,8 +256,44 @@ const TribunalLobby = (() => {
 	const settingsSubtitle = document.getElementById('match-settings-subtitle');
 	const advancedRules = document.getElementById('match-advanced-rules');
 	const btnToggleAdvanced = document.getElementById('btn-toggle-advanced-rules');
+	const advancedWarningIcon = document.getElementById('advanced-rules-warning-icon');
 	const pingAudio = document.getElementById('ping-cue');
 	if (pingAudio) pingAudio.src = PING_CUE_SRC();
+
+	// The house-rules warning icon's tooltip is rendered as a real,
+	// body-appended fixed-position element instead of the shared
+	// .tribunal-tip::after pseudo-element (see lobby-sidebar.css) — that
+	// icon sits inside the settings form's scrolling container
+	// (#match-settings-form, overflow-y: auto), and an absolutely-
+	// positioned pseudo-element there counts toward that container's
+	// scrollable overflow, which is exactly what was forcing a horizontal
+	// scrollbar. Positioned via JS on hover/focus so it floats completely
+	// outside that container instead. See #advanced-rules-warning-icon.
+	// tribunal-tip::after { content: none } in lobby-sidebar.css, which
+	// turns off the normal pseudo-element tooltip just for this icon.
+	let fixedTipEl = null;
+	function showFixedTooltip(anchor) {
+		if (!anchor?.dataset.tip) return;
+		if (!fixedTipEl) {
+			fixedTipEl = document.createElement('div');
+			fixedTipEl.className = 'fixed-tribunal-tip';
+			document.body.appendChild(fixedTipEl);
+		}
+		fixedTipEl.textContent = anchor.dataset.tip;
+		const rect = anchor.getBoundingClientRect();
+		fixedTipEl.style.left = `${rect.left + rect.width / 2}px`;
+		fixedTipEl.style.top = `${rect.top - 8}px`;
+		fixedTipEl.classList.add('visible');
+	}
+	function hideFixedTooltip() {
+		fixedTipEl?.classList.remove('visible');
+	}
+	if (advancedWarningIcon) {
+		advancedWarningIcon.addEventListener('mouseenter', () => showFixedTooltip(advancedWarningIcon));
+		advancedWarningIcon.addEventListener('mouseleave', hideFixedTooltip);
+		advancedWarningIcon.addEventListener('focus', () => showFixedTooltip(advancedWarningIcon));
+		advancedWarningIcon.addEventListener('blur', hideFixedTooltip);
+	}
 
 	// A native range input keeps the drag "captured" even once the pointer
 	// leaves it, so releasing outside the settings box still resolves the
@@ -727,6 +781,22 @@ const TribunalLobby = (() => {
 		sidebar?.setAttribute('aria-hidden', visible ? 'false' : 'true');
 	}
 
+	/** Keeps a range input's --fill custom property (the filled portion of
+	 * the track, see .volume-slider in music-controls.css) and its adjacent
+	 * live-value display in sync with the input's current value. Shared by
+	 * every slider row in the settings form (max players, cards per player)
+	 * rather than duplicated per-slider, since they're all the same
+	 * min/max/value -> percentage arithmetic. */
+	function updateSliderFill(el, valueEl) {
+		if (!el) return;
+		const min = Number(el.min);
+		const max = Number(el.max);
+		const val = Number(el.value);
+		const pct = max > min ? ((val - min) / (max - min)) * 100 : 100;
+		el.style.setProperty('--fill', `${pct}%`);
+		if (valueEl) valueEl.textContent = el.value;
+	}
+
 	function syncSettingsForm() {
 		if (!state || !settingsForm) return;
 		const s = state.settings;
@@ -751,11 +821,7 @@ const TribunalLobby = (() => {
 			maxPlayersEl.max = String(maxCap);
 			maxPlayersEl.value = String(state.maxPlayers);
 			maxPlayersEl.disabled = !canEdit;
-			const pct = maxCap > minCap
-				? ((state.maxPlayers - minCap) / (maxCap - minCap)) * 100
-				: 100;
-			maxPlayersEl.style.setProperty('--fill', `${pct}%`);
-			if (maxPlayersValueEl) maxPlayersValueEl.textContent = String(state.maxPlayers);
+			updateSliderFill(maxPlayersEl, maxPlayersValueEl);
 		}
 
 		const map = {
@@ -764,6 +830,7 @@ const TribunalLobby = (() => {
 			time_bank: 'setting-time-bank',
 			turn_timer: 'setting-turn-timer',
 			challenge_timer: 'setting-challenge-timer',
+			time_bank_count: 'setting-time-bank-count',
 			character_copies: 'setting-char-copies',
 			declared_coup: 'setting-declared-coup',
 			declared_assassinate: 'setting-declared-assassinate',
@@ -776,6 +843,7 @@ const TribunalLobby = (() => {
 			extort_coins: 'setting-extort-coins',
 			tax_coins: 'setting-tax-coins',
 			exchange_draw_cards: 'setting-exchange-cards',
+			cards_per_player: 'setting-cards-per-player',
 		};
 
 		Object.entries(map).forEach(([key, id]) => {
@@ -791,6 +859,9 @@ const TribunalLobby = (() => {
 				el.value = String(s[key]);
 			}
 			el.disabled = !canEdit;
+			if (el.type === 'range') {
+				updateSliderFill(el, document.getElementById(`${id}-value`));
+			}
 		});
 
 		// Forced-coup threshold can never sit below the cost of a coup (the
@@ -809,7 +880,7 @@ const TribunalLobby = (() => {
 			advancedWarningIcon.setAttribute('aria-hidden', String(!showWarning));
 		}
 
-		refreshSettingDiffMarkers(s, state.maxPlayers);
+		refreshSettingDiffMarkers(s);
 	}
 
 	function renderPlayers() {
@@ -839,7 +910,7 @@ const TribunalLobby = (() => {
 				continue;
 			}
 
-			const avatarSrc = player.avatarUrl || '/static/img/default-avatar.png';
+			const avatarSrc = player.avatarUrl || '/static/assets/avatars/default/placeholder.png';
 			const effectivelyReady = playerIsEffectivelyReady(player);
 			const showKick = canHost && !matchLive && player.id !== state.localPlayerId;
 			const showPromote = canHost && !matchLive && !player.isHost
@@ -1248,11 +1319,31 @@ const TribunalLobby = (() => {
 		const extortCoins = Number(document.getElementById('setting-extort-coins')?.value ?? 2);
 		const taxCoins = Number(document.getElementById('setting-tax-coins')?.value ?? 3);
 		const exchangeDrawCards = Number(document.getElementById('setting-exchange-cards')?.value ?? 2);
+		const timeBankCount = Number(document.getElementById('setting-time-bank-count')?.value ?? 2);
+		const cardsPerPlayer = Number(document.getElementById('setting-cards-per-player')?.value ?? 2);
 
 		// Forced-coup threshold must never sit below the cost of a coup,
 		// so clamp here to keep the form from submitting a contradictory pair.
 		const forcedCoupRaw = Number(document.getElementById('setting-forced-coup-threshold')?.value ?? 10);
 		const forcedCoupThreshold = Math.max(coupCost, forcedCoupRaw);
+
+		// -1 is the wire/engine representation of "infinite" (see
+		// constants.MATCH_SETTINGS_SCHEMA) — translated right here, at
+		// the DOM boundary, so nothing downstream (diffing against
+		// state.settings, the outgoing patch, validate_settings_patch)
+		// ever sees the string 'inf' and rejects it as a non-integer.
+		let characterCopies = copiesRaw === 'inf' ? -1 : Number(copiesRaw);
+
+		// Best-effort mirror of validate_settings_patch()'s deck-size
+		// cross-field rule — the backend check is the real gate (see
+		// models/match.py), this is only here so the form doesn't show a
+		// value the server is about to silently override. Skipped for an
+		// infinite deck (characterCopies <= 0), which always has enough cards.
+		const maxPlayersForCheck = maxPlayersRaw !== undefined ? Number(maxPlayersRaw) : state?.maxPlayers;
+		if (characterCopies > 0 && maxPlayersForCheck !== undefined) {
+			const minCopies = minCharacterCopiesFor(cardsPerPlayer, maxPlayersForCheck, exchangeDrawCards);
+			characterCopies = Math.max(characterCopies, minCopies);
+		}
 
 		return {
 			reformation: document.getElementById('setting-reformation')?.checked ?? false,
@@ -1260,12 +1351,8 @@ const TribunalLobby = (() => {
 			time_bank: Number(document.getElementById('setting-time-bank')?.value ?? 60),
 			turn_timer: Number(document.getElementById('setting-turn-timer')?.value ?? 30),
 			challenge_timer: Number(document.getElementById('setting-challenge-timer')?.value ?? 5),
-			// -1 is the wire/engine representation of "infinite" (see
-			// constants.MATCH_SETTINGS_SCHEMA) — translated right here, at
-			// the DOM boundary, so nothing downstream (diffing against
-			// state.settings, the outgoing patch, validate_settings_patch)
-			// ever sees the string 'inf' and rejects it as a non-integer.
-			character_copies: copiesRaw === 'inf' ? -1 : Number(copiesRaw),
+			time_bank_count: timeBankCount,
+			character_copies: characterCopies,
 			declared_coup: document.getElementById('setting-declared-coup')?.checked ?? false,
 			declared_assassinate: document.getElementById('setting-declared-assassinate')?.checked ?? false,
 			starting_coins: startingCoins,
@@ -1277,6 +1364,7 @@ const TribunalLobby = (() => {
 			extort_coins: extortCoins,
 			tax_coins: taxCoins,
 			exchange_draw_cards: exchangeDrawCards,
+			cards_per_player: cardsPerPlayer,
 			max_players: maxPlayersRaw !== undefined ? Number(maxPlayersRaw) : undefined,
 		};
 	}
@@ -1374,15 +1462,8 @@ const TribunalLobby = (() => {
 	// live on 'input' below, purely cosmetic, no settings commit.
 	settingsForm?.addEventListener('change', handleSettingsFormUpdate);
 	settingsForm?.addEventListener('input', (e) => {
-		const maxPlayersEl = document.getElementById('setting-max-players');
-		const maxPlayersValueEl = document.getElementById('setting-max-players-value');
-		if (e.target === maxPlayersEl) {
-			if (maxPlayersValueEl) maxPlayersValueEl.textContent = maxPlayersEl.value;
-			const minCap = Number(maxPlayersEl.min);
-			const maxCap = Number(maxPlayersEl.max);
-			const val = Number(maxPlayersEl.value);
-			const pct = maxCap > minCap ? ((val - minCap) / (maxCap - minCap)) * 100 : 100;
-			maxPlayersEl.style.setProperty('--fill', `${pct}%`);
+		if (e.target.classList?.contains('match-settings-slider') && e.target.id) {
+			updateSliderFill(e.target, document.getElementById(`${e.target.id}-value`));
 		}
 
 		// forced_coup_threshold must never sit below coup_cost. Nudge it up
@@ -1411,7 +1492,7 @@ const TribunalLobby = (() => {
 			advancedWarningIcon.setAttribute('aria-hidden', String(!showWarning));
 		}
 
-		refreshSettingDiffMarkers(formSettings, formSettings.max_players);
+		refreshSettingDiffMarkers(formSettings);
 	});
 
 	/** navigator.clipboard requires a secure context (https, or localhost) —
