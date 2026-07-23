@@ -1,17 +1,17 @@
-import { GEOMETRY } from '../settings.js';
-
 import Scene from '../model/scene.js'
 import Renderer from '../view/renderer.js'
 
 /**
  * Game's main class, responsable for its initialization
- *  and loop. Manages model and view tasks
+ *  and loop. Manages model/view tasks and gets input but
+ *  does not handle them
  *
  * @export
  * @class App
  * @typedef {App}
  */
 export default class App {
+    #canvas;
     #scene; #renderer;
     #deltaTime = 0; #lastFrame = 0;
     #keys = {};
@@ -24,13 +24,14 @@ export default class App {
      * @param {WebGL2RenderingContext} gl 
      */
     constructor(canvas, gl) {
-        this.#genCircleVertices();
         this.#initGL(gl);
-
-        this.#scene = new Scene();
-        this.#renderer = new Renderer(canvas, gl);
+        this.#canvas = canvas;
         this.#lastFrame = Date.now();
 
+        // Create renderer always before creating the scene
+        this.#renderer = new Renderer(canvas, gl);
+        this.#scene = new Scene();
+        
         document.addEventListener('mousemove', (e) => this.#mouseMovementCallback(e));
         document.addEventListener('keydown', (e) => this.#keys[e.code] = true);
         document.addEventListener('keyup', (e) => this.#keys[e.code] = false);
@@ -66,36 +67,17 @@ export default class App {
     }
 
     #mouseMovementCallback(event) {
+        let mouseX = event.offsetX;
+        let mouseY = event.offsetY;
+
         let xOffset = event.movementX;
         let yOffset = -event.movementY;
 
         this.#scene.camera.processMouseMovement(xOffset, yOffset);
-    }
 
-    /** 
-     * Generates circle vertices, indices and uv coordinates
-     * 
-     * @private
-     */
-    #genCircleVertices() {
-        GEOMETRY.circle.vertices = [];
-        GEOMETRY.circle.indices = [];
-        
-        // Generating vertices and uv coordinates
-        GEOMETRY.circle.vertices.push(0.0, 0.0, 0.0, 0.5, 0.5);
-        for(let i=0; i< GEOMETRY.circle.resolution; i++) {
-            const angle = (i/GEOMETRY.circle.resolution) * Math.PI * 2;
-
-            const u = 0.5 + (Math.cos(angle) * 0.5);
-            const v = 0.5 - (Math.sin(angle) * 0.5);
-
-            GEOMETRY.circle.vertices.push(Math.cos(angle), Math.sin(angle), 0.0, u, v);
-        };
-
-        // Generating indices
-        for(let i=1; i <= GEOMETRY.circle.resolution; i++) {
-            const nexVert = (i==GEOMETRY.circle.resolution) ? 1 : i + 1;
-            GEOMETRY.circle.indices.push(0, i, nexVert);
-        };
+        const mouseX_norm = (2.0 * mouseX) / this.#canvas.width - 1.0;
+        const mouseY_norm = 1.0 - (2.0 * mouseY) / this.#canvas.height; // Y Inverted
+        const aspectRatio = this.#canvas.width / this.#canvas.height; 
+        this.#scene.processMouseOver(mouseX_norm, mouseY_norm, aspectRatio);
     }
 }
