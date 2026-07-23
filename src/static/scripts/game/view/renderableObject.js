@@ -85,6 +85,7 @@ export default class RenderableObject {
     }
 
     onMouseEnter(point) { }
+    onMouseOver(point) { }
     onMouseExit() { }
 
     /**

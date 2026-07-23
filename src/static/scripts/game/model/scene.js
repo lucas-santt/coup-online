@@ -87,6 +87,9 @@ export default class Scene {
             if(this.#hoveredObject) this.#hoveredObject.onMouseExit();
             if(closestObj) closestObj.onMouseEnter(closestHit);
             this.#hoveredObject = closestObj;
+        } else {
+            if(this.#hoveredObject) 
+                this.#hoveredObject.onMouseOver(closestHit);
         }
     }
 

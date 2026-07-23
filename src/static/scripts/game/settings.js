@@ -33,7 +33,7 @@ export const GEOMETRY = {
     },
     coin: {
         resolution: 24
-    }
+    }   
 }
 
 export const ASSETS = {
@@ -94,7 +94,7 @@ export const PLAYERS = {
     user: {
         pos: {
             coinStack: new Vector3( 0.55, -2.4, -1.6),
-            frontCard: new Vector3(-0.15, -2.1, -1.4),
+            frontCard: new Vector3(-0.15, -2.2, -1.45),
             backCard:  new Vector3( 0.15, -2.1, -1.39)
         },
         rot: {

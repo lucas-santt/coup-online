@@ -30,6 +30,11 @@ export function smoothstep(t) {
     return clampedT * clampedT * (3 - 2 * clampedT);
 }
 
+export function easeOutBack(x, c = 1.7) {
+    const c3 = c + 1;
+    return 1 + c3 * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+}
+
 export function radians(degreesAngle) {
     return degreesAngle * (Math.PI / 180.0);
 }
