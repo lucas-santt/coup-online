@@ -530,7 +530,7 @@
 .tribunal-ready-btn.is-ready {
 	background: var(--color-navy);
 	color: var(--color-panel-light);
-	border-color: var(--color-orange);
+	border-color: var(--color-light-blue);
 }
 
 /* Desktop: right-edge dock, expand on hover (or .is-expanded for a11y) */

@@ -87,7 +87,7 @@ MATCH_SETTINGS_CROSS_FIELD_RULES: list[str] = [
 ]
 
 # Ping (host -> unready players)
-PING_COOLDOWN_SECONDS: int = 10
+PING_COOLDOWN_SECONDS: int = 5
 PING_LOUDER_EVERY_NTH: int = 5
 
 # Settings changes (host, mid-lobby). Short — this isn't meant to stop a
