@@ -2,6 +2,7 @@ from typing import Annotated
 import uuid
 
 from fastapi import Depends, Cookie
+from sqlmodel import select
 
 from backend.database import SessionDep
 from backend.models.player import Player
@@ -23,8 +24,17 @@ def optional_registered_or_guest(
     if not session_token:
         return None
 
-    player_id = uuid.UUID(session_token)
-    player = session.get(Player, player_id)
+    try:
+        token = uuid.UUID(session_token)
+    except ValueError:
+        return None
+
+    # Looked up by session_token, not by id: the cookie no longer *is*
+    # the player id, it's a per-login token that gets rotated out from
+    # under any previous cookie the moment a fresh login/guest/signup
+    # happens (see routers/auth.py). A stale cookie simply matches no
+    # one here, rather than remaining a valid credential forever.
+    player = session.exec(select(Player).where(Player.session_token == token)).first()
     return player
 
 

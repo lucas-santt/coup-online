@@ -1,3 +1,4 @@
+import random
 import uuid
 
 from fastapi import APIRouter, HTTPException, Response, status
@@ -12,8 +13,59 @@ from backend.models.player import (
     PlayerSignup,
 )
 
+from backend.errors import ErrorCode, api_error
+from backend.routers.websockets import lobby_manager
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+
+def _issue_session(player: Player, session: SessionDep, response: Response) -> None:
+    """Rotates the player's session_token and writes the new value to the
+    cookie. Whatever cookie was issued before this call now matches no
+    row in the DB (see optional_registered_or_guest), which is what makes
+    a fresh login/guest/signup immediately invalidate any device that was
+    previously using this account, rather than the old `str(player.id)`
+    cookie scheme where every device shared the same permanent credential.
+    """
+    player.session_token = uuid.uuid4()
+    add_to_db(player, session)
+    response.set_cookie(key="session_token", value=str(player.session_token), path="/")
+
+
+_GUEST_ADJECTIVES = [
+    "Loyal", "Dutiful", "Obedient", "Vigilant", "Compliant", "Faithful",
+    "Diligent", "Steadfast", "Exemplary", "Model", "Grateful", "Devoted",
+    "Unwavering", "Orderly", "Disciplined", "Patriotic", "Correct",
+    "Approved", "Sanctioned", "Registered", "Cooperative", "Watchful",
+    "Industrious", "Uniform",
+]
+
+_GUEST_NOUNS = [
+    "Citizen", "Comrade", "Worker", "Subject", "Informant", "Inspector",
+    "Clerk", "Laborer", "Patriot", "Servant", "Cog", "Unit", "Operative",
+    "Functionary", "Registrant", "Applicant", "Denizen", "Cadre",
+]
+
+
+def _generate_guest_username(session: SessionDep) -> str:
+    while True:
+        adjective = random.choice(_GUEST_ADJECTIVES)
+        noun = random.choice(_GUEST_NOUNS)
+        candidate = f"{adjective}{noun}"
+
+        taken = session.exec(
+            select(Player).where(Player.username == candidate)
+        ).first()
+        if not taken:
+            return candidate
+
+        # Collision (or repeat visitor): append a ministry-issued number
+        candidate = f"{adjective}{noun} Nº{random.randint(0, 9999):04d}"
+        taken = session.exec(
+            select(Player).where(Player.username == candidate)
+        ).first()
+        if not taken:
+            return candidate
 
 @router.post("/guest")
 async def guest(
@@ -21,16 +73,18 @@ async def guest(
 ) -> dict[str, str]:
 
     if not session_guest:
-        name = f"guest-{uuid.uuid4().hex}"
+        name = _generate_guest_username(session)
         session_guest = Player(
-            username=name, password="", password_confirmation="", is_guest=True
+            username=name, password="", is_guest=True, displayname=name
         )
 
         add_to_db(session_guest, session)
+        _issue_session(session_guest, session, response)
 
-        response.set_cookie(key="session_token", value=str(session_guest.id))
-
-    return {"message": "Successfully entered as guest."}
+    return {
+        "message": "Successfully entered as guest.",
+        "username": session_guest.username,
+    }
 
 
 @router.post("/login")
@@ -47,14 +101,21 @@ async def login(
     db_player: Player | None = session.exec(query).first()
 
     if not db_player:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Wrong username or password."
+        raise api_error(
+            status.HTTP_404_NOT_FOUND,
+            ErrorCode.INVALID_CREDENTIALS,
+            "Wrong username or password.",
         )
 
     db_player.status = PlayerStatus.ONLINE
-    add_to_db(db_player, session)
 
-    response.set_cookie(key="session_token", value=str(db_player.id))
+    # Boot whatever device is currently holding this account *before*
+    # rotating the token below — that rotation is what actually revokes
+    # the old device's cookie; this is just what tells it in real time,
+    # instead of leaving it to find out via a surprise 401 on its next
+    # request.
+    await lobby_manager.kick(db_player.id)
+    _issue_session(db_player, session, response)
 
     return {"message": "Successfully logged in"}
 
@@ -71,8 +132,10 @@ async def signup(
     db_player = session.exec(query).first()
 
     if db_player:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Username already exists."
+        raise api_error(
+            status.HTTP_409_CONFLICT,
+            ErrorCode.USERNAME_TAKEN,
+            "Username already exists.",
         )
 
     if session_guest:
@@ -85,8 +148,7 @@ async def signup(
         player = Player.model_validate(player_signup)
 
     add_to_db(player, session)
-
-    response.set_cookie(key="session_token", value=str(player.id))
+    _issue_session(player, session, response)
 
     return {"message": "Successfully signed up"}
 
@@ -99,6 +161,7 @@ async def logout(
 ) -> None:
     if session_player:
         session_player.status = PlayerStatus.OFFLINE
+        session_player.session_token = None
         add_to_db(session_player, session)
 
-    response.delete_cookie("session_token")
+    response.delete_cookie("session_token", path="/")

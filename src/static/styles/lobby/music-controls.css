@@ -5,23 +5,16 @@
 .music-controls {
 	position: fixed;
 	bottom: 22px;
-	right: 22px;
+	left: 22px;
 	z-index: 100;
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	background-color: rgba(244, 234, 212, 0.92);
-	border: 1px solid var(--color-gold-dark);
-	outline: 2px double var(--color-gold);
-	outline-offset: -3px;
-	border-radius: 30px;
+	background-color: var(--color-panel);
+	border: 1px solid var(--color-ink);
+	border-radius: 4px;
 	padding: 6px 12px 6px 8px;
-	box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-	transition: box-shadow 0.3s ease;
-}
-
-.music-controls:hover {
-	box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+	box-shadow: var(--shadow-stamp-sm);
 }
 
 .music-btn {
@@ -29,20 +22,19 @@
 	border: none;
 	cursor: pointer;
 	font-size: 1.3rem;
-	color: var(--color-leather-light);
+	color: var(--color-ink);
 	line-height: 1;
 	width: 28px;
 	height: 28px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	transition: color 0.2s ease, transform 0.2s ease;
+	transition: color 0.15s ease;
 	padding: 0;
 }
 
 .music-btn:hover {
-	color: var(--color-crimson);
-	transform: scale(1.15);
+	color: var(--color-navy);
 }
 
 .music-icon {
@@ -61,9 +53,8 @@
 	left: 50%;
 	width: 135%;
 	height: 2px;
-	background-color: var(--color-crimson);
+	background-color: var(--color-alert);
 	transform: translate(-50%, -50%) rotate(-45deg);
-	box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 	display: block;
 }
 
@@ -77,7 +68,7 @@
 	appearance: none;
 	width: 80px;
 	height: 4px;
-	background: linear-gradient(to right, var(--color-gold-dark) 0%, var(--color-gold-dark) var(--fill, 15%), #ccc var(--fill, 15%), #ccc 100%);
+	background: linear-gradient(to right, var(--color-navy) 0%, var(--color-navy) var(--fill, 15%), var(--color-panel-dim) var(--fill, 15%), var(--color-panel-dim) 100%);
 	border-radius: 2px;
 	outline: none;
 	cursor: pointer;
@@ -88,16 +79,42 @@
 	width: 14px;
 	height: 14px;
 	border-radius: 50%;
-	background: var(--color-crimson);
-	border: 2px solid var(--color-gold);
+	background: var(--color-panel-light);
+	border: 2px solid var(--color-ink);
 	cursor: pointer;
-	box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* Mobile: hide the floating widget while seated in a tribunal lobby —
+   the bottom-sheet sidebar already consumes that edge; desktop keeps it. */
+@media (max-width: 720px) {
+	body.in-tribunal .music-controls {
+		display: none;
+	}
+
+	/* Above .lobby-container (z-index: 45, see lobby-shell.css) -- with
+	   enough content in the active panel (e.g. a long match browse list)
+	   the lobby shell was growing tall enough to cover the widget outright,
+	   same underlying issue as the auth-overlay case below. Still well
+	   below the tribunal sidebar/backdrop and settings overlay (119+), so
+	   those still take priority over it as before. */
+	.music-controls {
+		z-index: 46;
+	}
+
+	/* ...except while the login/signup overlay (#auth-overlay, z-index: 50
+	   -- see .overlay-backdrop in scroll.css) is up: that overlay currently
+	   sits above the widget, so volume can't be touched before logging in.
+	   Scoped to #auth-overlay.visible so the normal below-lobby-shell
+	   stacking above is untouched once logged in / the overlay is closed. */
+	#auth-overlay.visible ~ .music-controls {
+		z-index: 60;
+	}
 }
 
 /* Responsiveness */
 @media (max-width: 480px) {
 	.music-controls {
 		bottom: 12px;
-		right: 12px;
+		left: 12px;
 	}
 }

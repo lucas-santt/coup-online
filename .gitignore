@@ -1,8 +1,10 @@
 
 # General
 
-# Ignore files starting with a double underscore
-__*
+
+# Personal ignores
+.hide*
+src.zip
 
 # VSCode
 .vscode/
@@ -35,3 +37,6 @@ htmlcov/
 
 # SQL
 *.db
+
+# Profile pictures
+src/static/assets/img/avatars/uploads/*.png

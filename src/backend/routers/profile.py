@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, File, UploadFile
 from backend.auth.required import RequiredRegisteredOrGuestDep
 from backend.settings import settings
 from backend.database import SessionDep, add_to_db
+from backend.routers.websockets import broadcast_player_profile_updated
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
@@ -14,13 +15,13 @@ router = APIRouter(prefix="/api/profile", tags=["profile"])
 async def me(player: RequiredRegisteredOrGuestDep) -> dict[str, str | bool | None]:
     return {
         "username": player.username,
-        "displayname": player.displayname,
+        "displayname": player.displayname or player.username,
         "avatar_url": player.avatar_url,
         "is_guest": player.is_guest,
     }
 
 
-@router.patch("/display-name")
+@router.patch("/displayname")
 async def set_displayname(
     displayname: Annotated[str, Body(embed=True)],
     session: SessionDep,
@@ -30,23 +31,24 @@ async def set_displayname(
 
     player.displayname = displayname
     add_to_db(player, session)
+    await broadcast_player_profile_updated(session, player.id)
     return {"displayname": player.displayname}
 
 
 @router.post("/avatar")
 async def set_avatar(
-    avatar: Annotated[UploadFile, File()],
-    session: SessionDep,
-    player: RequiredRegisteredOrGuestDep,
+	avatar: Annotated[UploadFile, File()],
+	session: SessionDep,
+	player: RequiredRegisteredOrGuestDep,
 ) -> dict[str, str]:
-    # TODO: Validate/Process file
+	filename = f"{player.id.hex}.png"
+	filepath = settings.avatar_upload_dir / filename
 
-    avatar_url = settings.avatar_upload_dir / f"{player.id.hex}.png"
+	with open(filepath, "wb+") as file:
+		shutil.copyfileobj(avatar.file, file)
 
-    with open(avatar_url.resolve(), "wb+") as file:
-        shutil.copyfileobj(avatar.file, file)
+	player.avatar_url = f"/static/assets/img/avatars/uploads/{filename}"
+	add_to_db(player, session)
+	await broadcast_player_profile_updated(session, player.id)
 
-    player.avatar_url = str(avatar_url)
-    add_to_db(player, session)
-
-    return {"avatar_url": player.avatar_url}
+	return {"avatar_url": player.avatar_url}

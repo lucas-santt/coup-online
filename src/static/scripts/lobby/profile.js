@@ -239,29 +239,65 @@
 
 	btnAvatarCancel.addEventListener('click', closeAvatarEditor);
 
-	btnAvatarConfirm.addEventListener('click', () => {
+	// btnAvatarConfirm handler, replacing the console.log + fake toast
+	btnAvatarConfirm.addEventListener('click', async () => {
 		const outSize = 280;
 		const outCanvas = document.createElement('canvas');
 		outCanvas.width = outSize;
 		outCanvas.height = outSize;
 
-		// Map the on-screen crop square back to the original image's
-		// own pixel coordinates (the stage is scaled by stageScale).
 		const sx = squareX / stageScale;
 		const sy = squareY / stageScale;
 		const sSize = squareSize / stageScale;
-
 		outCanvas.getContext('2d').drawImage(editImage, sx, sy, sSize, sSize, 0, 0, outSize, outSize);
 
-		avatarImg.src = outCanvas.toDataURL('image/png');
-		console.log(`Avatar Upload Requested: POST ${LOBBY_SETTINGS.endpoints.profile.avatar} | file: "${editFileName}"`);
-		Toast.show('Portrait updated.', 'success');
-		closeAvatarEditor();
-	});
+		const blob = await new Promise((resolve) => outCanvas.toBlob(resolve, 'image/png'));
+		const formData = new FormData();
+		formData.append('avatar', blob, editFileName);
 
+		try {
+			const res = await fetch(LOBBY_SETTINGS.endpoints.profile.avatar, {
+				method: 'POST',
+				credentials: 'same-origin',
+				body: formData,
+			});
+
+			if (!res.ok) {
+				Toast.show(await ToastMessages.fromResponse(res), 'warning');
+				return;
+			}
+
+			const data = await res.json();
+			const bustedUrl = `${data.avatar_url}?t=${Date.now()}`;
+			avatarImg.src = bustedUrl;
+			LobbySession.patch({ avatarUrl: bustedUrl });
+			Toast.show('Portrait updated.', 'success');
+		} catch (err) {
+			Toast.show(ToastMessages.connectionLost(), 'network');
+		} finally {
+			closeAvatarEditor();
+		}
+	});
+	
 	// =============================================
 	//  Header: Display Name (click-to-edit)
 	// =============================================
+
+	displayNameEl.addEventListener('click', startEditingName);
+	displayNameInput.addEventListener('blur', commitNameEdit);
+	btnEditName.addEventListener('click', startEditingName);
+	
+	displayNameInput.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			displayNameInput.blur();
+		}
+		if (e.key === 'Escape') {
+			displayNameInput.value = LobbySession.get().displayName;
+			displayNameInput.blur();
+		}
+	});
+
 	function startEditingName() {
 		const currentUser = LobbySession.get();
 		displayNameInput.value = currentUser.displayName;
@@ -272,7 +308,8 @@
 		displayNameInput.select();
 	}
 
-	function commitNameEdit() {
+	// commitNameEdit(), replacing the console.log line
+	async function commitNameEdit() {
 		const currentUser = LobbySession.get();
 		const newName = displayNameInput.value.trim();
 		displayNameInput.classList.add('hidden');
@@ -280,20 +317,24 @@
 
 		if (!newName || newName === currentUser.displayName) return;
 
-		LobbySession.patch({ displayName: newName });
-		displayNameEl.textContent = newName;
-		console.log(`Display Name Update: PATCH ${LOBBY_SETTINGS.endpoints.profile.displayName} | display_name: "${newName}"`);
-		Toast.show('Name updated.', 'success');
-	}
+		try {
+			const res = await fetch(LOBBY_SETTINGS.endpoints.profile.displayName, {
+				method: 'PATCH',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ displayname: newName }),
+			});
 
-	btnEditName.addEventListener('click', startEditingName);
-	displayNameEl.addEventListener('click', startEditingName);
-	displayNameInput.addEventListener('blur', commitNameEdit);
-	displayNameInput.addEventListener('keydown', (e) => {
-		if (e.key === 'Enter') displayNameInput.blur();
-		if (e.key === 'Escape') {
-			displayNameInput.value = LobbySession.get().displayName;
-			displayNameInput.blur();
+			if (!res.ok) {
+				Toast.show(await ToastMessages.fromResponse(res), 'warning');
+				return;
+			}
+
+			LobbySession.patch({ displayName: newName });
+			displayNameEl.textContent = newName;
+			Toast.show('Name updated.', 'success');
+		} catch (err) {
+			Toast.show(ToastMessages.connectionLost(), 'network');
 		}
-	});
+	}
 })();

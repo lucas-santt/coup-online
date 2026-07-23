@@ -1,6 +1,6 @@
 const LOBBY_SETTINGS = {
 	audio: {
-		defaultVolume: 0.20,
+		defaultVolume: 0.10,
 		blurVolumeMultiplier: 0.30,
 		fadeDefaultDurationMs: 200,
 		fadeFocusDurationMs: 200,
@@ -8,11 +8,36 @@ const LOBBY_SETTINGS = {
 	},
 	toast: {
 		autoDismissMs: 4500,
+		// Panopticon Deco icon set: geometric, single-color (currentColor),
+		// framed in the same square across all five so they read as one
+		// family. `network` gets a broken signal line instead of an X,
+		// to separate "the line went dead" from "you were refused".
 		icons: {
-			info: '📜',
-			success: '👑',
-			warning: '⚔️',
-			error: '🛡️',
+			info: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="1.5"/>
+				<circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/>
+				<circle cx="12" cy="12" r="1.4" fill="currentColor"/>
+			</svg>`,
+			success: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="1.5"/>
+				<path d="M7 12.5L10.5 16L17 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="square"/>
+			</svg>`,
+			warning: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M12 3L21 20H3L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/>
+				<line x1="12" y1="9" x2="12" y2="14.5" stroke="currentColor" stroke-width="1.8"/>
+				<rect x="11.15" y="16" width="1.7" height="1.7" fill="currentColor"/>
+			</svg>`,
+			error: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="1.5"/>
+				<line x1="7" y1="7" x2="17" y2="17" stroke="currentColor" stroke-width="1.8"/>
+				<line x1="17" y1="7" x2="7" y2="17" stroke="currentColor" stroke-width="1.8"/>
+			</svg>`,
+			network: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="1.5"/>
+				<line x1="7" y1="7" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.8"/>
+				<line x1="13.5" y1="13.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.8"/>
+				<line x1="6" y1="18" x2="18" y2="6" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>
+			</svg>`,
 		},
 	},
 	match: {
@@ -21,18 +46,45 @@ const LOBBY_SETTINGS = {
 		defaultMaxPlayers: 4,
 		nameMaxLength: 30,
 		passwordMaxLength: 50,
-		codeMaxLength: 8,
+		// backend generates join codes as 6 chars from a disambiguated
+		// 32-symbol alphabet (digits + uppercase, minus I/L/O/U) — see
+		// backend/constants.py JOIN_CODE_ALPHABET / JOIN_CODE_LENGTH.
+		codeMaxLength: 6,
 		searchMaxLength: 30,
+		pingCooldownMs: 5_000,
+		sessionStorageKey: 'coupe.activeTribunal',
+
+		// Every Nth ping (cumulative, per tribunal session) plays the
+		// louder cue instead of the normal one, e.g. as a nudge once
+		// polite pings keep getting ignored.
+		pingCueSrc: '/static/assets/audio/sfx/ping.wav',
+		pingCueLouderSrc: '/static/assets/audio/sfx/ping-louder.wav',
+		pingCueLouderEveryNth: 5,
 	},
 	displayName: {
 		maxLength: 20,
 	},
+	user: {
+		defaultAvatarUrl: '/static/assets/img/avatars/default/placeholder.png',
+	},
 	auth: {
+		// Mirrors backend/constants.py — keep these in sync manually,
+		// there's no shared source of truth between Python and JS here.
+		usernameMinLength: 3,
+		usernameMaxLength: 24,
+		usernamePattern: /^[a-zA-Z0-9_]+$/,
+
 		// bcrypt silently ignores input past 72 bytes, so capping here isn't
 		// just "avoid a huge request" — it keeps the password the user thinks
 		// they set from becoming a different, shorter one to the hasher.
-		usernameMaxLength: 24,
+		passwordMinLength: 3,
 		passwordMaxLength: 72,
+
+		// Flag only — "we were logged in last time the page loaded, so
+		// it's worth silently retrying before showing the auth gate"
+		// (see main.js). Distinct key from match.sessionStorageKey,
+		// which tracks a specific active tribunal session instead.
+		sessionStorageKey: 'coupe.hadSession',
 	},
 
 	// ============================================================
@@ -42,11 +94,17 @@ const LOBBY_SETTINGS = {
 	//  pattern landing/main.js uses for auth. The shapes below are
 	//  the intended contract for the FastAPI backend once these
 	//  routes exist, so both sides can build against them.
+	//
+	//  On failure, real endpoints return:
+	//    { detail: { error_code: string, detail: string } }
+	//  error_code is looked up in ToastMessages.errorCodes
+	//  (see toast-messages.js) to produce the shown message.
 	// ============================================================
 	endpoints: {
 		auth: {
 			guest: '/api/auth/guest',
 			// POST /api/auth/guest
+			// -> { message, username }  (username is backend-generated, e.g. "Guest-042817")
 
 			login: '/api/auth/login',
 			// POST /api/auth/login
@@ -107,6 +165,11 @@ const LOBBY_SETTINGS = {
 			// POST /api/matches/{match_id}/join
 			// body: { password: string | omitted (if public) }
 			// -> { match_id }
+
+			// --- Stage-2 lobby (stubs in tribunal-lobby.js; wire to WS later) ---
+			// removePlayer(playerId), promoteToHost(playerId),
+			// sendPingToUnready(), onSettingsChange(settings),
+			// leave / start / ready toggles, checkForActiveSession()
 		},
 
 		friends: {
