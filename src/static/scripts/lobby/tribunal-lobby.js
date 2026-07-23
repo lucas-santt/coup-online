@@ -10,10 +10,10 @@
 
 const TribunalLobby = (() => {
 	const STORAGE_KEY = () => LOBBY_SETTINGS.match.sessionStorageKey || 'coupe.activeTribunal';
-	const PING_COOLDOWN_MS = () => LOBBY_SETTINGS.match.pingCooldownMs || 10_000;
-	const PING_CUE_SRC = () => LOBBY_SETTINGS.match.pingCueSrc || '/static/assets/ping.wav';
-	const PING_CUE_LOUDER_SRC = () => LOBBY_SETTINGS.match.pingCueLouderSrc || '/static/assets/ping-louder.wav';
-	const PING_CUE_LOUDER_EVERY_NTH = () => LOBBY_SETTINGS.match.pingCueLouderEveryNth || 5;
+	const PING_COOLDOWN_MS = () => LOBBY_SETTINGS.match.pingCooldownMs;
+	const PING_CUE_SRC = () => LOBBY_SETTINGS.match.pingCueSrc;
+	const PING_CUE_LOUDER_SRC = () => LOBBY_SETTINGS.match.pingCueLouderSrc;
+	const PING_CUE_LOUDER_EVERY_NTH = () => LOBBY_SETTINGS.match.pingCueLouderEveryNth;
 
 	const CROWN_SVG = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 		<path d="M3 17L5.5 8L9.5 12L12 6L14.5 12L18.5 8L21 17H3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/>
@@ -707,6 +707,7 @@ const TribunalLobby = (() => {
 			try {
 				if (pingAudio) {
 					pingAudio.src = payload.louder ? PING_CUE_LOUDER_SRC() : PING_CUE_SRC();
+					console.log('pingAudio.src', pingAudio.src);
 					pingAudio.currentTime = 0;
 					pingAudio.play();
 				}
@@ -937,7 +938,7 @@ const TribunalLobby = (() => {
 				continue;
 			}
 
-			const avatarSrc = player.avatarUrl || '/static/assets/avatars/default/placeholder.png';
+			const avatarSrc = player.avatarUrl || LOBBY_SETTINGS.user.defaultAvatarUrl;
 			const effectivelyReady = playerIsEffectivelyReady(player);
 			const showKick = canHost && !matchLive && player.id !== state.localPlayerId;
 			const showPromote = canHost && !matchLive && !player.isHost

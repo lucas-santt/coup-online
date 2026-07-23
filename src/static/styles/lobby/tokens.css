@@ -71,14 +71,14 @@ html {
 
 	background:
 		linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%)),
-		url("../../assets/background-desktop.webp") center / cover no-repeat fixed;
+		url("/static/assets/img/backgrounds/background-desktop.webp") center / cover no-repeat fixed;
 }
 
 @media (max-aspect-ratio: 1/1) {
 	html {
 		background-image:
 			linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%)),
-			url("../../assets/background-mobile.webp");
+			url("/static/assets/img/backgrounds/background-mobile.webp");
 		/* background-attachment: fixed is unreliable on mobile browsers --
 		   it can fail to extend across the full scrollable page height
 		   (leaving plain html/body background showing through further

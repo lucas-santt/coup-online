@@ -39,4 +39,4 @@ htmlcov/
 *.db
 
 # Profile pictures
-src/static/assets/avatars/uploads/*.png
+src/static/assets/img/avatars/uploads/*.png

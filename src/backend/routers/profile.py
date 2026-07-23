@@ -47,7 +47,7 @@ async def set_avatar(
 	with open(filepath, "wb+") as file:
 		shutil.copyfileobj(avatar.file, file)
 
-	player.avatar_url = f"/static/assets/avatars/uploads/{filename}"
+	player.avatar_url = f"/static/assets/img/avatars/uploads/{filename}"
 	add_to_db(player, session)
 	await broadcast_player_profile_updated(session, player.id)
 

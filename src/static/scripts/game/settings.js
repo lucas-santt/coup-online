@@ -43,16 +43,16 @@ export const OBJ = {
     coin: {
         scale: new Vector3(0.08, 0.08, 1),
         rotation: new Vector3(90, 0, 0),
-        textures: [ '/static/img/Coin.png' ]
+        textures: [ '/static/assets/img/game/Coin.png' ]
     },
     card: {
         scale: new Vector3(0.4, 0.42, 1.0),
         textures: [
-            '/static/img/Card-Back.png',
-            '/static/img/Card-Ambassador_v2.0.png',
-            '/static/img/Card-Assasin_v2.0.png',
-            '/static/img/Card-Captain_v2.0.png',
-            '/static/img/Card-Contessa_v2.0.png'
+            '/static/assets/img/game/Card-Back.png',
+            '/static/assets/img/game/Card-Ambassador_v2.0.png',
+            '/static/assets/img/game/Card-Assasin_v2.0.png',
+            '/static/assets/img/game/Card-Captain_v2.0.png',
+            '/static/assets/img/game/Card-Contessa_v2.0.png'
         ]
     },
     drawPile: {

@@ -57,12 +57,15 @@ const LOBBY_SETTINGS = {
 		// Every Nth ping (cumulative, per tribunal session) plays the
 		// louder cue instead of the normal one, e.g. as a nudge once
 		// polite pings keep getting ignored.
-		pingCueSrc: '/static/assets/ping.wav',
-		pingCueLouderSrc: '/static/assets/ping-louder.wav',
+		pingCueSrc: '/static/assets/audio/sfx/ping.wav',
+		pingCueLouderSrc: '/static/assets/audio/sfx/ping-louder.wav',
 		pingCueLouderEveryNth: 5,
 	},
 	displayName: {
 		maxLength: 20,
+	},
+	user: {
+		defaultAvatarUrl: '/static/assets/img/avatars/default/placeholder.png',
 	},
 	auth: {
 		// Mirrors backend/constants.py — keep these in sync manually,

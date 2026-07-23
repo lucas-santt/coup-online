@@ -90,7 +90,7 @@ async def read_game() -> FileResponse:
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon() -> FileResponse:
 	"""Serves the favicon."""
-	return FileResponse(ASSETS_DIR / "favicon.ico")
+	return FileResponse(ASSETS_DIR / "img" / "favicon.ico")
 
 
 def main() -> None:
