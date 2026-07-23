@@ -14,8 +14,22 @@ from backend.models.player import (
 )
 
 from backend.errors import ErrorCode, api_error
+from backend.routers.websockets import lobby_manager
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+def _issue_session(player: Player, session: SessionDep, response: Response) -> None:
+    """Rotates the player's session_token and writes the new value to the
+    cookie. Whatever cookie was issued before this call now matches no
+    row in the DB (see optional_registered_or_guest), which is what makes
+    a fresh login/guest/signup immediately invalidate any device that was
+    previously using this account, rather than the old `str(player.id)`
+    cookie scheme where every device shared the same permanent credential.
+    """
+    player.session_token = uuid.uuid4()
+    add_to_db(player, session)
+    response.set_cookie(key="session_token", value=str(player.session_token), path="/")
 
 
 _GUEST_ADJECTIVES = [
@@ -65,8 +79,7 @@ async def guest(
         )
 
         add_to_db(session_guest, session)
-
-        response.set_cookie(key="session_token", value=str(session_guest.id), path="/")
+        _issue_session(session_guest, session, response)
 
     return {
         "message": "Successfully entered as guest.",
@@ -95,9 +108,14 @@ async def login(
         )
 
     db_player.status = PlayerStatus.ONLINE
-    add_to_db(db_player, session)
 
-    response.set_cookie(key="session_token", value=str(db_player.id), path="/")
+    # Boot whatever device is currently holding this account *before*
+    # rotating the token below — that rotation is what actually revokes
+    # the old device's cookie; this is just what tells it in real time,
+    # instead of leaving it to find out via a surprise 401 on its next
+    # request.
+    await lobby_manager.kick(db_player.id)
+    _issue_session(db_player, session, response)
 
     return {"message": "Successfully logged in"}
 
@@ -130,8 +148,7 @@ async def signup(
         player = Player.model_validate(player_signup)
 
     add_to_db(player, session)
-
-    response.set_cookie(key="session_token", value=str(player.id), path="/")
+    _issue_session(player, session, response)
 
     return {"message": "Successfully signed up"}
 
@@ -144,6 +161,7 @@ async def logout(
 ) -> None:
     if session_player:
         session_player.status = PlayerStatus.OFFLINE
+        session_player.session_token = None
         add_to_db(session_player, session)
 
     response.delete_cookie("session_token", path="/")

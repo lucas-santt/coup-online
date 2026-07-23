@@ -76,6 +76,12 @@ const LOBBY_SETTINGS = {
 		// they set from becoming a different, shorter one to the hasher.
 		passwordMinLength: 3,
 		passwordMaxLength: 72,
+
+		// Flag only — "we were logged in last time the page loaded, so
+		// it's worth silently retrying before showing the auth gate"
+		// (see main.js). Distinct key from match.sessionStorageKey,
+		// which tracks a specific active tribunal session instead.
+		sessionStorageKey: 'coupe.hadSession',
 	},
 
 	// ============================================================

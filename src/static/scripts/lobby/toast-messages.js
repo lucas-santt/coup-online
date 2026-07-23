@@ -8,6 +8,7 @@
 const ToastMessages = {
 	session: {
 		loggedOut: () => 'Session closed. You have been logged out.',
+		sessionReplaced: () => 'This account was logged in on another device. You have been disconnected.',
 	},
 
 	auth: {

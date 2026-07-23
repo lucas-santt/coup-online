@@ -75,13 +75,13 @@
 
 .primary-btn {
 	background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-dark) 100%);
-	border: 2px solid var(--color-orange);
+	border: 2px solid var(--color-light-blue);
 	color: var(--color-panel-light);
 }
 
 .primary-btn:hover {
 	background: linear-gradient(135deg, var(--color-navy-light) 0%, var(--color-navy) 100%);
-	border-color: var(--color-orange);
+	border-color: var(--color-light-blue);
 }
 
 .primary-btn:active {

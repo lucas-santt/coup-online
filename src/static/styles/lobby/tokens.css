@@ -25,6 +25,7 @@
 	--color-alert: #d2451c;
 	--color-alert-dark: #a6350f;
 	--color-gold: #b8892f;
+	--color-light-blue: #6174af;
 
 	/* "Prison orange", the watchtower/inmate accent. Deliberately kept
 	   distinct from --color-alert: alert is reserved for destructive/

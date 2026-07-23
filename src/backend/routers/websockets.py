@@ -85,6 +85,52 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+class LobbyConnectionManager:
+	"""Tracks live 'lobby' sockets — one per open tab, opened as soon as
+	the lobby is revealed (see session-socket.js), independent of any
+	match. The only thing these are for: giving a login elsewhere
+	somewhere to push a real-time "you've been logged into on another
+	device" notice, instead of the old tab only finding out the next
+	time an unrelated request happened to 401.
+
+	Keyed by player_id, not by session_token — a fresh login always
+	rotates the account's session_token (see routers/auth.py), so any
+	socket still registered under that player_id at the moment of a new
+	login is, by definition, the old session. The new device hasn't
+	opened its own lobby socket yet.
+	"""
+
+	def __init__(self) -> None:
+		self._connections: dict[uuid.UUID, set[WebSocket]] = {}
+
+	def add(self, player_id: uuid.UUID, socket: WebSocket) -> None:
+		self._connections.setdefault(player_id, set()).add(socket)
+
+	def remove(self, player_id: uuid.UUID, socket: WebSocket) -> None:
+		sockets = self._connections.get(player_id)
+		if not sockets:
+			return
+		sockets.discard(socket)
+		if not sockets:
+			self._connections.pop(player_id, None)
+
+	async def kick(self, player_id: uuid.UUID) -> None:
+		sockets = list(self._connections.get(player_id, ()))
+		for socket in sockets:
+			try:
+				await socket.send_json({
+					"type": "session_replaced",
+					"payload": {"detail": "This account was logged in on another device."},
+				})
+				await socket.close(code=4001)
+			except Exception:
+				pass
+		self._connections.pop(player_id, None)
+
+
+lobby_manager = LobbyConnectionManager()
+
+
 def _as_utc(dt: datetime | None) -> datetime | None:
 	"""SQLite doesn't persist tzinfo, so a timezone-aware datetime we store
 	(everything here is written with datetime.now(UTC)) comes back naive
@@ -818,3 +864,22 @@ async def match_socket(
 		manager.remove(match_uuid, player.id, websocket)
 		if not manager.is_connected(match_uuid, player.id):
 			await _start_disconnect_grace(match_uuid, player.id)
+
+
+@router.websocket("/lobby")
+async def lobby_socket(websocket: WebSocket, player: RequiredRegisteredOrGuestDep) -> None:
+	"""Lightweight, match-independent socket — see LobbyConnectionManager
+	above for what it's for. No client->server messages are expected;
+	this just keeps a place open for the server to push to."""
+	await websocket.accept()
+	lobby_manager.add(player.id, websocket)
+
+	try:
+		while True:
+			# Nothing meaningful ever arrives from the client side — this
+			# just blocks until the tab closes/reloads/disconnects.
+			await websocket.receive_text()
+	except WebSocketDisconnect:
+		pass
+	finally:
+		lobby_manager.remove(player.id, websocket)

@@ -41,17 +41,30 @@
 		});
 	}
 
-	async function revealLobby(result) {
-		let profile;
+	const SESSION_STORAGE_KEY = LOBBY_SETTINGS.auth.sessionStorageKey;
+
+	// Split out of revealLobby so the boot-time silent check (below) can
+	// tell "no session" apart from "network's down" without popping a
+	// connection-lost toast on every reload of a logged-out browser.
+	async function fetchProfile() {
 		try {
 			const res = await fetch(LOBBY_SETTINGS.endpoints.profile.me, {
 				credentials: 'same-origin',
 			});
-			if (!res.ok) throw new Error('profile fetch failed');
-			profile = await res.json();
+			if (!res.ok) return { ok: false, networkError: false };
+			return { ok: true, profile: await res.json() };
 		} catch (err) {
-			Toast.show(ToastMessages.connectionLost(), 'network');
-			return;
+			return { ok: false, networkError: true };
+		}
+	}
+
+	// Returns true once the lobby is actually showing, false if there was
+	// no valid session (or the request failed) to reveal it with.
+	async function revealLobby() {
+		const { ok, profile, networkError } = await fetchProfile();
+		if (!ok) {
+			if (networkError) Toast.show(ToastMessages.connectionLost(), 'network');
+			return false;
 		}
 
 		LobbySession.set({
@@ -61,6 +74,10 @@
 			avatarUrl: profile.avatar_url,
 		});
 		const currentUser = LobbySession.get();
+		// A profile fetch only succeeds with a valid session_token cookie,
+		// so this is confirmation (not an assumption) that we're logged in —
+		// safe to remember for next time the page loads.
+		localStorage.setItem(SESSION_STORAGE_KEY, '1');
 
 		const avatarImg = document.getElementById('avatar-img');
 		if (avatarImg && currentUser.avatarUrl) {
@@ -72,6 +89,7 @@
 		tabFriends.disabled = currentUser.isGuest;
 
 		lobbyContainer.classList.remove('hidden');
+		SessionSocket.connect();
 
 		// Rejoin an in-progress tribunal session (sidebar) if one was stored.
 		// Only fall through to the invite code if the player isn't already
@@ -90,15 +108,65 @@
 				Toast.show(ToastMessages.fromErrorCode(result.errorCode), 'warning');
 			}
 		}
+
+		return true;
 	}
 
-	// First gate: blocking, must resolve to guest/login/signup
-	AuthOverlay.open({ context: 'gate', onDone: revealLobby });
+	// If we were logged in last time this page loaded, try to silently
+	// resume that session (session_token cookie is still what actually
+	// authenticates the request — this just decides whether it's worth
+	// trying before falling back to the blocking gate overlay). Skips
+	// the overlay entirely on success, so a refresh doesn't boot the
+	// player back out to the login screen.
+	(async () => {
+		const hadSession = localStorage.getItem(SESSION_STORAGE_KEY) === '1';
+		if (hadSession && (await revealLobby())) return;
+
+		localStorage.removeItem(SESSION_STORAGE_KEY);
+		AuthOverlay.open({ context: 'gate', onDone: revealLobby });
+	})();
+
+	// Shared by manual logout and getting displaced by a newer login
+	// elsewhere — both end with this tab holding a dead session and
+	// needing to land back on the auth gate.
+	async function clearSessionLocally() {
+		SessionSocket.disconnect();
+		// Best-effort: the cookie's session_token has already been rotated
+		// out from under us in the session-replaced case (the login that
+		// displaced us assigned a fresh one), so this resolves to "no
+		// matching session" server-side and just clears the cookie — it
+		// can't accidentally log out whichever device now holds the
+		// account. In the manual-logout case it's the real thing.
+		try {
+			await fetch(LOBBY_SETTINGS.endpoints.auth.logout, {
+				method: 'POST',
+				credentials: 'same-origin',
+			});
+		} catch (err) {
+			// proceed with local cleanup regardless
+		}
+
+		if (TribunalLobby.isActive()) TribunalLobby.leave();
+		LobbySession.set(null);
+		localStorage.removeItem(SESSION_STORAGE_KEY);
+		lobbyContainer.classList.add('hidden');
+	}
+
+	// Pushed by backend/routers/websockets.py's LobbyConnectionManager the
+	// moment someone else logs into this same account — we lost the
+	// account to a newer login, so there's nothing to silently resume;
+	// land back on the blocking gate same as a manual logout, not the
+	// silent auto-login path.
+	document.addEventListener('session-replaced', async () => {
+		await clearSessionLocally();
+		Toast.show(ToastMessages.session.sessionReplaced(), 'warning');
+		AuthOverlay.open({ context: 'gate', onDone: revealLobby });
+	});
 
 	// =============================================
 	//  Header: Login/Signup <-> Logout
 	// =============================================
-	btnAuthAction.addEventListener('click', () => {
+	btnAuthAction.addEventListener('click', async () => {
 		const currentUser = LobbySession.get();
 
 		if (!currentUser || currentUser.isGuest) {
@@ -107,16 +175,13 @@
 			AuthOverlay.open({
 				context: 'convert',
 				onDone: (result) => {
-					if (result.authenticated) revealLobby(result);
+					if (result.authenticated) revealLobby();
 					// else: cancelled, stay as guest, nothing to do
 				},
 			});
 		} else {
-			// console.log(`Logout Requested: POST ${LOBBY_SETTINGS.endpoints.auth.logout}`);
-			// Toast.show(ToastMessages.session.loggedOut(), 'info');
-			if (TribunalLobby.isActive()) TribunalLobby.leave();
-			LobbySession.set(null);
-			lobbyContainer.classList.add('hidden');
+			await clearSessionLocally();
+			Toast.show(ToastMessages.session.loggedOut(), 'info');
 			AuthOverlay.open({ context: 'gate', onDone: revealLobby });
 		}
 	});

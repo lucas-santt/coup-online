@@ -331,7 +331,11 @@
 			<section class="lobby-panel" id="panel-customization" role="tabpanel">
 				<h3 class="panel-heading">Customization</h3>
 				<div class="locked-placeholder">
-					<span class="lock-icon">🔒</span>
+					<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="lock-icon" aria-hidden="true">
+						<rect x="5" y="11" width="14" height="9" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M8 11V7H16V11" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/>
+						<rect x="11" y="14.5" width="2" height="3.5" fill="currentColor"/>
+					</svg>
 					<p>Skins and nameplates are coming soon.</p>
 				</div>
 			</section>
@@ -576,6 +580,7 @@
 	<!-- Split from a single main.js. session.js/friends.js must load
 	     before main.js: it calls LobbySession and Friends.load(). -->
 	<script src="/static/scripts/lobby/session.js"></script>
+	<script src="/static/scripts/lobby/session-socket.js"></script>
 	<script src="/static/scripts/lobby/profile.js"></script>
 	<script src="/static/scripts/lobby/tribunal-lobby.js?v=7"></script>
 	<script src="/static/scripts/lobby/matches.js"></script>

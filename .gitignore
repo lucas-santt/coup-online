@@ -4,6 +4,7 @@
 
 # Personal ignores
 .hide*
+src.zip
 
 # VSCode
 .vscode/

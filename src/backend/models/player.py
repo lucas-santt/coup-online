@@ -113,6 +113,13 @@ class Player(PlayerBase, table=True):
     status: PlayerStatus = PlayerStatus.ONLINE
     avatar_url: str = Field(default_factory=_random_default_avatar_url)
 
+    # The value actually carried in the session_token cookie (see
+    # routers/auth.py). Rotated on every login/guest/signup, which is what
+    # makes "logging in elsewhere kicks the old device" work: an old
+    # cookie stops matching the moment a fresh one is issued, rather than
+    # remaining valid forever the way `str(player.id)` did.
+    session_token: uuid.UUID | None = Field(default=None, index=True)
+
     wins: int = 0
     losses: int = 0
 
