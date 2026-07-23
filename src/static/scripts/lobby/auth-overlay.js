@@ -31,7 +31,6 @@ const AuthOverlay = (() => {
 	const btnTextLogin = btnSubmit.querySelector('.btn-text-login');
 	const btnTextSignup = btnSubmit.querySelector('.btn-text-signup');
 	const linkToggleAuth = document.getElementById('link-toggle-auth');
-	const toggleHintText = document.getElementById('toggle-hint-text');
 	const btnGuest = document.getElementById('btn-guest');
 	const usernameInput = document.getElementById('auth-username');
 	const passwordInput = document.getElementById('auth-password');
@@ -66,7 +65,7 @@ const AuthOverlay = (() => {
 		if (currentMode === 'signup') {
 			overlaySubtitle.textContent = 'Create an account to keep this character between sessions.';
 		} else {
-			overlaySubtitle.textContent = 'Logging in to another account will discard your guest progress!';
+			overlaySubtitle.innerHTML = 'Logging in to another account will <strong>discard your guest progress!</strong> Sign up instead to keep it.';
 		}
 	}
 
@@ -85,8 +84,6 @@ const AuthOverlay = (() => {
 
 			btnTextSignup.classList.remove('active');
 			btnTextLogin.classList.add('active');
-
-			toggleHintText.innerHTML = `Don't have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Sign up</a>`;
 		} else {
 			tabSignup.classList.add('active');
 			tabSignup.setAttribute('aria-selected', 'true');
@@ -101,16 +98,9 @@ const AuthOverlay = (() => {
 
 			btnTextLogin.classList.remove('active');
 			btnTextSignup.classList.add('active');
-
-			toggleHintText.innerHTML = `Already have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Log in</a>`;
 		}
 
 		updateConvertSubtitle();
-
-		document.getElementById('link-toggle-auth-inner').addEventListener('click', (e) => {
-			e.preventDefault();
-			setAuthMode(currentMode === 'login' ? 'signup' : 'login');
-		});
 	}
 
 	function resolve(result) {
