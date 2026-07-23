@@ -1,5 +1,9 @@
+/** @file 
+ *  Animation curves, cheat sheet: https://easings.net
+ */
+
 import { Vector3 } from "./wglm-classes.js";
-import { lerp, smoothstep } from "./wglm.js";
+import { lerp, smoothstep, easeOutBack } from "./wglm.js";
 
 /**
  * Linear interpolation between two 3D vectors
@@ -35,4 +39,14 @@ export function easeInOutCurve(start, end, t) {
         lerp(start.y, end.y, easedT),
         lerp(start.z, end.z, easedT)
     );
+}
+
+export function easeOutBackCurve(start, end, t) {
+    const easedT = easeOutBack(t);
+
+    return new Vector3(
+        lerp(start.x, end.x, easedT),
+        lerp(start.y, end.y, easedT),
+        lerp(start.z, end.z, easedT)
+    )
 }

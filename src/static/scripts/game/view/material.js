@@ -1,18 +1,24 @@
 import Shader from './shader.js'
 import ImageLoader from './imageLoader.js';
+import Renderer from './renderer.js';
 
 export default class Material {
     shader; texture; textureTarget;
 
-    constructor(gl, vertexSource, fragmentSource, texturePaths = null) {
-        this.shader = new Shader(gl, vertexSource, fragmentSource);
+    constructor(vertexSource, fragmentSource, texturePaths = null) {
+        const gl = Renderer.gl;
+        this.shader = new Shader(vertexSource, fragmentSource);
         if(texturePaths) this.#generateTexture(gl, texturePaths);
     }
 
-    bind(gl = null) {
+    bind(projection = null, view = null) {
         this.shader.use();
 
+        if(projection) this.shader.setMat4("projection", projection);
+        if(view) this.shader.setMat4("view", view);
+
         if(this.texture) {
+            const gl = Renderer.gl;
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(this.textureTarget, this.texture);
             this.shader.setInt("uTextureMap", 0);
@@ -31,6 +37,13 @@ export default class Material {
         this.#bindTex(gl, images);
     }
 
+    
+    /**
+     * Bind a texture, either if is 2D or 3D
+     *
+     * @param {WebGL2RenderingContext} gl 
+     * @param {ImageData[]} images 
+     */
     #bindTex(gl, images) {
         if(this.texture) gl.deleteTexture(this.texture);
 

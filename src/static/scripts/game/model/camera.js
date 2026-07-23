@@ -1,5 +1,5 @@
-import { Vector3 } from '../utils/wglm-classes.js'
-import * as wglm from "../utils/wglm.js"
+import * as wglm from "../utils/wglm.js";
+import { Vector2, Vector3, Ray } from '../utils/wglm-classes.js';
 
 export const CameraMovement = {
     FORWARD: 'FORWARD',
@@ -12,18 +12,20 @@ export const CameraMovement = {
 
 export default class Camera {
     position;
-    front; up; right;
-    worldUp;
-
     yaw; pitch;
+    zoom; // Or FOV Y in radians
+    
+    #worldUp;
+    #front; #up; #right;
 
     #allowMovement;
 
-    constructor(position, worldUp, yaw, pitch, allowMovement = false) {
+    constructor(position, worldUp, yaw, pitch, zoom, allowMovement = false) {
         this.position = position;
-        this.worldUp  = worldUp;
         this.yaw   = yaw;
         this.pitch = pitch;
+        this.zoom = zoom;
+        this.#worldUp  = worldUp;
         this.#allowMovement = allowMovement;
 
         this.#updateCameraVectors();
@@ -36,7 +38,35 @@ export default class Camera {
      * @returns {Float32Array} 
      */
     getView() {
-        return wglm.lookAt(this.position, Vector3.add(this.position, this.front), this.up).flatten();
+        return wglm.lookAt(this.position, Vector3.add(this.position, this.#front), this.#up).flatten();
+    }
+
+     
+    /**
+     * Creates a ray wich originates from the camera
+     *  and points into a screen point (transformed into 3D)
+     *
+     * @param {Vector2} ndcPoint 
+     * @param {Number} aspectRatio 
+     * @returns {Ray} 
+     */
+    rayCast(ndcPoint, aspectRatio) {
+        const fovy = wglm.radians(this.zoom);
+        const tanHalfFovy = Math.tan(fovy / 2.0); // Equals to half of the near plane height
+
+        // Projecting screen point into near plane
+        let viewPoint = Vector2.mult(ndcPoint, tanHalfFovy);
+        viewPoint.x *= aspectRatio;
+
+        // Rotating the ray according to camera's rotattion
+        const rayDirRight = Vector3.mult(this.#right, viewPoint.x);
+        const rayDirUp    = Vector3.mult(this.#up, viewPoint.y);
+
+        let rayDir = Vector3.add(this.#front, rayDirRight);
+        rayDir = Vector3.add(rayDir, rayDirUp);
+
+        return new Ray(this.position.clone(), Vector3.normalize(rayDir));
+        
     }
 
     processKeyboardMovement(dir, deltaTime) {
@@ -45,16 +75,16 @@ export default class Camera {
         const vel = 2 * deltaTime;
 
         if(dir == CameraMovement.FORWARD)
-            this.position = Vector3.add(this.position, Vector3.mult(this.front, vel));
+            this.position = Vector3.add(this.position, Vector3.mult(this.#front, vel));
         
         else if(dir == CameraMovement.BACKWARD)
-            this.position = Vector3.subtract(this.position, Vector3.mult(this.front, vel));
+            this.position = Vector3.subtract(this.position, Vector3.mult(this.#front, vel));
 
         else if(dir == CameraMovement.LEFT)
-            this.position = Vector3.subtract(this.position, Vector3.mult(this.right, vel));
+            this.position = Vector3.subtract(this.position, Vector3.mult(this.#right, vel));
 
         else if(dir == CameraMovement.RIGHT)
-            this.position = Vector3.add(this.position, Vector3.mult(this.right, vel));
+            this.position = Vector3.add(this.position, Vector3.mult(this.#right, vel));
     }
 
     processMouseMovement(xOffset, yOffset, constraintPitch = true) {
@@ -87,8 +117,8 @@ export default class Camera {
         newFront.y = Math.sin(pitchRadians);
         newFront.z = Math.sin(yawRadians) * Math.cos(pitchRadians);
 
-        this.front = wglm.normalize(newFront);
-        this.right = wglm.normalize(wglm.cross(this.front, this.worldUp));
-        this.up    = wglm.normalize(wglm.cross(this.right, this.front));
+        this.#front = Vector3.normalize(newFront);
+        this.#right = Vector3.normalize(Vector3.cross(this.#front, this.#worldUp));
+        this.#up    = Vector3.normalize(Vector3.cross(this.#right, this.#front));
     }
 }

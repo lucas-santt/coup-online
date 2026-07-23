@@ -1,9 +1,10 @@
+import Renderer from "./renderer.js";
+
 export default class Shader {
-    gl; ID;
+    ID;
 
-    constructor(gl, vertexSrc, fragmentSrc) {
-        this.gl = gl;
-
+    constructor(vertexSrc, fragmentSrc) {
+        const gl = Renderer.gl;
         const vertexShader   = this.#createShader(gl.VERTEX_SHADER, vertexSrc);
         const fragmentShader = this.#createShader(gl.FRAGMENT_SHADER, fragmentSrc);
         
@@ -25,34 +26,35 @@ export default class Shader {
     }
 
     use() {
-        this.gl.useProgram(this.ID);
+        Renderer.gl.useProgram(this.ID);
     }
 
     setBool(name, value) {
-        this.gl.uniform1i(this.gl.getUniformLocation(this.ID, name), value ? 1 : 0);
+        Renderer.gl.uniform1i(Renderer.gl.getUniformLocation(this.ID, name), value ? 1 : 0);
     }
 
     setInt(name, value) {
-        this.gl.uniform1i(this.gl.getUniformLocation(this.ID, name), value);
+        Renderer.gl.uniform1i(Renderer.gl.getUniformLocation(this.ID, name), value);
     }
 
     setFloat(name, value) {
-        this.gl.uniform1f(this.gl.getUniformLocation(this.ID, name), value);
+        Renderer.gl.uniform1f(Renderer.gl.getUniformLocation(this.ID, name), value);
     }
 
     setMat4(name, matrix) {
-        this.gl.uniformMatrix4fv(this.gl.getUniformLocation(this.ID, name), false, matrix);
+        Renderer.gl.uniformMatrix4fv(Renderer.gl.getUniformLocation(this.ID, name), false, matrix);
     }
 
     #createShader(type, src) {
-        const shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, src);
-        this.gl.compileShader(shader);
+        const gl = Renderer.gl;
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, src);
+        gl.compileShader(shader);
 
         // Check for any compiling error
-        if(!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            console.error(this.gl.getShaderInfoLog(shader));
-            this.gl.deleteShader(shader);
+        if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
             return null;
         }
 
