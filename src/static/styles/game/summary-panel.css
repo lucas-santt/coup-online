@@ -1,0 +1,269 @@
+/* summary-panel.css */
+
+#summary-panel {
+	position: fixed;
+	top: 0;
+	right: 0;
+	height: 100%;
+	z-index: 30;
+	display: flex;
+	align-items: stretch;
+}
+
+.summary-panel-tab {
+	flex-shrink: 0;
+	width: 34px;
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	border: none;
+	border-left: 2px solid var(--color-ink);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.summary-panel-tab-label {
+	writing-mode: vertical-rl;
+	transform: rotate(180deg);
+	font-family: var(--font-display);
+	font-size: 0.8rem;
+	letter-spacing: 3px;
+	white-space: nowrap;
+}
+
+.summary-panel-body {
+	width: 0;
+	overflow: hidden;
+	transition: width 0.2s ease;
+	background: var(--color-panel);
+	border-left: 2px solid var(--color-ink);
+	box-shadow: -4px 0 0 rgba(0, 0, 0, 0.25);
+	display: flex;
+	flex-direction: column;
+}
+
+#summary-panel.is-hovered .summary-panel-body,
+#summary-panel.is-pinned .summary-panel-body,
+#summary-panel.is-open .summary-panel-body {
+	width: clamp(240px, 80vw, 300px);
+}
+
+.summary-panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.8rem 1rem 0.6rem;
+	border-bottom: 1px solid var(--color-ink);
+	flex-shrink: 0;
+}
+
+.summary-panel-title {
+	font-family: var(--font-display);
+	font-size: 0.9rem;
+	letter-spacing: 2px;
+	color: var(--color-ink);
+}
+
+.summary-panel-pin {
+	width: 28px;
+	height: 28px;
+	border: 1px solid var(--color-ink);
+	background: var(--color-panel-light);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--color-ink-muted);
+}
+
+.summary-panel-pin[aria-pressed="true"] {
+	background: var(--color-orange);
+	color: var(--color-panel-light);
+}
+
+.summary-panel-pin svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* No hover on touch devices -- the pin toggle has no equivalent there
+   (tapping the tab is the only interaction, see summary-panel.js), so
+   hide it rather than leave a control that can't do anything. */
+#summary-panel.is-touch .summary-panel-pin {
+	display: none;
+}
+
+.summary-panel-list {
+	flex: 1 1 auto;
+	overflow-y: auto;
+	padding: 0.6rem 0.8rem 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.7rem;
+}
+
+.summary-empty {
+	font-size: 0.85rem;
+	color: var(--color-ink-muted);
+	text-align: center;
+	margin-top: 1rem;
+}
+
+.summary-player-row {
+	display: flex;
+	gap: 0.6rem;
+	padding: 0.5rem;
+	background: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+}
+
+.summary-player-row.is-out {
+	opacity: 0.55;
+}
+
+.summary-player-row.is-pending {
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	border-color: var(--color-orange);
+}
+
+.summary-player-row.is-pending .summary-player-name {
+	color: var(--color-panel-light);
+}
+
+.summary-avatar {
+	width: 34px;
+	height: 34px;
+	border: 1px solid var(--color-ink);
+	object-fit: cover;
+	background: var(--color-panel-dim);
+	flex-shrink: 0;
+}
+
+.summary-player-body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.summary-player-name-row {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.summary-active-marker {
+	color: var(--color-orange);
+	font-size: 0.7rem;
+}
+
+.summary-player-name {
+	font-family: var(--font-display);
+	font-size: 0.75rem;
+	letter-spacing: 0.5px;
+	color: var(--color-ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.summary-status {
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.7rem;
+	letter-spacing: 0.5px;
+	color: var(--color-orange-dark);
+}
+
+.summary-coins {
+	font-size: 0.75rem;
+	color: var(--color-ink-muted);
+}
+
+.summary-cards {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.3rem;
+	font-size: 0.7rem;
+}
+
+.summary-cards-revealed-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.3rem;
+	width: 100%;
+}
+
+.summary-cards-label {
+	color: var(--color-ink-muted);
+	font-size: 0.65rem;
+	letter-spacing: 0.5px;
+}
+
+.summary-card-pip {
+	display: inline-block;
+	width: 10px;
+	height: 14px;
+	background: var(--color-navy);
+	border: 1px solid var(--color-ink);
+}
+
+.summary-card-revealed {
+	display: inline-block;
+	padding: 0.1rem 0.35rem;
+	background: var(--color-alert);
+	color: var(--color-panel-light);
+	font-weight: 700;
+	font-size: 0.65rem;
+	letter-spacing: 0.3px;
+}
+
+.summary-card-revealed.is-own {
+	background: var(--color-navy);
+}
+
+.summary-claim {
+	font-size: 0.8rem;
+	display: flex;
+	gap: 0.35rem;
+	flex-wrap: wrap;
+}
+
+.summary-claim-label {
+	color: var(--color-panel-dim);
+}
+
+.summary-claim-value {
+	font-weight: 700;
+}
+
+.summary-waiting {
+	font-size: 0.7rem;
+	font-style: italic;
+	color: var(--color-panel-dim);
+}
+
+.summary-time-bank {
+	display: flex;
+	gap: 0.2rem;
+}
+
+.summary-token {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--color-gold);
+	border: 1px solid var(--color-ink);
+}
+
+@media (max-width: 420px) {
+	.summary-panel-tab {
+		width: 28px;
+	}
+}

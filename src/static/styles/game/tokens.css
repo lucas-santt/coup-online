@@ -1,0 +1,55 @@
+:root {
+	/* Neutrals */
+	--color-bg: #151515;
+	--color-panel: #dcd2c0;
+	--color-panel-light: #ede6d6;
+	--color-panel-dim: #cbc0aa;
+	--color-ink: #1a1310;
+	--color-ink-muted: #5c5347;
+
+	/* Accents */
+	--color-navy: #1E2B41;
+	--color-navy-light: #2b3f63;
+	--color-navy-dark: #121d33;
+	--color-alert: #CE5133;
+	--color-alert-dark: #C3453E;
+	--color-gold: #b8892f;
+	--color-light-blue: #6174af;
+	--color-orange: #CE5133;
+	--color-orange-dark: #C3453E;
+	--color-online: #3f8f4f;
+	--color-offline: #8a8478;
+
+	--font-display: 'Black Ops One', sans-serif;
+	--font-body: 'Public Sans', sans-serif;
+
+	--shadow-stamp: 6px 6px 0 var(--color-ink);
+	--shadow-stamp-sm: 4px 4px 0 var(--color-ink);
+	--shadow-stamp-hover: 8px 8px 0 var(--color-ink);
+	--shadow-stamp-sm-hover: 5px 5px 0 var(--color-ink);
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html, body {
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background-color: #000;
+	font-family: var(--font-body);
+	color: var(--color-ink);
+}
+
+canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.hidden {
+	display: none !important;
+}

@@ -1,0 +1,133 @@
+/* overlay.css
+   The DOM overlay sits in a single fixed-position layer above the
+   WebGL canvas (see game.html) -- everything in here and in hud.css /
+   summary-panel.css is a child of #game-overlay. Nothing in this layer
+   owns game state; it only renders GameState (see ui/*.js). */
+
+#game-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	pointer-events: none; /* children opt back in individually */
+	font-family: var(--font-body);
+}
+
+#game-overlay a,
+#game-overlay button {
+	pointer-events: auto;
+}
+
+/* ============================================================
+   Corner brackets -- print registration-mark corners, matching the
+   lobby's auth overlay/panel treatment (see lobby/scroll.css). Ported
+   rather than shared cross-folder, since it's a handful of lines and
+   this page doesn't otherwise load any lobby stylesheet.
+   ============================================================ */
+.corner-brackets {
+	position: relative;
+}
+
+.corner-brackets::before {
+	content: '';
+	position: absolute;
+	inset: 9px;
+	pointer-events: none;
+	background-repeat: no-repeat;
+	background-image:
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange)),
+		linear-gradient(var(--color-orange), var(--color-orange));
+	background-size:
+		2px 16px, 16px 2px,
+		2px 16px, 16px 2px,
+		2px 16px, 16px 2px,
+		2px 16px, 16px 2px;
+	background-position:
+		top left, top left,
+		top right, top right,
+		bottom left, bottom left,
+		bottom right, bottom right;
+}
+
+/* ============================================================
+   Reconnect banner -- shown whenever the socket has dropped after
+   already having connected once (see hud.js). Sits above everything
+   else in the overlay since it's telling the player the rest of the
+   overlay may be stale.
+   ============================================================ */
+#connection-banner {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 40;
+	margin-top: 0.75rem;
+	padding: 0.5rem 1.2rem;
+	background: var(--color-alert);
+	color: var(--color-panel-light);
+	font-family: var(--font-display);
+	font-size: 0.85rem;
+	letter-spacing: 1px;
+	box-shadow: var(--shadow-stamp-sm);
+	border: 1px solid var(--color-ink);
+}
+
+/* ============================================================
+   End-of-match banner -- a full backdrop, same visual language as the
+   lobby's overlay-backdrop, with a single "Return to Lobby" action.
+   ============================================================ */
+#end-of-match-banner {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.75);
+	padding: 24px 20px;
+}
+
+.eom-panel {
+	background-color: var(--color-panel);
+	border: 2px solid var(--color-ink);
+	outline: 1px solid var(--color-orange);
+	outline-offset: -7px;
+	box-shadow: var(--shadow-stamp);
+	padding: 2.4rem 2.6rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.4rem;
+	max-width: 90vw;
+}
+
+#eom-title {
+	font-family: var(--font-display);
+	font-size: 1.8rem;
+	letter-spacing: 2px;
+	color: var(--color-ink);
+	text-align: center;
+}
+
+.eom-return-btn {
+	font-family: var(--font-display);
+	font-size: 0.95rem;
+	letter-spacing: 2px;
+	padding: 0.65rem 1.5rem;
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	text-decoration: none;
+	border: 1px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+	transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.eom-return-btn:hover {
+	box-shadow: var(--shadow-stamp-sm-hover);
+	transform: translateY(-1px);
+}

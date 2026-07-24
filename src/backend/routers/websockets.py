@@ -741,6 +741,16 @@ def _match_state_payload(engine_match: EngineMatch, viewer_id: str) -> dict:
 			"block_claimed_card": td["block_claimed_card"],
 			"players_passed_action": list(td["players_passed_action"]),
 			"players_passed_block": list(td["players_passed_block"]),
+			# Who's picking a card during WAITING_CARD_LOSS -- not
+			# necessarily the action's target (a challenge can send the
+			# source, the blocker, or the challenger to lose a card
+			# instead, see TurnDescription's docstring). Exposed here so
+			# a reconnecting/resyncing client can show "choosing a card
+			# to lose" for the right player from the state alone, the
+			# same way it already can for whose turn it is, rather than
+			# only knowing this from the event that happened to trigger
+			# it.
+			"card_loss_player_id": td["card_loss_player_id"],
 		},
 		"your_hand": list(viewer.cards) if viewer else [],
 	}

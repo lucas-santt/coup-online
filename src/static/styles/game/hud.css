@@ -1,0 +1,127 @@
+/* hud.css */
+
+#hud-bar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+	padding: 0.6rem 1rem;
+	background: var(--color-panel);
+	border-bottom: 2px solid var(--color-ink);
+	box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+}
+
+.hud-local-player {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	min-width: 0;
+}
+
+.hud-avatar {
+	width: 40px;
+	height: 40px;
+	border: 2px solid var(--color-ink);
+	object-fit: cover;
+	background: var(--color-panel-dim);
+	flex-shrink: 0;
+}
+
+.hud-local-info {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.2;
+	min-width: 0;
+}
+
+.hud-local-name {
+	font-family: var(--font-display);
+	font-size: 0.85rem;
+	letter-spacing: 1px;
+	color: var(--color-ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.hud-local-coins {
+	font-family: var(--font-body);
+	font-size: 0.8rem;
+	color: var(--color-ink-muted);
+}
+
+.hud-phase {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	min-width: 160px;
+}
+
+.hud-phase-text {
+	font-family: var(--font-display);
+	font-size: 0.9rem;
+	letter-spacing: 1px;
+	color: var(--color-navy);
+	text-align: center;
+}
+
+/* Timer ring/bar wiring lands with spec section 7.6-7.8 -- kept
+   hidden and empty for now rather than half-built (no server-side
+   timer data exists yet, see match-view-spec.md's known engine
+   gaps). */
+.hud-phase-timer {
+	width: 100%;
+	max-width: 220px;
+	height: 6px;
+	margin-top: 0.3rem;
+	background: var(--color-panel-dim);
+	border: 1px solid var(--color-ink);
+}
+
+.hud-phase-timer-fill {
+	height: 100%;
+	width: 100%;
+	background: var(--color-orange);
+}
+
+.hud-hand {
+	display: flex;
+	gap: 0.4rem;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+.hud-hand-card {
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.75rem;
+	letter-spacing: 0.5px;
+	padding: 0.35rem 0.55rem;
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+	#hud-bar {
+		justify-content: center;
+		text-align: center;
+	}
+
+	.hud-phase {
+		order: 3;
+		flex-basis: 100%;
+	}
+
+	.hud-hand {
+		justify-content: center;
+	}
+}
