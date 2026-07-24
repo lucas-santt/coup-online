@@ -322,7 +322,7 @@ def test_make_action_coup():
     match.make_action()
     assert(match.status["current_match_state"] == "waiting_card_loss" and match.turn_description["target_id"] == other_player_id)
     # Tests making assassinate when the target has one card
-    match.players[other_player_id].cards = ["duke"]
+    match.players[other_player_id].cards = ["Duke"]
     match.end_current_turn()
     match.process_event(current_player_id, {"event": "chosen_action", "action": "coup", "target_id": other_player_id})
     match.make_action()
@@ -359,7 +359,7 @@ def test_make_action_assassinate():
     match.make_action()
     assert(match.status["current_match_state"] == "waiting_card_loss")
     # Tests assassinating when the target has one card
-    match.players[other_player_id].cards = ["duke"]
+    match.players[other_player_id].cards = ["Duke"]
     match.end_current_turn()
     match.process_event(current_player_id, {"event": "chosen_action", "action": "assassinate", "target_id": other_player_id})
     match.process_event(other_player_id, {"event": "pass"})

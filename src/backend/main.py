@@ -205,9 +205,55 @@ async def websocket_endpoint(websocket: WebSocket, match_id: str, player_id: str
                         
                     elif event in ["action_challenge_confirmed", "block_challenge_confirmed"]:
                         await manager.broadcast(result, match_id)
+                        if event == "action_challenge_confirmed":
+                            challenge_result = match.resolve_action_challenge()
+                        else:
+                            challenge_result = match.resolve_block_challenge()
+                
+                        challenge_event = challenge_result["event"]
+
+                        if challenge_event in ["challenge_lost", "challenge_overcome"]:
+                            await manager.broadcast(challenge_result, match_id)
+                            current_state = match.status["current_match_state"]
+                            
+                            if current_state in ["turn_resolved", "block_confirmed"]:
+                                new_state = match.new_turn()
+                                await manager.broadcast(new_state, match_id)
+
+                            elif current_state == "action_confirmed":
+                                post_action_result = match.make_action()
+                                post_action_event = post_action_result["event"]
+
+                                if post_action_event == "turn_resolved":
+                                    await manager.broadcast(post_action_result, match_id)
+                                    new_state = match.new_turn()
+                                    await manager.broadcast(new_state, match_id)
+                                
+                                elif post_action_event in ["waiting_card_loss", "waiting_exchange"]:
+                                    target_id = post_action_result["player_id"]
+                                    await manager.broadcast_with_exception({"event": post_action_event, "player_id": target_id}, match_id, target_id)
+                                    await manager.send_personal_message(post_action_result, match_id, target_id)
+                        
+                        elif challenge_event == "waiting_card_loss":
+                            target_id = challenge_result["player_id"]
+                            await manager.broadcast_with_exception({"event": "waiting_card_loss", "player_id": target_id}, match_id, target_id)
+                            await manager.send_personal_message(challenge_result, match_id, target_id)
 
             except ValueError as e:
                 await manager.send_personal_message({"error": str(e)}, match_id, player_id)
     except WebSocketDisconnect:
         manager.disconnect(match_id, player_id)
         await manager.broadcast({"event": "player_disconnected", "player": player_id}, match_id)
+        if match_id in active_matches:
+            match = active_matches[match_id]
+            result = match.disconnect_player(player_id)
+            
+            if result:
+                if result["event"] in ["new_turn", "end_of_match", "action_confirmed", "block_confirmed"]:
+                    await manager.broadcast(result, match_id)
+                
+                # Se destravou o turno atual, resolve o turno e pede o próximo
+                elif result["event"] == "turn_resolved":
+                    await manager.broadcast(result, match_id)
+                    new_state = match.new_turn()
+                    await manager.broadcast(new_state, match_id)
