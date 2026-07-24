@@ -20,6 +20,7 @@
 	<link rel="stylesheet" href="/static/styles/game/target-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/contest-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/card-loss-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/exchange-menu.css?v=1">
 
 	<script type="module" src="/static/scripts/game/main.js"></script>
 </head>
@@ -116,6 +117,20 @@
 			<div class="card-loss-panel corner-brackets">
 				<span id="card-loss-hint"></span>
 				<div id="card-loss-list"></div>
+			</div>
+		</div>
+
+		<!-- ============================================================
+		     Exchange picker -- shown after a successful Ambassador
+		     Exchange, when the local player's hand contains their old
+		     cards plus the draw. The selected cards are the ones kept.
+		     ============================================================ -->
+		<div id="exchange-menu" class="hidden" role="dialog" aria-label="Choose cards to keep">
+			<div class="exchange-panel corner-brackets">
+				<span id="exchange-hint"></span>
+				<span id="exchange-count"></span>
+				<div id="exchange-list"></div>
+				<button id="exchange-confirm" type="button" disabled>Keep Selected</button>
 			</div>
 		</div>
 

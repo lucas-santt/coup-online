@@ -112,26 +112,23 @@
 	padding: 0;
 	background: var(--color-panel);
 	border: none;
-	/* clip-path already cuts the slice's own outline out of everything
-	   painted on this box, including a border -- inset box-shadow reads
-	   as a clean stroke along whatever edges survive the clip instead. */
-	box-shadow: inset 0 0 0 2px var(--color-ink);
+	box-shadow: none;
 	cursor: pointer;
 	pointer-events: auto;
-	transition: box-shadow 0.15s ease, filter 0.15s ease;
+	transition: box-shadow 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
 }
 
 .radial-wedge:hover,
 .radial-wedge:focus-visible {
 	filter: brightness(1.1);
-	box-shadow: inset 0 0 0 3px var(--color-orange);
+	box-shadow: inset 0 0 0 12px var(--color-online);
 	outline: none;
 	z-index: 2;
 }
 
 .radial-wedge.is-disabled {
-	filter: grayscale(0.7);
-	opacity: 0.55;
+	filter: grayscale(0.9) brightness(0.75);
+	opacity: 0.42;
 	cursor: not-allowed;
 }
 
@@ -169,12 +166,29 @@
 	height: 100%;
 }
 
+.radial-wedge-icon-img {
+	object-fit: fill;
+}
+
 @media (max-width: 640px) {
 	.radial-wedge-icon {
 		width: 22px;
 		height: 22px;
 		margin: -11px 0 0 -11px;
 	}
+}
+
+.radial-separator {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	z-index: 2;
+	width: 4px;
+	height: 50%;
+	background: var(--color-ink);
+	transform-origin: 50% 0;
+	transform: translateX(-50%) rotate(var(--separator-angle));
+	pointer-events: none;
 }
 
 /* ============================================================
@@ -302,6 +316,11 @@
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.1s ease;
+}
+
+.radial-tooltip[style*="left"] {
+	bottom: auto;
+	transform: translate(14px, -100%) translateY(-10px);
 }
 
 .radial-tooltip-line {

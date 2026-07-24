@@ -1,9 +1,27 @@
 /* contest-menu.css
    Decorates the shared .radial-wedge scaffold (radial-menu.css) for
-   Contestation specifically (spec §7.3). Wedges here are plain text --
-   Pass, Contest, and (for whoever's eligible) one Block wedge per legal
-   claim -- no card art or avatar, unlike the Action Menu / Target
-   Selection, since there's no single character or player to depict. */
+   Contestation specifically (spec §7.3). Wedges here use response
+   glyphs for Pass, Contest, and Block. */
+
+#contest-menu-wedges .radial-wedge {
+	background: var(--color-panel-light);
+}
+
+.contest-wedge-icon {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 32px;
+	height: 32px;
+	margin: -16px 0 0 -16px;
+	transform: rotate(var(--wedge-angle)) translateY(calc(-1 * var(--icon-radius))) rotate(calc(-1 * var(--wedge-angle)));
+	color: var(--color-navy-dark);
+}
+
+.contest-wedge-icon svg {
+	width: 100%;
+	height: 100%;
+}
 
 #contest-menu-wedges .radial-wedge-label {
 	font-size: 0.72rem;
@@ -17,4 +35,12 @@
 	font-size: 0.62rem;
 	letter-spacing: 0.3px;
 	color: var(--color-ink-muted);
+}
+
+@media (max-width: 640px) {
+	.contest-wedge-icon {
+		width: 24px;
+		height: 24px;
+		margin: -12px 0 0 -12px;
+	}
 }

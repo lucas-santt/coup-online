@@ -1,21 +1,21 @@
 import GameState from '../state/game-state.js';
 import { escapeHtml, escapeAttr } from './dom-utils.js';
 import { actionLabel, actionDescription, ACTION_CLAIMS, TARGETED_ACTIONS, cardArtUrl } from './labels.js';
-import { layoutWedges, bindRadialKeys, bindTouchTooltips } from './radial-menu.js';
+import { layoutWedges, bindRadialKeys, bindTouchTooltips, bindPointerTooltips } from './radial-menu.js';
 import TargetMenu from './target-menu.js';
 
 // Fixed wedge order, 1-7 (spec §7.1's "Keyboard shortcuts"): Income,
 // Foreign Aid, Coup, Tax, Assassinate, Extort, Exchange.
 const ACTIONS = ['income', 'foreign_aid', 'coup', 'tax', 'assassinate', 'steal', 'exchange'];
 
-// Flat, single-color glyphs for the three actions with no associated
-// character (spec §7.1's "Custom icons") -- drawn inline rather than
-// pulling in new asset files, same treatment as the Summary Panel's pin
-// icon already inlined in game.html.
 const ACTION_ICONS = {
-	income: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><line x1="12" y1="7" x2="12" y2="17" stroke="currentColor" stroke-width="2"/></svg>',
-	foreign_aid: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="14" r="6" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="9" r="6" stroke="currentColor" stroke-width="2"/></svg>',
-	coup: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14 4L12 14L10 4Z" fill="currentColor"/><rect x="10.5" y="14" width="3" height="6" fill="currentColor"/><rect x="8" y="12" width="8" height="2" fill="currentColor"/></svg>',
+	income: 'income.png',
+	foreign_aid: 'external-aid.png',
+	coup: 'coup.png',
+	tax: 'tax.png',
+	assassinate: 'assassinate.png',
+	steal: 'extort.png',
+	exchange: 'exchange.png',
 };
 
 const ActionMenu = (() => {
@@ -40,6 +40,7 @@ const ActionMenu = (() => {
 		isTouch = window.matchMedia('(hover: none)').matches;
 		els.menu.classList.toggle('is-touch', isTouch);
 		bindTouchTooltips(els.menu);
+		bindPointerTooltips(els.menu);
 		TargetMenu.init({ onBack: reopenAfterBack });
 		GameState.subscribe(render);
 	}
@@ -94,7 +95,10 @@ const ActionMenu = (() => {
 		const owned = claim ? (state.yourHand || []).includes(claim) : null;
 		const art = claim
 			? `<img class="radial-wedge-art" src="${escapeAttr(cardArtUrl(claim))}" alt="" aria-hidden="true">`
-			: `<span class="radial-wedge-icon" aria-hidden="true">${ACTION_ICONS[action]}</span>`;
+			: '';
+		const icon = ACTION_ICONS[action]
+			? `<img class="radial-wedge-icon radial-wedge-icon-img" src="/static/assets/img/game/action-icons/${escapeAttr(ACTION_ICONS[action])}" alt="" aria-hidden="true">`
+			: '';
 
 		const badge = claim
 			? `<span class="radial-wedge-badge${owned ? ' is-owned' : ''}" aria-hidden="true">${owned ? '✓' : '?'}</span>`
@@ -106,9 +110,15 @@ const ActionMenu = (() => {
 		// a second, separately-triggered tooltip from the badge's
 		// owned/not-owned one below -- both could pop open at once and
 		// overlap -- so now they're one tooltip, stacked as two lines.
-		const lines = [reason || actionDescription(action, state.settings)];
-		if (claim) lines.push(owned ? `You have the ${claim}.` : `You don't have the ${claim}.`);
-		const tooltip = `<span class="radial-tooltip">${lines.map((l) => `<span class="radial-tooltip-line">${escapeHtml(l)}</span>`).join('')}</span>`;
+		const lines = [escapeHtml(reason || actionDescription(action, state.settings))];
+		if (claim) {
+			lines.push(
+				owned
+					? `You have the ${escapeHtml(claim)}.`
+					: `You <strong>don't</strong> have the ${escapeHtml(claim)}.`
+			);
+		}
+		const tooltip = `<span class="radial-tooltip">${lines.map((l) => `<span class="radial-tooltip-line">${l}</span>`).join('')}</span>`;
 
 		return `
 			<div class="radial-wedge-slot">
@@ -120,6 +130,7 @@ const ActionMenu = (() => {
 					role="menuitem"
 				>
 					${art}
+					${icon}
 				</button>
 				<div class="radial-wedge-overlay">
 					<div class="radial-wedge-anchor">

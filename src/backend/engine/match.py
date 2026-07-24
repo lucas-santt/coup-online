@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 from typing import Any, TypedDict
 
 from backend import constants
@@ -131,7 +132,7 @@ class Match:
 		# ACTION_CHALLENGE_CONFIRMED: an action challenge has been initiated and will be resolved immediately;
 		# BLOCK_CHALLENGE_CONFIRMED: a block challenge has been initiated and will be resolved immediately;
 		# WAITING_CARD_LOSS: a player with more than one card has lost influence and must choose one of their cards;
-		# WAITING_EXCHANGE: a player used the "exchange" action and must return two cards to the deck;
+		# WAITING_EXCHANGE: a player used the "exchange" action and must choose which cards to keep;
 		# TURN_RESOLVED: declares the current turn resolved. The next step is to start a new turn.
 
 		self.turn_description: TurnDescription = self._blank_turn_description()
@@ -557,14 +558,20 @@ class Match:
 		# Catch errors
 		if player_id != source_id:
 			raise ValueError("It is not your turn.")
-		if event != ClientEvent.SELECTED_CARDS or not selected_cards or len(selected_cards) != 2:
-			raise ValueError("You must choose two cards to return to the deck.")
+		if event != ClientEvent.SELECTED_CARDS or not selected_cards or len(selected_cards) != self.cards_per_player:
+			raise ValueError(f"You must choose {self.cards_per_player} cards to keep.")
 
 		player = self.players[player_id]
+		hand_counts = Counter(player.cards)
+		selected_counts = Counter(selected_cards)
+		if any(selected_counts[card] > hand_counts[card] for card in selected_counts):
+			raise ValueError("You need to select cards that you own.")
+
+		returned_cards = list(player.cards)
 		for card in selected_cards:
-			if card not in player.cards:
-				raise ValueError("You need to select cards that you own.")
-			player.cards.remove(card)
+			returned_cards.remove(card)
+		player.cards = list(selected_cards)
+		for card in returned_cards:
 			self.deck.push_card(card)
 		self.deck.shuffle()
 		self.status["current_match_state"] = MatchEvent.TURN_RESOLVED

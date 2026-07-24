@@ -10,9 +10,31 @@
 	   overlay now (their own chip background keeps them legible on their
 	   own), so this only has to stay readable as art, not as a backdrop
 	   for text sitting directly on top of it. */
-	opacity: 0.55;
+	opacity: 0.72;
 }
 
 #action-menu-wedges .radial-wedge.is-disabled .radial-wedge-art {
-	opacity: 0.3;
+	opacity: 0.24;
+}
+
+#action-menu-wedges .radial-wedge:not(.is-disabled) .radial-wedge-icon {
+	filter: drop-shadow(1px 1px 0 rgba(237, 230, 214, 0.55));
+}
+
+#action-menu-wedges .radial-wedge-icon {
+	width: 44px;
+	height: 44px;
+	margin: -22px 0 0 -22px;
+}
+
+#action-menu-wedges .radial-wedge.is-disabled .radial-wedge-icon {
+	opacity: 0.58;
+}
+
+@media (max-width: 640px) {
+	#action-menu-wedges .radial-wedge-icon {
+		width: 34px;
+		height: 34px;
+		margin: -17px 0 0 -17px;
+	}
 }

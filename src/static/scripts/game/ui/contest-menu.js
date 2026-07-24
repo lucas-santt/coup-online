@@ -2,7 +2,13 @@ import GameState from '../state/game-state.js';
 import { escapeHtml, escapeAttr } from './dom-utils.js';
 import { ACTION_CLAIMS, BLOCK_CLAIMS } from './labels.js';
 import { describeDecision, headline } from './match-text.js';
-import { layoutWedges, bindRadialKeys, bindTouchTooltips } from './radial-menu.js';
+import { layoutWedges, bindRadialKeys, bindTouchTooltips, bindPointerTooltips } from './radial-menu.js';
+
+const CONTEST_ICONS = {
+	pass: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5L10 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+	challenge: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="2.2"/><path d="M15 15L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 10.5H13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+	block: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L19 6V11.5C19 16 16.2 19.2 12 21C7.8 19.2 5 16 5 11.5V6L12 3Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 12H15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+};
 
 // Spec §7.3's table, as code: a challengeable action gets a Contest wedge
 // (ACTION_CLAIMS has an entry for exactly the actions that make a
@@ -31,6 +37,7 @@ const ContestMenu = (() => {
 		};
 		els.menu.classList.toggle('is-touch', window.matchMedia('(hover: none)').matches);
 		bindTouchTooltips(els.menu);
+		bindPointerTooltips(els.menu);
 		GameState.subscribe(render);
 	}
 
@@ -125,9 +132,12 @@ const ContestMenu = (() => {
 	}
 
 	function wedgeMarkup({ choice, label, sub }) {
+		const iconKey = choice.startsWith('block:') ? 'block' : choice;
 		return `
 			<div class="radial-wedge-slot">
-				<button type="button" class="radial-wedge" data-choice="${escapeAttr(choice)}" role="menuitem"></button>
+				<button type="button" class="radial-wedge" data-choice="${escapeAttr(choice)}" role="menuitem">
+					<span class="contest-wedge-icon" aria-hidden="true">${CONTEST_ICONS[iconKey] || ''}</span>
+				</button>
 				<div class="radial-wedge-overlay">
 					<div class="radial-wedge-anchor">
 						<div class="radial-wedge-content">

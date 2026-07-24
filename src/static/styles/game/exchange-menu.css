@@ -1,0 +1,118 @@
+#exchange-menu {
+	position: fixed;
+	inset: 0;
+	z-index: 36;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.6);
+	padding: 24px 20px;
+}
+
+.exchange-panel {
+	background-color: var(--color-panel);
+	border: 2px solid var(--color-ink);
+	outline: 1px solid var(--color-orange);
+	outline-offset: -7px;
+	box-shadow: var(--shadow-stamp);
+	padding: 1.8rem 2rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+	max-width: min(92vw, 720px);
+}
+
+#exchange-hint {
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	letter-spacing: 1.5px;
+	color: var(--color-ink);
+	text-align: center;
+}
+
+#exchange-count {
+	font-family: var(--font-body);
+	font-size: 0.78rem;
+	font-weight: 700;
+	color: var(--color-ink-muted);
+}
+
+#exchange-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+	gap: 0.8rem;
+	width: min(100%, 600px);
+}
+
+.exchange-card {
+	min-height: 150px;
+	padding: 0.8rem;
+	background: var(--color-panel-light);
+	color: var(--color-ink);
+	border: 2px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+	cursor: pointer;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.exchange-card:hover,
+.exchange-card:focus-visible {
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-stamp-sm-hover);
+	outline: none;
+}
+
+.exchange-card.is-selected {
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	outline: 3px solid var(--color-orange);
+	outline-offset: -8px;
+}
+
+.exchange-card-name {
+	display: block;
+	font-family: var(--font-display);
+	font-size: 0.85rem;
+	letter-spacing: 1px;
+	line-height: 1.15;
+}
+
+#exchange-confirm {
+	font-family: var(--font-display);
+	font-size: 0.9rem;
+	letter-spacing: 1.5px;
+	padding: 0.75rem 1.5rem;
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+	cursor: pointer;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+#exchange-confirm:hover:not(:disabled),
+#exchange-confirm:focus-visible:not(:disabled) {
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-stamp-sm-hover);
+	outline: none;
+}
+
+#exchange-confirm:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+	.exchange-panel {
+		padding: 1.4rem 1.2rem;
+	}
+
+	#exchange-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.exchange-card {
+		min-height: 118px;
+	}
+}

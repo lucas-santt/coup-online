@@ -76,12 +76,12 @@ export function headline(decision, players, localPlayerId) {
 			return decision.playerId === localPlayerId ? 'Your Turn' : `${name(decision.playerId)}'s Turn`;
 		case 'pending-claim':
 			return decision.actorId === localPlayerId
-				? `You declare ${actionLabel(decision.action)}`
-				: `${name(decision.actorId)} declares ${actionLabel(decision.action)}`;
+				? `You declare\n${actionLabel(decision.action)}`
+				: `${name(decision.actorId)} declares\n${actionLabel(decision.action)}`;
 		case 'pending-block':
 			return decision.blockerId === localPlayerId
-				? `You block with ${decision.claim || '?'}`
-				: `${name(decision.blockerId)} blocks with ${decision.claim || '?'}`;
+				? `You block with\n${decision.claim || '?'}`
+				: `${name(decision.blockerId)} blocks with\n${decision.claim || '?'}`;
 		case 'card-loss':
 			return decision.playerId === localPlayerId
 				? 'Choose a card to lose'

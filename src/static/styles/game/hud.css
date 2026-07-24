@@ -70,6 +70,8 @@
 	letter-spacing: 1px;
 	color: var(--color-navy);
 	text-align: center;
+	line-height: 1.15;
+	white-space: pre-line;
 }
 
 /* Timer ring/bar wiring lands with spec section 7.6-7.8 -- kept

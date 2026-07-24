@@ -39,12 +39,19 @@ export function layoutWedges(wedgesEl, wedgeEls) {
 	const count = wedgeEls.length;
 	wedgesEl.style.setProperty('--wedge-count', String(count));
 	const step = 360 / count;
+	wedgesEl.querySelectorAll('.radial-separator').forEach((el) => el.remove());
 	wedgeEls.forEach((el, i) => {
 		const slot = el.closest('.radial-wedge-slot') || el.parentElement;
 		const centerAngle = i * step; // 0 = top, increasing clockwise -- same convention the old square layout used
 		slot.style.setProperty('--wedge-angle', `${centerAngle}deg`);
 		el.style.clipPath = wedgeClipPath(centerAngle, step);
 	});
+	for (let i = 0; i < count; i++) {
+		const separator = document.createElement('span');
+		separator.className = 'radial-separator';
+		separator.style.setProperty('--separator-angle', `${i * step - step / 2 + 180}deg`);
+		wedgesEl.append(separator);
+	}
 }
 
 function wedgeClipPath(centerAngleDeg, stepDeg) {
@@ -55,7 +62,7 @@ function wedgeClipPath(centerAngleDeg, stepDeg) {
 	// One point roughly every 12 degrees so the outer/inner arcs read as
 	// curves rather than obviously-straight chords once the slice spans
 	// more than a few degrees.
-	const arcSamples = Math.max(1, Math.ceil(stepDeg / 12));
+	const arcSamples = Math.max(1, Math.ceil((end - start) / 6));
 	const points = [];
 	for (let s = 0; s <= arcSamples; s++) {
 		points.push(polarPoint(OUTER_RADIUS_PCT, start + (end - start) * (s / arcSamples)));
@@ -125,5 +132,27 @@ export function bindTouchTooltips(container) {
 	return () => {
 		container.removeEventListener('click', onContainerClick);
 		document.removeEventListener('click', onDocumentClick);
+	};
+}
+
+export function bindPointerTooltips(container) {
+	function onPointerMove(e) {
+		const slot = e.target.closest('.radial-wedge-slot');
+		if (!slot || !container.contains(slot)) return;
+		const tooltip = slot.querySelector('.radial-tooltip');
+		if (!tooltip) return;
+		const triggerRect = tooltip.parentElement.getBoundingClientRect();
+		tooltip.style.left = `${e.clientX - triggerRect.left}px`;
+		tooltip.style.top = `${e.clientY - triggerRect.top}px`;
+	}
+	function onPointerLeave(e) {
+		const slot = e.target.closest('.radial-wedge-slot');
+		slot?.querySelector('.radial-tooltip')?.removeAttribute('style');
+	}
+	container.addEventListener('pointermove', onPointerMove);
+	container.addEventListener('pointerleave', onPointerLeave, true);
+	return () => {
+		container.removeEventListener('pointermove', onPointerMove);
+		container.removeEventListener('pointerleave', onPointerLeave, true);
 	};
 }

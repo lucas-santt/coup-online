@@ -3,6 +3,7 @@ import SummaryPanel from './summary-panel.js';
 import ActionMenu from './action-menu.js';
 import ContestMenu from './contest-menu.js';
 import CardLossMenu from './card-loss-menu.js';
+import ExchangeMenu from './exchange-menu.js';
 
 const Overlay = (() => {
 	function init() {
@@ -21,6 +22,7 @@ const Overlay = (() => {
 		// Card Loss picker -- independent of everything else too, driven
 		// entirely by GameState.phase/turnDescription like ContestMenu.
 		CardLossMenu.init();
+		ExchangeMenu.init();
 	}
 
 	return { init };
