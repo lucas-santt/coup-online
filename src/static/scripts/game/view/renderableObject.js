@@ -1,7 +1,7 @@
 import { Vector3, Mat4, Ray } from '../utils/wglm-classes.js'
 import * as wglm from '../utils/wglm.js'
 
-import Animator from './animation.js';
+import { ObjectAnimator } from './animation.js';
 import AssetManager from './assetManager.js';
 
 /**
@@ -30,7 +30,7 @@ export default class RenderableObject {
         this.#mesh = mesh;
         this.#material = material;
 
-        this.animator = new Animator(this);
+        this.animator = new ObjectAnimator(this);
     }
     
     get position()  { return this.#position };

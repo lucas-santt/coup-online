@@ -11,4 +11,15 @@ export default class Player {
         this.coinStack.update(dt);
         this.cards.forEach(card => card.update(dt));
     }
+
+    exchangeCard(cardID, otherPlayer, otherPlayerCardID) {
+        const newCard = otherPlayer.cards[otherPlayerCardID];
+        const cardExchanged = this.cards[cardID];
+
+        this.cards[cardID] = newCard;
+        otherPlayer.cards[otherPlayerCardID] = cardExchanged;
+
+        newCard.startExchangeAnim(cardExchanged);
+        cardExchanged.startExchangeAnim(newCard);
+    }
 }

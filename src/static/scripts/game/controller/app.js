@@ -33,7 +33,7 @@ export default class App {
         this.#scene = new Scene();
         
         document.addEventListener('mousemove', (e) => this.#mouseMovementCallback(e));
-        document.addEventListener('keydown', (e) => this.#keys[e.code] = true);
+        document.addEventListener('keydown', (e) => { if(!e.repeat) this.#keys[e.code] = true; });
         document.addEventListener('keyup', (e) => this.#keys[e.code] = false);
     }
 

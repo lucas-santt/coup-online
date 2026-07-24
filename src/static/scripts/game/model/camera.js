@@ -1,5 +1,8 @@
 import * as wglm from "../utils/wglm.js";
 import { Vector2, Vector3, Ray } from '../utils/wglm-classes.js';
+import { ANIM } from "../settings.js";
+
+import { CameraAnimator } from "../view/animation.js";
 
 export const CameraMovement = {
     FORWARD: 'FORWARD',
@@ -14,9 +17,16 @@ export default class Camera {
     position;
     yaw; pitch;
     zoom; // Or FOV Y in radians
+
+    animator;
+    ogPos; ogZoom;
+    ogYaw; ogPitch;
     
     #worldUp;
     #front; #up; #right;
+
+    #lookTarget;
+    #looking = false;
 
     #allowMovement;
 
@@ -25,8 +35,22 @@ export default class Camera {
         this.yaw   = yaw;
         this.pitch = pitch;
         this.zoom = zoom;
+
+        this.animator = new CameraAnimator(this);
+        this.ogPos = position;
+        this.ogYaw = yaw, this.ogPitch = pitch;
+        this.ogZoom = zoom;
+        
         this.#worldUp  = worldUp;
         this.#allowMovement = allowMovement;
+
+        this.#updateCameraVectors();
+    }
+
+    update(dt) {
+        this.animator.update(dt);
+
+        if(this.#looking) this.#lookObject();
 
         this.#updateCameraVectors();
     }
@@ -40,7 +64,6 @@ export default class Camera {
     getView() {
         return wglm.lookAt(this.position, Vector3.add(this.position, this.#front), this.#up).flatten();
     }
-
      
     /**
      * Creates a ray wich originates from the camera
@@ -104,6 +127,24 @@ export default class Camera {
         this.#updateCameraVectors();
     }
 
+    startLooking(object, zoom = null){
+        this.#lookTarget = object;
+        this.#looking = true;
+
+        if(zoom == null) return;
+        this.animator.zoomAnimation({ to: zoom, ...ANIM.camera.startLooking });
+    }
+
+    stopLooking() {
+        const { stopLooking } = ANIM.camera
+        this.#lookTarget = null;
+        this.#looking = false;
+
+        this.animator.zoomAnimation({to: this.ogZoom, ...stopLooking});
+        this.animator.pitchAnimation({to: this.ogPitch, ...stopLooking});
+        this.animator.yawAnimation({to: this.ogYaw, ...stopLooking});
+    }
+
     /** 
      * Updates camera's front, right and up vectors.
      *  Which are essential for the lookAt matrix creation
@@ -120,5 +161,31 @@ export default class Camera {
         this.#front = Vector3.normalize(newFront);
         this.#right = Vector3.normalize(Vector3.cross(this.#front, this.#worldUp));
         this.#up    = Vector3.normalize(Vector3.cross(this.#right, this.#front));
+    }
+
+    async #lookObject() {
+        const { looking } = ANIM.camera;
+        let { pitch, yaw } = this.#lookAngle(this.#lookTarget.position);
+
+        if(pitch > 89.0)  pitch = 89.0;
+        if(pitch < -89.0) pitch = -89.0;
+
+        await Promise.all([
+            this.animator.pitchAnimation({to: pitch, ...looking}),
+            this.animator.yawAnimation({to: yaw, ...looking})
+        ])
+    }
+
+    #lookAngle(point) {
+        let dir = Vector3.subtract(this.#lookTarget.position, this.position);
+        dir = Vector3.normalize(dir);
+
+        const pitchRad = Math.asin(dir.y);
+        // why atan2: Look the "ground" plane from above
+        const yawRad   = Math.atan2(dir.z, dir.x);
+        
+        const pitch = wglm.degrees(pitchRad);
+        const yaw   = wglm.degrees(yawRad);
+        return { pitch, yaw };
     }
 }

@@ -129,6 +129,20 @@ export const PLAYERS = {
 // Animation ------------------------------------
 
 export const ANIM = {
+    camera: {
+        startLooking: {
+            animTime: 1.0,
+            animCurve: wglmAnim.linearCurve
+        },
+        looking: {
+            animTime: 0.8,
+            animCurve: wglmAnim.linearCurve
+        },
+        stopLooking: {
+            animTime: 0.5,
+            animCurve: wglmAnim.easeInOutCurve
+        }
+    },
     coinStack: {
         delayBetweenCoins: 0.2,
         levitate: {
@@ -147,13 +161,43 @@ export const ANIM = {
             animCurve: wglmAnim.easeInOutCurve
         },
     },
-    userCard: {
-        hover: {
-            positionOffset: new Vector3(0.0, 0.1, -0.06),
-            animSettings: {
-                animTime: 0.2,
-                animCurve: wglmAnim.easeOutBackCurve
-            }
+    exchangeCard: {
+        levitateOffset: new Vector3(0, 0.5, -0.2),
+        levitateAnim: { 
+            animTime: 1.0,
+            animCurve: wglmAnim.easeOutQuintCurve
+        },
+        translateAnim: {
+            animTime: 1.25,
+            animCurve: wglmAnim.easeOutQuintCurve
         }
+    },
+    hoverCard: {
+        positionOffset: new Vector3(0.0, 0.1, -0.06),
+        animSettings: {
+            animTime: 0.2,
+            animCurve: wglmAnim.easeOutBackCurve
+        }
+    },
+    showCard: {
+        totalAnimTime: 6,
+        cameraZoom: 30,
+        cameraTime: 0.9,
+        card: {
+            posOffset: new Vector3(0.0, 0.7, -0.4),
+            rotOffset: new Vector3(0.0, 180.0, 0.0),
+            translation: {
+                animTime: 2.5,
+                animCurve: wglmAnim.easeOutCircCurve
+            },
+            rotation: {
+                animTime: 0.25,
+                animCurve: wglmAnim.easeInOutCurve
+            },
+            inverseTranslation: {
+                animTime: 0.8,
+                animCurve: wglmAnim.easeOutQuintCurve
+            }
+        },
     }
 }

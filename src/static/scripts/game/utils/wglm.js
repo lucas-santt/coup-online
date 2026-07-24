@@ -18,25 +18,20 @@ export function lerp(start, end, t) {
     return start + (end-start) * t;
 }
 
-/**
- * Easing function for ease-in and ease-out
- *
- * @export
- * @param {number} t Linear factor between 0 and 1 
- * @returns {number} 
- */
-export function smoothstep(t) {
-    const clampedT = Math.max(0, Math.min(1, t));
-    return clampedT * clampedT * (3 - 2 * clampedT);
-}
-
-export function easeOutBack(x, c = 1.7) {
-    const c3 = c + 1;
-    return 1 + c3 * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+export function lerp3D(start, end, t) {
+    return new Vector3(
+        lerp(start.x, end.x, t),
+        lerp(start.y, end.y, t),
+        lerp(start.z, end.z, t)
+    )
 }
 
 export function radians(degreesAngle) {
     return degreesAngle * (Math.PI / 180.0);
+}
+
+export function degrees(radiansAngle) {
+    return radiansAngle * (180.0/Math.PI);
 }
 
 // ------------- Vectors -------------

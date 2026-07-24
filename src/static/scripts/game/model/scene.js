@@ -1,6 +1,7 @@
-import { INIT_CAM } from '../settings.js'
+import { ANIM, INIT_CAM } from '../settings.js'
 import { Vector2, Vector3 } from '../utils/wglm-classes.js'
 import * as wglm from '../utils/wglm.js'
+import { easeInOutCurve, linearCurve } from '../utils/wlgm-animation-curves.js';
 
 import Camera, { CameraMovement } from "./camera.js";
 import SceneBuilder from './sceneBuilder.js';
@@ -15,23 +16,31 @@ import SceneBuilder from './sceneBuilder.js';
  * @typedef {Scene}
  */
 export default class Scene {
+    gameManager;
     camera; players;
     drawPile; coinBank;
 
     #hoveredObject = null;
     
     constructor() {
-        this.camera = new Camera(INIT_CAM.position, new Vector3(0, 1, 0), INIT_CAM.yaw, INIT_CAM.pitch, INIT_CAM.zoom);
+        this.camera = new Camera(
+            INIT_CAM.position, 
+            new Vector3(0, 1, 0), 
+            INIT_CAM.yaw, 
+            INIT_CAM.pitch,
+            INIT_CAM.zoom
+        );
         
         const { players, drawPile, coinBank } = SceneBuilder.build();
         this.players  = players;
         this.drawPile = drawPile;
-        this.coinBank = coinBank; 
+        this.coinBank = coinBank;
     }
 
     update(dt, keys) {
         this.processInput(dt, keys);
 
+        this.camera.update(dt);
         this.players.forEach(player => player.update(dt));
     }
 
@@ -43,6 +52,9 @@ export default class Scene {
 
         if(keys['KeyC']) this.players[0].coinStack.spend(2); keys['KeyC'] = false;
         if(keys['KeyV']) this.players[0].coinStack.buy(2);   keys['KeyV'] = false;
+
+        if(keys['KeyE']) this.players[0].exchangeCard(0, this.players[1], 0); keys['KeyE'] = false;
+        if(keys['KeyR']) this.showCard(this.players[2], 0); keys['KeyR'] = false;
     }
 
     
@@ -102,5 +114,27 @@ export default class Scene {
             coins.push(...p.coinStack.getAllCoins());
         }
         return { cards, coins };
+    }
+
+    // Actions
+    async showCard(player, cardID) {
+        const { showCard } = ANIM
+        const card = player.cards[cardID];
+        const id = player.id;
+        
+        // User animation doesn't use camera
+        if(id != 0) this.camera.startLooking(card, showCard.cameraZoom);
+        card.startShowingAnim(id);
+        
+        await new Promise((resolve) => {
+            setTimeout(resolve, showCard.totalAnimTime * showCard.cameraTime * 1000);
+        });
+        // Camera may end animation before card
+        if(id != 0) this.camera.stopLooking();
+
+        await new Promise((resolve) => {
+            setTimeout(resolve, showCard.totalAnimTime * (1-showCard.cameraTime) * 1000);
+        })
+        card.stopShowingAnim();
     }
 }
