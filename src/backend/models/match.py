@@ -23,6 +23,7 @@ BASE_CARD_TYPES: int = 5
 class MatchStatus(StrEnum):
 	WAITING = "waiting"
 	IN_PROGRESS = "in_progress"
+	FINISHED = "finished"
 
 
 class MatchVisibility(StrEnum):

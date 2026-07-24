@@ -735,11 +735,7 @@ const TribunalLobby = (() => {
 		closeMatchSettings();
 		render();
 		Toast.show(ToastMessages.matches.matchStarted(), 'success');
-		// Client's contract per the WS spec: navigate to game.html here.
-		// game.html doesn't exist yet (explicitly out of scope for this
-		// task), so this is left as the integration point rather than a
-		// guessed navigation call:
-		// window.location.href = `/static/pages/game.html?match=${state.matchId}`;
+		window.location.href = `/static/pages/game.html?match=${state.matchId}`;
 	}
 
 	function restartPingCountdown() {

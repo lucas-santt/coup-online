@@ -22,6 +22,13 @@ class Player:
 	avatar_url: str
 	coins: int = 0
 	cards: list[Card] = field(default_factory=list)
+	# Cards permanently lost (coup/assassinate hit, or lost a challenge) --
+	# these stay publicly face-up for the rest of the match. Deliberately
+	# separate from a challenge *defense*: a player who reveals the exact
+	# card they were challenged on isn't losing it, it goes back into the
+	# deck and they draw a replacement (see Match.resolve_action_challenge/
+	# resolve_block_challenge), so that case never touches this list.
+	lost_cards: list[Card] = field(default_factory=list)
 
 	@property
 	def alive(self) -> bool:
@@ -30,4 +37,3 @@ class Player:
 		that would let it drift out of sync with `cards`, e.g. if a caller
 		forgot to flip it after the player's last card is lost."""
 		return len(self.cards) > 0
-	

@@ -31,6 +31,10 @@ class ErrorCode(StrEnum):
 	CANNOT_TARGET_SELF = "CANNOT_TARGET_SELF"
 	SETTINGS_ON_COOLDOWN = "SETTINGS_ON_COOLDOWN"
 
+	# in-match websocket (see routers/websockets.py's in-match handlers)
+	MATCH_NOT_IN_PROGRESS = "MATCH_NOT_IN_PROGRESS"
+	INVALID_ACTION = "INVALID_ACTION"
+
 	# generic fallback
 	UNKNOWN_ERROR = "UNKNOWN_ERROR"
 

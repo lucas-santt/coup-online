@@ -44,6 +44,29 @@ CHALLENGEABLE_ACTIONS: frozenset[Action] = frozenset(
 	{Action.TAX, Action.ASSASSINATE, Action.STEAL, Action.EXCHANGE}
 )
 
+# The character an action's own claim is pinned to -- what a challenge on
+# the *action itself* (ACTION_DECLARED -> challenge) is actually checking
+# the source_id's hand against. Only meaningful for CHALLENGEABLE_ACTIONS;
+# income/foreign_aid/coup make no character claim so they have no entry.
+ACTION_CLAIMS: dict[Action, Card] = {
+	Action.TAX: Card.DUKE,
+	Action.STEAL: Card.CAPTAIN,
+	Action.ASSASSINATE: Card.ASSASSIN,
+	Action.EXCHANGE: Card.AMBASSADOR,
+}
+
+# The character(s) a *block* may claim, per action. Foreign Aid and
+# Assassinate each have exactly one legal block claim; Steal has two
+# (either Captain or Ambassador may block a steal), so a blocker on Steal
+# must say which one they're claiming -- see BLOCK's "claimed_card" field
+# in process_event_while_action_declared. Coup has no entry: it's in
+# UNCONTESTABLE_ACTIONS and can't be blocked at all.
+BLOCK_CLAIMS: dict[Action, frozenset[Card]] = {
+	Action.FOREIGN_AID: frozenset({Card.DUKE}),
+	Action.ASSASSINATE: frozenset({Card.CONTESSA}),
+	Action.STEAL: frozenset({Card.CAPTAIN, Card.AMBASSADOR}),
+}
+
 
 class ClientEvent(StrEnum):
 	"""Event names a client sends *in* to `Match.process_event`'s `data`
