@@ -15,6 +15,10 @@
 	<link rel="stylesheet" href="/static/styles/game/overlay.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/hud.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/summary-panel.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/radial-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/action-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/target-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/contest-menu.css?v=1">
 
 	<script type="module" src="/static/scripts/game/main.js"></script>
 </head>
@@ -57,6 +61,50 @@
 		</header>
 
 		<!-- ============================================================
+		     Action Menu (spec §7.1) -- radial menu of all 7 actions,
+		     shown whenever it becomes the local player's turn. See
+		     ui/action-menu.js. Wedges are generated into
+		     #action-menu-wedges at open time, not hardcoded here, since
+		     each one's disabled/owned state depends on live GameState.
+		     ============================================================ -->
+		<div id="action-menu" class="radial-menu hidden" role="menu" aria-label="Choose your action">
+			<div class="radial-menu-hub">
+				<span id="action-menu-hint" class="radial-menu-hint"></span>
+			</div>
+			<div id="action-menu-wedges" class="radial-menu-wedges"></div>
+		</div>
+
+		<!-- ============================================================
+		     Target Selection (spec §7.2) -- replaces the Action Menu
+		     after a targeted action (Coup, Assassinate, Extort) is
+		     picked, unless there's only one possible opponent (see
+		     ui/action-menu.js's handleChoose, which skips straight to a
+		     server request in that case). See ui/target-menu.js.
+		     ============================================================ -->
+		<div id="target-menu" class="radial-menu hidden" role="menu" aria-label="Choose a target">
+			<div class="radial-menu-hub">
+				<span id="target-menu-hint" class="radial-menu-hint"></span>
+				<button id="target-menu-back" type="button" class="radial-menu-back">Back</button>
+			</div>
+			<div id="target-menu-wedges" class="radial-menu-wedges"></div>
+		</div>
+
+		<!-- ============================================================
+		     Contestation (spec §7.3) -- radial menu of Pass/Contest/Block,
+		     shown to every player who isn't the actor (ACTION_DECLARED) or
+		     the blocker (BLOCK_DECLARED) once there's a claim on the
+		     table. No Back step here -- unlike Target Selection, nothing
+		     has been "picked" yet to back out of; Pass/Contest/Block are
+		     each a final response. See ui/contest-menu.js.
+		     ============================================================ -->
+		<div id="contest-menu" class="radial-menu hidden" role="menu" aria-label="Respond to the declared action">
+			<div class="radial-menu-hub">
+				<span id="contest-menu-hint" class="radial-menu-hint"></span>
+			</div>
+			<div id="contest-menu-wedges" class="radial-menu-wedges"></div>
+		</div>
+
+		<!-- ============================================================
 		     End-of-match banner -- see hud.js's renderEndOfMatch().
 		     ============================================================ -->
 		<div id="end-of-match-banner" class="hidden">
@@ -73,9 +121,6 @@
 		     summary-panel.js for both behaviors.
 		     ============================================================ -->
 		<aside id="summary-panel" aria-label="Match summary">
-			<button id="summary-panel-tab" class="summary-panel-tab" aria-expanded="false">
-				<span class="summary-panel-tab-label">MATCH</span>
-			</button>
 			<div class="summary-panel-body">
 				<div class="summary-panel-header">
 					<span class="summary-panel-title">Match</span>
@@ -88,6 +133,16 @@
 				</div>
 				<div id="summary-panel-list" class="summary-panel-list"></div>
 			</div>
+			<!-- Tab comes AFTER the body in DOM order so it stays flush
+			     against the container's fixed right edge (see
+			     summary-panel.css) regardless of the body's width -- with
+			     the tab first, expanding the body pushed the tab itself
+			     left with it, so the very thing under the cursor kept
+			     sliding out from underneath as it grew, and the panel
+			     visibly juddered chasing the mouse. -->
+			<button id="summary-panel-tab" class="summary-panel-tab" aria-expanded="false">
+				<span class="summary-panel-tab-label">MATCH</span>
+			</button>
 		</aside>
 	</div>
 </body>

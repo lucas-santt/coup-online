@@ -1,0 +1,202 @@
+import GameState from '../state/game-state.js';
+import { escapeHtml, escapeAttr } from './dom-utils.js';
+import { actionLabel, actionDescription, ACTION_CLAIMS, TARGETED_ACTIONS, cardArtUrl } from './labels.js';
+import { layoutWedges, bindRadialKeys, bindTouchTooltips } from './radial-menu.js';
+import TargetMenu from './target-menu.js';
+
+// Fixed wedge order, 1-7 (spec §7.1's "Keyboard shortcuts"): Income,
+// Foreign Aid, Coup, Tax, Assassinate, Extort, Exchange.
+const ACTIONS = ['income', 'foreign_aid', 'coup', 'tax', 'assassinate', 'steal', 'exchange'];
+
+// Flat, single-color glyphs for the three actions with no associated
+// character (spec §7.1's "Custom icons") -- drawn inline rather than
+// pulling in new asset files, same treatment as the Summary Panel's pin
+// icon already inlined in game.html.
+const ACTION_ICONS = {
+	income: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><line x1="12" y1="7" x2="12" y2="17" stroke="currentColor" stroke-width="2"/></svg>',
+	foreign_aid: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="14" r="6" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="9" r="6" stroke="currentColor" stroke-width="2"/></svg>',
+	coup: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14 4L12 14L10 4Z" fill="currentColor"/><rect x="10.5" y="14" width="3" height="6" fill="currentColor"/><rect x="8" y="12" width="8" height="2" fill="currentColor"/></svg>',
+};
+
+const ActionMenu = (() => {
+	let els = null;
+	let isTouch = false;
+	let unbindKeys = null;
+	// True while Target Selection (or the two-player auto-target request)
+	// is handling a targeted action the player already picked here --
+	// keeps this menu hidden even though GameState still says it's the
+	// local player's turn, since nothing has been sent to the server yet
+	// and a "Back" tap should be able to bring this menu back rather than
+	// re-deriving that entirely from wire state.
+	let awaitingTarget = false;
+	let isOpen = false;
+
+	function init() {
+		els = {
+			menu: document.getElementById('action-menu'),
+			wedges: document.getElementById('action-menu-wedges'),
+			hint: document.getElementById('action-menu-hint'),
+		};
+		isTouch = window.matchMedia('(hover: none)').matches;
+		els.menu.classList.toggle('is-touch', isTouch);
+		bindTouchTooltips(els.menu);
+		TargetMenu.init({ onBack: reopenAfterBack });
+		GameState.subscribe(render);
+	}
+
+	function render(state) {
+		const me = state.players[state.localPlayerId];
+		const myTurn = state.phase === 'waiting_action' && state.turnPlayerId === state.localPlayerId;
+
+		if (!myTurn || !me) {
+			awaitingTarget = false;
+			close();
+			return;
+		}
+		if (awaitingTarget) {
+			// Target Selection (or an in-flight auto-target request) owns
+			// the screen right now -- leave it alone.
+			return;
+		}
+		open(state, me);
+	}
+
+	function open(state, me) {
+		els.hint.textContent = 'Choose Your Action';
+		els.wedges.innerHTML = ACTIONS.map((action) => wedgeMarkup(action, state, me)).join('');
+
+		const wedgeEls = Array.from(els.wedges.querySelectorAll('.radial-wedge'));
+		layoutWedges(els.wedges, wedgeEls);
+		wedgeEls.forEach((el) => {
+			el.addEventListener('click', () => handleChoose(el.dataset.action, state));
+		});
+
+		els.menu.classList.remove('hidden');
+		if (!isOpen) {
+			unbindKeys = bindRadialKeys(els.wedges);
+		}
+		isOpen = true;
+	}
+
+	function close() {
+		if (!isOpen) return;
+		els.menu.classList.add('hidden');
+		els.wedges.innerHTML = '';
+		unbindKeys?.();
+		unbindKeys = null;
+		isOpen = false;
+	}
+
+	function wedgeMarkup(action, state, me) {
+		const claim = ACTION_CLAIMS[action] || null;
+		const affordable = isAffordable(action, me.coins, state.settings);
+		const reason = affordable ? '' : disabledReason(action, me.coins, state.settings);
+		const owned = claim ? (state.yourHand || []).includes(claim) : null;
+		const art = claim
+			? `<img class="radial-wedge-art" src="${escapeAttr(cardArtUrl(claim))}" alt="" aria-hidden="true">`
+			: `<span class="radial-wedge-icon" aria-hidden="true">${ACTION_ICONS[action]}</span>`;
+
+		const badge = claim
+			? `<span class="radial-wedge-badge radial-tooltip-trigger${owned ? ' is-owned' : ''}" tabindex="0">
+					${owned ? '✓' : '?'}
+					<span class="radial-tooltip">${owned ? `You have the ${escapeHtml(claim)}` : `You don't have the ${escapeHtml(claim)}`}</span>
+				</span>`
+			: '';
+
+		// Disabled always wins (the player needs to know why they can't
+		// click it more than what it does); otherwise show what the action
+		// does, with this match's own settings filled in -- every wedge is
+		// a tooltip trigger now, not just disabled ones.
+		const tooltipText = reason || actionDescription(action, state.settings);
+		const tooltip = tooltipText
+			? `<span class="radial-tooltip">${escapeHtml(tooltipText)}</span>`
+			: '';
+
+		return `
+			<button
+				type="button"
+				class="radial-wedge radial-tooltip-trigger${affordable ? '' : ' is-disabled'}"
+				data-action="${escapeAttr(action)}"
+				aria-disabled="${affordable ? 'false' : 'true'}"
+				role="menuitem"
+			>
+				${art}
+				${badge}
+				<span class="radial-wedge-label">${escapeHtml(actionLabel(action))}</span>
+				${tooltip}
+			</button>`;
+	}
+
+	function handleChoose(action, state) {
+		const wedge = els.wedges.querySelector(`.radial-wedge[data-action="${action}"]`);
+		if (wedge?.getAttribute('aria-disabled') === 'true') return;
+
+		if (!TARGETED_ACTIONS.includes(action)) {
+			submit(action, null);
+			return;
+		}
+
+		const eligible = state.turnOrder.filter(
+			(id) => id !== state.localPlayerId && state.players[id]?.alive
+		);
+		if (eligible.length <= 1) {
+			// Spec §7.2: with only one possible opponent there's nothing to
+			// choose between -- Target Selection is skipped and the sole
+			// opponent is auto-targeted immediately.
+			submit(action, eligible[0] ?? null);
+			return;
+		}
+
+		awaitingTarget = true;
+		close();
+		TargetMenu.open(action, eligible, state);
+	}
+
+	function submit(action, targetPlayerId) {
+		awaitingTarget = true;
+		close();
+		GameState.chooseAction(action, targetPlayerId).catch((err) => {
+			// Rejected (stale affordability, race with a concurrent state
+			// change, ...) -- the server never advanced, so the next
+			// GameState update still says it's our turn and this menu
+			// reopens on its own. Nothing more to reconcile locally, per
+			// the spec's server-authoritative model.
+			console.warn('chosen_action rejected:', err?.detail || err);
+			awaitingTarget = false;
+			render(GameState.getState());
+		});
+	}
+
+	function reopenAfterBack() {
+		awaitingTarget = false;
+		render(GameState.getState());
+	}
+
+	// ---- Affordability -----------------------------------------------
+	// Mirrors backend/engine/match.py's get_options() exactly, using this
+	// match's own settings rather than hardcoded thresholds -- purely a
+	// display computation (spec §7.1's "Disabled actions"). The server
+	// re-validates independently; this never lets the client skip that.
+
+	function isAffordable(action, coins, settings) {
+		if (!settings) return false;
+		if (coins >= settings.forcedCoupThreshold) return action === 'coup';
+		if (action === 'coup') return coins >= settings.coupCost;
+		if (action === 'assassinate') return coins >= settings.assassinateCost;
+		return true;
+	}
+
+	function disabledReason(action, coins, settings) {
+		if (!settings) return '';
+		if (coins >= settings.forcedCoupThreshold && action !== 'coup') {
+			return `You have ${coins} coins — you must Coup.`;
+		}
+		if (action === 'coup') return `Requires ${settings.coupCost} coins.`;
+		if (action === 'assassinate') return `Requires ${settings.assassinateCost} coins.`;
+		return '';
+	}
+
+	return { init };
+})();
+
+export default ActionMenu;

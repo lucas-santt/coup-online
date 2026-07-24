@@ -46,7 +46,8 @@ export const ASSETS = {
             '/static/assets/img/game/Card-Ambassador_v2.0.png',
             '/static/assets/img/game/Card-Assasin_v2.0.png',
             '/static/assets/img/game/Card-Captain_v2.0.png',
-            '/static/assets/img/game/Card-Contessa_v2.0.png'
+            '/static/assets/img/game/Card-Contessa_v2.0.png',
+			'/static/assets/img/game/Card-Duke_v2.0.png',
         ]
     },
     coin: {
@@ -79,7 +80,8 @@ export const OBJ = {
             '/static/assets/img/game/Card-Ambassador_v2.0.png',
             '/static/assets/img/game/Card-Assasin_v2.0.png',
             '/static/assets/img/game/Card-Captain_v2.0.png',
-            '/static/assets/img/game/Card-Contessa_v2.0.png'
+            '/static/assets/img/game/Card-Contessa_v2.0.png',
+			'/static/assets/img/game/Card-Duke_v2.0.png',
         ]
     },
     drawPile: {

@@ -75,9 +75,13 @@ export function headline(decision, players, localPlayerId) {
 		case 'turn':
 			return decision.playerId === localPlayerId ? 'Your Turn' : `${name(decision.playerId)}'s Turn`;
 		case 'pending-claim':
-			return `${name(decision.actorId)} declares ${actionLabel(decision.action)}`;
+			return decision.actorId === localPlayerId
+				? `You declare ${actionLabel(decision.action)}`
+				: `${name(decision.actorId)} declares ${actionLabel(decision.action)}`;
 		case 'pending-block':
-			return `${name(decision.blockerId)} blocks with ${decision.claim || '?'}`;
+			return decision.blockerId === localPlayerId
+				? `You block with ${decision.claim || '?'}`
+				: `${name(decision.blockerId)} blocks with ${decision.claim || '?'}`;
 		case 'card-loss':
 			return decision.playerId === localPlayerId
 				? 'Choose a card to lose'

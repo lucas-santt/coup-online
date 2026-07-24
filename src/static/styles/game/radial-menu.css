@@ -1,0 +1,213 @@
+/* radial-menu.css
+   Shared scaffold for every radial menu in the match view -- the Action
+   Menu (action-menu.css) and Target Selection (target-menu.css) each
+   layer their own decoration on top of this. See spec §7.1/§7.2. */
+
+.radial-menu {
+	position: fixed;
+	inset: 0;
+	z-index: 35;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.45);
+}
+
+.radial-menu-wedges {
+	position: relative;
+	width: min(80vw, 460px);
+	height: min(80vw, 460px);
+	--wedge-radius: 165px;
+}
+
+@media (max-width: 640px) {
+	.radial-menu-wedges {
+		--wedge-radius: 120px;
+	}
+}
+
+/* Center hub -- a static label (Action Menu) or label + Back button
+   (Target Selection), never itself a wedge. */
+.radial-menu-hub {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.6rem;
+	text-align: center;
+	max-width: 55vw;
+}
+
+.radial-menu-hint {
+	font-family: var(--font-display);
+	font-size: 1rem;
+	letter-spacing: 1.5px;
+	color: var(--color-panel-light);
+	text-shadow: 2px 2px 0 var(--color-ink);
+}
+
+.radial-menu-back {
+	font-family: var(--font-display);
+	font-size: 0.8rem;
+	letter-spacing: 1.5px;
+	padding: 0.5rem 1.1rem;
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+	cursor: pointer;
+	transition: box-shadow 0.15s ease;
+}
+
+.radial-menu-back:hover {
+	box-shadow: var(--shadow-stamp-sm-hover);
+}
+
+/* One wedge -- a flat square stamp positioned around the circle by
+   rotating to its angle, pushing out by the radius, then rotating back
+   so its own content stays upright. --wedge-count/--wedge-index are set
+   per-instance by ui/radial-menu.js's layoutWedges(); --wedge-radius is
+   the presentational constant above. */
+.radial-wedge {
+	--wedge-angle: calc(360deg / var(--wedge-count, 1) * var(--wedge-index, 0));
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 88px;
+	height: 88px;
+	margin: -44px 0 0 -44px;
+	transform: rotate(var(--wedge-angle)) translateY(calc(-1 * var(--wedge-radius))) rotate(calc(-1 * var(--wedge-angle)));
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.2rem;
+	padding: 0.3rem;
+	background: var(--color-panel);
+	border: 2px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+	cursor: pointer;
+	overflow: visible;
+	transition: box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+@media (max-width: 640px) {
+	.radial-wedge {
+		width: 68px;
+		height: 68px;
+		margin: -34px 0 0 -34px;
+	}
+}
+
+.radial-wedge:hover,
+.radial-wedge:focus-visible {
+	box-shadow: var(--shadow-stamp-sm-hover);
+	filter: brightness(1.08);
+	outline: none;
+}
+
+.radial-wedge.is-disabled {
+	filter: grayscale(0.7);
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.radial-wedge-label {
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.62rem;
+	letter-spacing: 0.3px;
+	color: var(--color-ink);
+	text-align: center;
+	line-height: 1.1;
+}
+
+.radial-wedge-icon {
+	width: 28px;
+	height: 28px;
+	color: var(--color-navy);
+}
+
+.radial-wedge-icon svg {
+	width: 100%;
+	height: 100%;
+}
+
+/* Card art (Action Menu) / avatar (Target Selection) filling the wedge
+   behind everything else -- see .radial-wedge-art modifiers in
+   action-menu.css/target-menu.css for the two different treatments. */
+.radial-wedge-art {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* ============================================================
+   Tooltips -- shared by disabled-wedge cost/reason text and the
+   character-owned badge. Desktop: plain CSS hover/focus. Touch: JS
+   toggles .is-tooltip-open (see ui/radial-menu.js's bindTouchTooltips).
+   ============================================================ */
+.radial-tooltip {
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	font-family: var(--font-body);
+	font-size: 0.68rem;
+	line-height: 1.3;
+	padding: 0.35rem 0.55rem;
+	white-space: normal;
+	width: max-content;
+	max-width: 190px;
+	border: 1px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.1s ease;
+	z-index: 5;
+}
+
+.radial-tooltip-trigger:hover .radial-tooltip,
+.radial-tooltip-trigger:focus-visible .radial-tooltip,
+.radial-tooltip-trigger.is-tooltip-open .radial-tooltip {
+	opacity: 1;
+}
+
+/* The badge is itself a nested tooltip trigger inside the wedge, which
+   is now also a trigger for its own (always-on) description tooltip --
+   hovering the badge would otherwise show both stacked at the same
+   centered spot. Shifting the badge's tooltip to the right keeps them
+   legible side by side instead of overlapping. */
+.radial-wedge-badge .radial-tooltip {
+	left: auto;
+	right: -6px;
+	transform: none;
+}
+
+/* Character-owned indicator badge (Action Menu only, see action-menu.css
+   for its positioning) -- base look lives here since it's just another
+   tooltip trigger. */
+.radial-wedge-badge {
+	font-family: var(--font-display);
+	font-size: 0.65rem;
+	width: 18px;
+	height: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-panel-dim);
+	color: var(--color-ink-muted);
+	border: 1px solid var(--color-ink);
+}
+
+.radial-wedge-badge.is-owned {
+	background: var(--color-online);
+	color: var(--color-panel-light);
+}

@@ -141,14 +141,20 @@ const SummaryPanel = (() => {
 		return `<div class="summary-cards">${hand}</div>`;
 	}
 
+	// Flat hourglass silhouette, same inline-SVG treatment as the pin icon
+	// above and the Action Menu's custom action icons -- previously each
+	// token was a plain gold circle, which read as a second coin count
+	// rather than a distinct resource.
+	const HOURGLASS_ICON = '<svg class="summary-token-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 2H18V4L13 12L18 20V22H6V20L11 12L6 4V2Z"/></svg>';
+
 	function timeBankLine(state) {
 		const count = state.settings?.timeBankCount;
 		if (!count) return '';
 		// Spent-token tracking isn't implemented server-side yet (see the
 		// spec's "known engine gaps" -- timers/time bank spending land in
 		// a later pass), so every token renders as available for now.
-		const tokens = '<span class="summary-token" title="Time bank token"></span>'.repeat(count);
-		return `<div class="summary-time-bank">${tokens}</div>`;
+		const tokens = `<span class="summary-token" title="Time bank token">${HOURGLASS_ICON}</span>`.repeat(count);
+		return `<div class="summary-time-bank"><span class="summary-cards-label">Time Bank:</span> ${tokens}</div>`;
 	}
 
 	return { init };

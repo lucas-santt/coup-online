@@ -1,0 +1,35 @@
+/* action-menu.css
+   Decorates the shared .radial-wedge scaffold (radial-menu.css) for the
+   Action Menu specifically (spec §7.1). */
+
+#action-menu-wedges .radial-wedge-art {
+	/* "Card art at low alpha in the background" (spec §7.1's "Card art")
+	   -- dimmed so the label/badge stay legible on top of it, and so
+	   players build the icon-to-character association passively rather
+	   than the wedge reading as a normal face-up card. */
+	z-index: 0;
+	opacity: 0.32;
+}
+
+#action-menu-wedges .radial-wedge.is-disabled .radial-wedge-art {
+	opacity: 0.18;
+}
+
+#action-menu-wedges .radial-wedge-icon {
+	position: relative;
+	z-index: 1;
+}
+
+#action-menu-wedges .radial-wedge-label {
+	position: relative;
+	z-index: 1;
+	padding: 0.1rem 0.3rem;
+	background: rgba(220, 210, 192, 0.82); /* --color-panel at reduced opacity */
+}
+
+#action-menu-wedges .radial-wedge-badge {
+	position: absolute;
+	z-index: 2;
+	top: 4px;
+	right: 4px;
+}

@@ -1,0 +1,26 @@
+/* target-menu.css
+   Decorates the shared .radial-wedge scaffold (radial-menu.css) for
+   Target Selection specifically (spec §7.2). Wedges here are player
+   avatars, at full opacity -- unlike the Action Menu's dimmed card art,
+   since identifying *who* you're targeting needs to read clearly. */
+
+#target-menu-wedges .radial-wedge-avatar {
+	z-index: 0;
+	object-fit: cover;
+	background: var(--color-panel-dim);
+}
+
+#target-menu-wedges .radial-wedge-label {
+	position: relative;
+	z-index: 1;
+	padding: 0.1rem 0.3rem;
+	background: rgba(220, 210, 192, 0.9); /* --color-panel at reduced opacity */
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.radial-menu-hub .radial-menu-back {
+	margin-top: 0.2rem;
+}

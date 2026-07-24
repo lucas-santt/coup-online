@@ -1,0 +1,20 @@
+/* contest-menu.css
+   Decorates the shared .radial-wedge scaffold (radial-menu.css) for
+   Contestation specifically (spec §7.3). Wedges here are plain text --
+   Pass, Contest, and (for whoever's eligible) one Block wedge per legal
+   claim -- no card art or avatar, unlike the Action Menu / Target
+   Selection, since there's no single character or player to depict. */
+
+#contest-menu-wedges .radial-wedge-label {
+	font-size: 0.72rem;
+}
+
+/* The claimed character under "Block" (e.g. "Captain" / "Ambassador") --
+   Extort offers two separate Block wedges, one per legal claim, so this
+   is what tells them apart at a glance. */
+.contest-wedge-sub {
+	font-family: var(--font-body);
+	font-size: 0.62rem;
+	letter-spacing: 0.3px;
+	color: var(--color-ink-muted);
+}
