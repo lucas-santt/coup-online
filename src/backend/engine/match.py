@@ -1,9 +1,38 @@
 import random
-from src.backend.engine.player import Player
-from src.backend.engine.deck import Deck
+from backend.engine.player import Player
+from backend.engine.deck import Deck
+
+
+DEFAULT_BASE_CARDS = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
+ALL_ACTIONS = ["income", "foreing_aid", "coup", "tax", "assassinate", "steal", "exchange"]
+
+# Now a lobby-configurable setting (constants.MATCH_SETTINGS_SCHEMA
+# "assassinate_cost"); kept as a named default here too so this constructor
+# still has a sane value if instantiated without going through a lobby's
+# MatchSettings row.
+DEFAULT_ASSASSINATE_COST = 3
+DEFAULT_EXTORT_COINS = 2
+DEFAULT_TAX_COINS = 3
+DEFAULT_EXCHANGE_DRAW_CARDS = 2
+
 
 class Match:
-    def __init__(self, id: str, base_cards=["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]):
+    def __init__(
+        self,
+        id: str,
+        base_cards: list[str] | None = None,
+        coup_cost: int = 7,
+        forced_coup_threshold: int = 10,
+        assassinate_cost: int = DEFAULT_ASSASSINATE_COST,
+        income_coins: int = 1,
+        foreign_aid_coins: int = 2,
+        extort_coins: int = DEFAULT_EXTORT_COINS,
+        tax_coins: int = DEFAULT_TAX_COINS,
+        exchange_draw_cards: int = DEFAULT_EXCHANGE_DRAW_CARDS,
+        reformation: bool = False,
+        declared_coup: bool = False,
+        declared_assassinate: bool = False,
+    ):
         self.id = id
         self.players = {}
         self.status = {"started": False, # status of the match
@@ -23,17 +52,18 @@ class Match:
         
         self.order = [] # player order
         self.turn_id = 0 # indicates whose turn it is to play (order[turn_id])
-        self.base_cards = base_cards
+        self.base_cards = base_cards if base_cards is not None else list(DEFAULT_BASE_CARDS)
+        self.last_action = None
         self.turn_description = {"source_id": None, # informations about the last action
-                                   "target_id": None,
-                                   "action": None,
-                                   "blocker_id": None,
-                                   "challenger_id": None,
-                                   "players_passed_action": [], # number of players who accepted the last action (did not block or challenge)
-                                   "players_passed_block": [],
-                                   "pending_action": False,
-                                   "card_loser_id": None}
-
+                                           "target_id": None,
+                                           "action": None,
+                                           "blocker_id": None,
+                                           "challenger_id": None,
+                                           "players_passed_action": [], # number of players who accepted the last action (did not block or challenge)
+                                           "players_passed_block": [],
+                                           "pending_action": False,
+                                           "card_loser_id": None}
+        
         # Influences that can make the action
         self.action_cards = {
             "assassinate": ["Assassin"],
@@ -48,6 +78,26 @@ class Match:
             "foreign_aid": ["Duke"],
             "steal": ["Ambassador", "Captain"]
         }
+        
+        # Ruleset values, provided by the lobby's MatchSettings rather than
+        # hardcoded. coup_cost/forced_coup_threshold/assassinate_cost drive
+        # get_options() below; income_coins/foreign_aid_coins/extort_coins/
+        # tax_coins/exchange_draw_cards are threaded through and stored for
+        # when action resolution (currently stubbed out in process_event's
+        # "action_declared" branch) actually applies coin gains/exchange
+        # draws — nothing to wire them into yet, but they shouldn't need to
+        # be re-threaded later either.
+        self.coup_cost = coup_cost
+        self.forced_coup_threshold = forced_coup_threshold
+        self.assassinate_cost = assassinate_cost
+        self.income_coins = income_coins
+        self.foreign_aid_coins = foreign_aid_coins
+        self.extort_coins = extort_coins
+        self.tax_coins = tax_coins
+        self.exchange_draw_cards = exchange_draw_cards
+        self.reformation = reformation
+        self.declared_coup = declared_coup
+        self.declared_assassinate = declared_assassinate
 
     # Adds a player to the match
     def add_player(self, id: str, name: str):
@@ -72,8 +122,13 @@ class Match:
     # Adjusts match states and distributes resources (cards and coins) to the players
     def start_match(self, copies_by_card=None, starting_coins=2):
         num_players = len(self.order)
-        if num_players < 2:
-            raise ValueError("At least 2 players are required.")
+        # Per explicit product direction (not a hard-coded engine opinion):
+        # player count is never a reason to refuse a start. A lobby with
+        # bot_fill=none and a single human is a legitimate (if degenerate)
+        # match. Only a genuinely empty lobby can't start, there's no one
+        # to take a turn.
+        if num_players < 1:
+            raise ValueError("At least 1 player is required to start.")
         # If copies_by_card=None, choose default values
         if copies_by_card is not None:
             if copies_by_card > 0 and num_players > (2 * copies_by_card) + 2:
@@ -98,7 +153,7 @@ class Match:
         first_player = self.players[self.order[0]] # first player
         return{"event": "new_turn",
                "player": first_player.id,
-               "options": first_player.get_action_options(),
+               "options": self.get_options(self.order[0]),
                "last_eliminated": []}
     
     # Deal the cards to each player
@@ -155,11 +210,10 @@ class Match:
             self.status["finished"] = True
             self.status["current_match_state"] = "end_of_match"
             return {"event": "end_of_match",
-                    "winner": winner_id,
-                    "last_eliminated": last_eliminated}
+                    "winner": winner_id}
         else:
             player = self.next_player()
-            options = player.get_action_options()
+            options = self.get_options(player.id)
             # Gets state of players
             players = {}
             for player2 in self.players.values():
@@ -216,9 +270,9 @@ class Match:
             raise ValueError("You can not do it right now.")
         if player_id != self.order[self.turn_id]:
             raise ValueError("It is not your turn.")
-        if action not in self.players[player_id].get_action_options():
-            if self.players[player_id].coins >= 10:
-                raise ValueError("You have 10 or more coins, you must choose 'coup'.")
+        if action not in self.get_options(player_id):
+            if self.players[player_id].coins >= self.forced_coup_threshold:
+                raise ValueError(f"You must choose 'coup' because you have {self.forced_coup_threshold} coins.")
             else:
                 raise ValueError("This is not a valid option or you do not have enough money.")
         if action in ["coup", "assassinate", "steal"]:
@@ -248,9 +302,9 @@ class Match:
             self.turn_description["players_passed_action"] = []
         # Collects the coins for the assassination
         if action == "assassinate":
-            self.add_coins_to_player(player_id, -3)
+            self.add_coins_to_player(player_id, -self.assassinate_cost)
         if action == "coup":
-            self.add_coins_to_player(player_id, -7)
+            self.add_coins_to_player(player_id, -self.coup_cost)
         return {"event": self.status["current_match_state"],
                 "action": action,
                 "player_id": player_id,
@@ -415,8 +469,8 @@ class Match:
         # Catch errors
         if player_id != source_id:
             raise ValueError("It is not your turn.")
-        if event != "selected_cards" or len(selected_cards) != 2:
-            raise ValueError("You must choose two cards to return to the deck.")
+        if event != "selected_cards" or len(selected_cards) != self.exchange_draw_cards:
+            raise ValueError(f"You must choose {self.exchange_draw_cards} cards to return to the deck.")
         
         for card in selected_cards:
             if card not in self.players[player_id].cards:
@@ -449,7 +503,7 @@ class Match:
         target_id = self.turn_description.get("target_id")
 
         if action == "income":
-            self.add_coins_to_player(source_id, 1)
+            self.add_coins_to_player(source_id, self.income_coins)
             self.status["current_match_state"] = "turn_resolved"
             return {"event": "turn_resolved",
                     "action": action,
@@ -458,7 +512,7 @@ class Match:
                     "lost_card": None}
         
         elif action == "foreign_aid":
-            self.add_coins_to_player(source_id, 2)
+            self.add_coins_to_player(source_id, self.foreign_aid_coins)
             self.status["current_match_state"] = "turn_resolved"
             return {"event": "turn_resolved",
                     "action": action,
@@ -484,7 +538,7 @@ class Match:
                         "cards": cards}
             
         elif action == "tax":
-            self.add_coins_to_player(source_id, 3)
+            self.add_coins_to_player(source_id, self.tax_coins)
             self.status["current_match_state"] = "turn_resolved"
             return {"event": "turn_resolved",
                     "action": action,
@@ -517,10 +571,8 @@ class Match:
                         "cards": cards}
             
         elif action == "steal":
-            if self.players[target_id].coins >= 2:
-                self.steal_coins(source_id, target_id, 2)
-            else:
-                self.steal_coins(source_id, target_id, 1)
+            stolen_coins = min(self.extort_coins, self.players[target_id].coins)
+            self.steal_coins(source_id, target_id, stolen_coins)
             self.status["current_match_state"] = "turn_resolved"
             return {"event": "turn_resolved",
                     "action": action,
@@ -529,9 +581,9 @@ class Match:
                     "lost_card": None}
         
         elif action == "exchange":
-            card1 = self.deck.pop_card()
-            card2 = self.deck.pop_card()
-            new_cards = [card1, card2]
+            new_cards = []
+            for _ in range(self.exchange_draw_cards):
+                new_cards.append(self.deck.pop_card())
             self.players[source_id].cards += new_cards
             self.status["current_match_state"] = "waiting_exchange"
             return {"event": "waiting_exchange",
@@ -690,3 +742,19 @@ class Match:
         self.remove_player(player_id)
         
         return result
+    
+    # Returns a player's possible options given their number of coins.
+    # Thresholds come from this match's own ruleset (self.coup_cost,
+    # self.forced_coup_threshold, self.assassinate_cost) instead of the
+    # previous hardcoded 10 / 7 / 3, so a lobby with a custom coup cost or
+    # forced-coup threshold actually changes what's playable.
+    def get_options(self, player_id: str):
+        player = self.players[player_id]
+        if player.coins >= self.forced_coup_threshold:
+            return ["coup"]
+        elif player.coins >= self.coup_cost:
+            return list(ALL_ACTIONS)
+        elif player.coins >= self.assassinate_cost:
+            return [action for action in ALL_ACTIONS if action != "coup"]
+        else:
+            return [action for action in ALL_ACTIONS if action not in ("coup", "assassinate")]

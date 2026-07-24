@@ -1,14 +1,16 @@
 // Shared lobby session state.
 //
-// Split out of main.js so profile.js, matches.js, and friends.js can all
-// read/update the current user without depending on script load order for
-// a single shared `let currentUser` variable. Not a full pub-sub, just a
-// getter/setter: every consumer here only touches the user from inside a
-// click handler that fires after the lobby is already revealed, so there's
-// no need to react to changes happening elsewhere.
+// Split out of main.js so profile.js, matches.js, friends.js, and
+// tribunal-lobby.js can all read/update the current user without depending
+// on script load order for a single shared `let currentUser` variable.
+// Active tribunal membership (sidebar lobby) lives in TribunalLobby.
+//
+// `subscribe` notifies listeners on set/patch so the tribunal sidebar can
+// mirror display-name / avatar changes immediately.
 
 const LobbySession = (() => {
 	let currentUser = null; // { isGuest, username, displayName, avatarUrl }
+	const listeners = new Set();
 
 	function get() {
 		return currentUser;
@@ -16,11 +18,28 @@ const LobbySession = (() => {
 
 	function set(user) {
 		currentUser = user;
+		notify();
 	}
 
 	function patch(partial) {
-		currentUser = { ...currentUser, ...partial };
+		if (!currentUser) {
+			currentUser = { ...partial };
+		} else {
+			currentUser = { ...currentUser, ...partial };
+		}
+		notify();
 	}
 
-	return { get, set, patch };
+	function subscribe(listener) {
+		listeners.add(listener);
+		return () => listeners.delete(listener);
+	}
+
+	function notify() {
+		listeners.forEach((fn) => {
+			try { fn(currentUser); } catch (_) { /* ignore listener errors */ }
+		});
+	}
+
+	return { get, set, patch, subscribe };
 })();

@@ -1,6 +1,5 @@
-import { OBJ, ANIM } from "../../settings.js";
 import { Vector3 } from "../../utils/wglm-classes.js";
-import { easeInOutCurve } from "../../utils/wlgm-animation-curves.js";
+import { OBJ, ANIM } from "../../settings.js";
 
 import Coin from "./coin.js";
 

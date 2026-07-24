@@ -3,10 +3,22 @@
  *  objects and players positions and rotations
  */
 import { Vector3 } from './utils/wglm-classes.js'
-import { easeInOutCurve } from "./utils/wlgm-animation-curves.js";
+import * as wglmAnim from "./utils/wlgm-animation-curves.js";
+
+import * as shaders from './shaders.js';
+
+export const GAME = {
+    backgroundColor: [0.8941, 0.8314, 0.7373, 0],
+    totalCardTypes: 4,
+    playerDistance: -4.0,
+    sidePlayerDistance: 1.9,
+    playerCoinCount: 7
+}
+
+// Assets -----------------------
 
 export const GEOMETRY = {
-    quad: {
+    card: {
         vertices: [
             // Pos           // TexCoords
            -0.5, -0.7, 0.0,  0.0, 1.0,   // bottom left
@@ -19,18 +31,33 @@ export const GEOMETRY = {
             1, 3, 2
         ]
     },
-    circle: {
+    coin: {
         resolution: 24
+    }   
+}
+
+export const ASSETS = {
+    card: {
+        name: "card",
+        vertexShader:   shaders.CARD_VERTEX_SHADER,
+        fragmentShader: shaders.CARD_FRAGMENT_SHADER,
+        textures: [
+            '/static/assets/img/game/Card-Back.png',
+            '/static/assets/img/game/Card-Ambassador_v2.0.png',
+            '/static/assets/img/game/Card-Assasin_v2.0.png',
+            '/static/assets/img/game/Card-Captain_v2.0.png',
+            '/static/assets/img/game/Card-Contessa_v2.0.png'
+        ]
+    },
+    coin: {
+        name: "coin",
+        vertexShader:   shaders.COIN_VERTEX_SHADER,
+        fragmentShader: shaders.COIN_FRAGMENT_SHADER,
+        textures: [ '/static/assets/img/game/Coin.png' ]
     }
 }
 
-export const GAME = {
-    backgroundColor: [0.8941, 0.8314, 0.7373, 0],
-    totalCardTypes: 4,
-    playerDistance: -4.0,
-    sidePlayerDistance: 1.9,
-    playerCoinCount: 7
-}
+// Position, rotation and scale -----------------------
 
 export const INIT_CAM = {
     position: new Vector3(0, 2, -1),
@@ -43,16 +70,16 @@ export const OBJ = {
     coin: {
         scale: new Vector3(0.08, 0.08, 1),
         rotation: new Vector3(90, 0, 0),
-        textures: [ '/static/img/Coin.png' ]
+        textures: [ '/static/assets/img/game/Coin.png' ]
     },
     card: {
         scale: new Vector3(0.4, 0.42, 1.0),
         textures: [
-            '/static/img/Card-Back.png',
-            '/static/img/Card-Ambassador_v2.0.png',
-            '/static/img/Card-Assasin_v2.0.png',
-            '/static/img/Card-Captain_v2.0.png',
-            '/static/img/Card-Contessa_v2.0.png'
+            '/static/assets/img/game/Card-Back.png',
+            '/static/assets/img/game/Card-Ambassador_v2.0.png',
+            '/static/assets/img/game/Card-Assasin_v2.0.png',
+            '/static/assets/img/game/Card-Captain_v2.0.png',
+            '/static/assets/img/game/Card-Contessa_v2.0.png'
         ]
     },
     drawPile: {
@@ -75,7 +102,7 @@ export const PLAYERS = {
     user: {
         pos: {
             coinStack: new Vector3( 0.55, -2.4, -1.6),
-            frontCard: new Vector3(-0.15, -2.1, -1.4),
+            frontCard: new Vector3(-0.15, -2.2, -1.45),
             backCard:  new Vector3( 0.15, -2.1, -1.39)
         },
         rot: {
@@ -107,15 +134,17 @@ export const PLAYERS = {
     }
 }
 
+// Animation ------------------------------------
+
 export const ANIM = {
     coinStack: {
         buy: {
             animTime: 1.0,
-            animCurve: easeInOutCurve
+            animCurve: wglmAnim.easeInOutCurve
         },
         spend: { 
             animTime: 1.0,
-            animCurve: easeInOutCurve
+            animCurve: wglmAnim.easeInOutCurve
         },
     }
 }

@@ -31,7 +31,6 @@ const AuthOverlay = (() => {
 	const btnTextLogin = btnSubmit.querySelector('.btn-text-login');
 	const btnTextSignup = btnSubmit.querySelector('.btn-text-signup');
 	const linkToggleAuth = document.getElementById('link-toggle-auth');
-	const toggleHintText = document.getElementById('toggle-hint-text');
 	const btnGuest = document.getElementById('btn-guest');
 	const usernameInput = document.getElementById('auth-username');
 	const passwordInput = document.getElementById('auth-password');
@@ -50,7 +49,8 @@ const AuthOverlay = (() => {
 		const overlayHeight = overlayScroll.offsetHeight;
 		const screenHeight = window.innerHeight;
 		const marginTop = (screenHeight - overlayHeight) * 0.5 - overlayHeight * 0.07;
-		overlayScroll.style.marginTop = `${marginTop}px`;
+		// overlayScroll.style.marginTop = `${marginTop}px`;
+		overlayScroll.style.marginTop = `100px`;
 		overlay.classList.add('pinned-top');
 	}
 
@@ -59,6 +59,15 @@ const AuthOverlay = (() => {
 	window.addEventListener('resize', () => {
 		if (overlay.classList.contains('visible')) pinTop();
 	});
+
+	function updateConvertSubtitle() {
+		if (context !== 'convert') return;
+		if (currentMode === 'signup') {
+			overlaySubtitle.textContent = 'Create an account to keep this character between sessions.';
+		} else {
+			overlaySubtitle.innerHTML = 'Logging in to another account will <strong>discard your guest progress!</strong> Sign up instead to keep it.';
+		}
+	}
 
 	function setAuthMode(mode) {
 		if (currentMode === mode) return;
@@ -75,8 +84,6 @@ const AuthOverlay = (() => {
 
 			btnTextSignup.classList.remove('active');
 			btnTextLogin.classList.add('active');
-
-			toggleHintText.innerHTML = `Don't have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Sign up</a>`;
 		} else {
 			tabSignup.classList.add('active');
 			tabSignup.setAttribute('aria-selected', 'true');
@@ -91,18 +98,16 @@ const AuthOverlay = (() => {
 
 			btnTextLogin.classList.remove('active');
 			btnTextSignup.classList.add('active');
-
-			toggleHintText.innerHTML = `Already have an account? <a href="#" id="link-toggle-auth-inner" class="renaissance-link">Log in</a>`;
 		}
 
-		document.getElementById('link-toggle-auth-inner').addEventListener('click', (e) => {
-			e.preventDefault();
-			setAuthMode(currentMode === 'login' ? 'signup' : 'login');
-		});
+		updateConvertSubtitle();
 	}
 
 	function resolve(result) {
 		overlay.classList.remove('visible');
+		if (overlay.contains(document.activeElement)) {
+			document.activeElement.blur();
+		}
 		overlay.setAttribute('aria-hidden', 'true');
 		authForm.reset();
 		const callback = onDone;
@@ -114,13 +119,16 @@ const AuthOverlay = (() => {
 	function open({ context: ctx = 'gate', onDone: callback = null } = {}) {
 		context = ctx;
 		onDone = callback;
-
 		if (context === 'convert') {
 			overlayTitle.textContent = 'Secure Your Progress';
-			overlaySubtitle.textContent = 'Create an account to keep this character between sessions.';
 			guestSection.classList.add('hidden');
+			// Default to signup so the user is nudged to keep their progress.
+			// We bypass the setAuthMode guard (currentMode may already be 'login'
+			// from the last close) by forcing currentMode first.
+			currentMode = 'login';
+			setAuthMode('signup');
 		} else {
-			overlayTitle.textContent = 'Enter the Court';
+			overlayTitle.textContent = 'Join the Regime';
 			overlaySubtitle.textContent = 'Log in, sign up, or slip in as a guest.';
 			guestSection.classList.remove('hidden');
 		}
@@ -151,47 +159,102 @@ const AuthOverlay = (() => {
 	});
 
 	// Guest
-	btnGuest.addEventListener('click', () => {
-		console.log(`Guest Auth Requested: POST ${LOBBY_SETTINGS.endpoints.auth.guest}`);
-		Toast.show('Welcome, Traveller! Entering the court as Guest...', 'success');
-		resolve({ authenticated: true, isGuest: true, username: 'Guest' });
+	btnGuest.addEventListener('click', async () => {
+		btnGuest.disabled = true;
+
+		try {
+			const res = await fetch(LOBBY_SETTINGS.endpoints.auth.guest, {
+				method: 'POST',
+				credentials: 'same-origin',
+			});
+
+			if (!res.ok) {
+				Toast.show(await ToastMessages.fromResponse(res), 'error');
+				return;
+			}
+
+			const data = await res.json();
+			//Toast.show(ToastMessages.auth.guestGranted(), 'success');
+			resolve({ authenticated: true, isGuest: true, username: data.username });
+		} catch (err) {
+			Toast.show(ToastMessages.connectionLost(), 'network');
+		} finally {
+			btnGuest.disabled = false;
+		}
 	});
 
 	// Login / Signup submit
-	authForm.addEventListener('submit', (e) => {
+	authForm.addEventListener('submit', async (e) => {
 		e.preventDefault();
 
 		const username = document.getElementById('auth-username').value.trim();
 		const password = document.getElementById('auth-password').value;
 
 		if (!username || !password) {
-			Toast.show('Moniker and passphrase must not be blank!', 'warning');
+			Toast.show(ToastMessages.auth.missingFields(), 'warning');
 			return;
 		}
 
-		if (currentMode === 'login') {
-			console.log(`Log In Requested: POST ${LOBBY_SETTINGS.endpoints.auth.login} | Username: "${username}"`);
-			Toast.show(`Verifying credentials for "${username}"...`, 'info');
+		btnSubmit.disabled = true;
 
-			setTimeout(() => {
-				Toast.show('Access granted! Entering the realm...', 'success');
+		if (currentMode === 'login') {
+			//Toast.show(ToastMessages.auth.verifying(username), 'info');
+
+			try {
+				const res = await fetch(LOBBY_SETTINGS.endpoints.auth.login, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ username, password }),
+				});
+				console.log(res);
+				if (!res.ok) {
+					Toast.show(await ToastMessages.fromResponse(res), 'warning');
+					return;
+				}
+
+				//Toast.show(ToastMessages.auth.loginSuccess(), 'success');
 				resolve({ authenticated: true, isGuest: false, username });
-			}, 1200);
+			} catch (err) {
+				Toast.show(ToastMessages.connectionLost(), 'network');
+			} finally {
+				btnSubmit.disabled = false;
+			}
 		} else {
 			const confirmPassword = confirmPasswordInput.value;
 			if (password !== confirmPassword) {
-				Toast.show('Verily, thy passphrases do not match!', 'warning');
+				Toast.show(ToastMessages.auth.passwordsMismatch(), 'warning');
 				confirmPasswordInput.focus();
+				btnSubmit.disabled = false;
 				return;
 			}
 
-			console.log(`Sign Up Requested: POST ${LOBBY_SETTINGS.endpoints.auth.signup} | Username: "${username}"`);
-			Toast.show(`Pledging allegiance for "${username}"...`, 'info');
+			//Toast.show(ToastMessages.auth.filing(username), 'info');
 
-			setTimeout(() => {
-				Toast.show('Allegiance sworn! Logging you in...', 'success');
+			try {
+				const res = await fetch(LOBBY_SETTINGS.endpoints.auth.signup, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						username,
+						password,
+						password_confirmation: confirmPassword,
+					}),
+				});
+
+				if (!res.ok) {
+					Toast.show(await ToastMessages.fromResponse(res), 'warning');
+					return;
+				}
+
+				//Toast.show(ToastMessages.auth.signupSuccess(), 'success');
 				resolve({ authenticated: true, isGuest: false, username });
-			}, 1200);
+			} catch (err) {
+				Toast.show(ToastMessages.connectionLost(), 'network');
+			} finally {
+				btnSubmit.disabled = false;
+			}
 		}
 	});
 

@@ -1,0 +1,1050 @@
+/* lobby-sidebar.css
+   Persistent in-match tribunal lobby overlay. Desktop: right-edge dock
+   that expands on hover. Mobile: bottom sheet with avatar grid rows.
+   Player slots always fill to max_players (occupied + empty placeholders). */
+
+.tribunal-sidebar {
+	--tribunal-avatar: 44px;
+	--tribunal-gap: 6px;
+	--tribunal-collapsed-pad-x: 10px;
+	--tribunal-collapsed-pad-y: 6px;
+	--tribunal-expanded-pad: 14px;
+	--tribunal-expanded-width: 280px;
+	--tribunal-edge-hit: 16px;
+	--tribunal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--tribunal-duration: 0.38s;
+	--tribunal-ready: #2ecc5a;
+	--tribunal-unready: #ff3b2f;
+
+	position: fixed;
+	z-index: 40;
+	pointer-events: none;
+	width: calc(var(--tribunal-avatar) + (var(--tribunal-collapsed-pad-x) * 2) + 4px);
+	transition: width var(--tribunal-duration) var(--tribunal-ease);
+}
+
+.tribunal-sidebar:not(.hidden) {
+	pointer-events: none;
+}
+
+.tribunal-sidebar:not(.hidden) .tribunal-sidebar-chrome {
+	pointer-events: auto;
+}
+
+.tribunal-sidebar-chrome {
+	background-color: var(--color-panel);
+	border: 2px solid var(--color-ink);
+	outline: 1px solid var(--color-orange);
+	outline-offset: -5px;
+	box-shadow: var(--shadow-stamp);
+	display: flex;
+	flex-direction: column;
+	gap: 0.55rem;
+	padding: var(--tribunal-collapsed-pad-y) var(--tribunal-collapsed-pad-x);
+	overflow: hidden;
+	transition: padding var(--tribunal-duration) var(--tribunal-ease),
+		gap var(--tribunal-duration) var(--tribunal-ease);
+}
+
+.tribunal-sidebar.is-expanded .tribunal-sidebar-chrome {
+	/* Room for corner brackets (inset 9px + 16px arms) without clipping content */
+	padding: var(--tribunal-expanded-pad);
+	overflow: visible;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.tribunal-sidebar:hover .tribunal-sidebar-chrome {
+		padding: var(--tribunal-expanded-pad);
+		overflow: visible;
+	}
+}
+
+/* Corner brackets only when expanded — they clip avatars when collapsed. */
+.tribunal-sidebar-chrome.corner-brackets::before {
+	opacity: 0;
+	transition: opacity 0.22s var(--tribunal-ease);
+}
+
+.tribunal-sidebar.is-expanded .tribunal-sidebar-chrome.corner-brackets::before {
+	opacity: 1;
+}
+
+.tribunal-sidebar-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.4rem;
+	min-height: 0;
+}
+
+.tribunal-code-block {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 0;
+	/* Collapsed: hide join code entirely */
+	max-width: 0;
+	opacity: 0;
+	overflow: hidden;
+	pointer-events: none;
+	transform: translateX(-6px);
+	transition:
+		max-width var(--tribunal-duration) var(--tribunal-ease),
+		opacity 0.28s var(--tribunal-ease),
+		transform var(--tribunal-duration) var(--tribunal-ease);
+}
+
+.tribunal-join-code {
+	font-family: var(--font-display);
+	font-size: 0.85rem;
+	letter-spacing: 1.5px;
+	color: var(--color-ink);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.tribunal-join-code:hover {
+	color: var(--color-orange);
+}
+
+.tribunal-icon-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: 1px solid var(--color-ink);
+	background: var(--color-panel-light);
+	color: var(--color-ink);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.tribunal-icon-btn:hover {
+	border-color: var(--color-orange);
+	color: var(--color-navy);
+}
+
+.tribunal-icon-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.tribunal-expand-toggle {
+	display: none;
+	font-family: var(--font-display);
+	font-size: 0.7rem;
+	letter-spacing: 1px;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--color-ink);
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	cursor: pointer;
+}
+
+.tribunal-player-list {
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: var(--tribunal-gap);
+	margin: 0;
+	padding: 0;
+}
+
+.tribunal-player-slot {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	min-height: var(--tribunal-avatar);
+}
+
+.tribunal-avatar {
+	width: var(--tribunal-avatar);
+	height: var(--tribunal-avatar);
+	flex-shrink: 0;
+	border: 2px solid var(--color-ink);
+	background: var(--color-navy);
+	overflow: hidden;
+	position: relative;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tribunal-avatar.is-ready {
+	border-color: var(--tribunal-ready);
+	box-shadow:
+		0 0 0 1px var(--tribunal-ready),
+		0 0 8px 2px rgba(46, 204, 90, 0.7),
+		0 0 16px 2px rgba(46, 204, 90, 0.35);
+}
+
+.tribunal-avatar.is-unready {
+	border-color: var(--tribunal-unready);
+	box-shadow:
+		0 0 0 1px var(--tribunal-unready),
+		0 0 8px 2px rgba(255, 59, 47, 0.75),
+		0 0 16px 2px rgba(255, 59, 47, 0.4);
+}
+
+.tribunal-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.tribunal-avatar.empty {
+	background:
+		repeating-linear-gradient(
+			-45deg,
+			var(--color-panel-dim) 0,
+			var(--color-panel-dim) 4px,
+			var(--color-panel-light) 4px,
+			var(--color-panel-light) 8px
+		);
+	opacity: 0.85;
+	border-color: var(--color-ink);
+	box-shadow: none;
+}
+
+.tribunal-player-meta {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+	min-width: 0;
+	flex: 1;
+	max-width: 0;
+	opacity: 0;
+	overflow: hidden;
+	transform: translateX(-8px);
+	pointer-events: none;
+	transition:
+		max-width var(--tribunal-duration) var(--tribunal-ease),
+		opacity 0.28s var(--tribunal-ease),
+		transform var(--tribunal-duration) var(--tribunal-ease);
+}
+
+.tribunal-player-name {
+	font-family: var(--font-body);
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: var(--color-ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+
+.tribunal-host-badge,
+.tribunal-ready-badge,
+.tribunal-forever-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	color: var(--color-ink-muted);
+	cursor: default;
+}
+
+.tribunal-host-badge {
+	color: var(--color-gold);
+}
+
+.tribunal-ready-badge.is-ready {
+	color: var(--tribunal-ready);
+	filter: drop-shadow(0 0 3px rgba(46, 204, 90, 0.85));
+}
+
+.tribunal-ready-badge.is-unready {
+	color: var(--tribunal-unready);
+	filter: drop-shadow(0 0 3px rgba(255, 59, 47, 0.85));
+}
+
+.tribunal-forever-badge {
+	color: var(--color-orange);
+	filter: drop-shadow(0 0 3px rgba(217, 99, 30, 0.7));
+}
+
+/* Custom hover tip — replaces native title="" / help cursor */
+.tribunal-tip {
+	position: relative;
+}
+
+.tribunal-tip::after {
+	content: attr(data-tip);
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%) translateY(4px);
+	padding: 0.35rem 0.55rem;
+	background: var(--color-ink);
+	color: var(--color-panel-light);
+	font-family: var(--font-body);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.2px;
+	text-transform: none;
+	/* Shrink-to-fit up to max-width: short tips (join code, copy link)
+	   still size to their own content; longer ones wrap onto a second
+	   line here instead of forcing the settings panel wider. */
+	max-width: 220px;
+	white-space: normal;
+	border: 1px solid var(--color-orange);
+	box-shadow: var(--shadow-stamp-sm);
+	opacity: 0;
+	pointer-events: none;
+	z-index: 500;
+	transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.tribunal-tip:hover::after {
+	opacity: 1;
+	transform: translateX(-50%) translateY(0);
+}
+
+/* Both the settings-diff asterisk and the house-rules warning icon sit
+   inside the settings form's scrolling container (#match-settings-form,
+   overflow-y: auto), and an absolutely-positioned ::after there counts
+   toward that container's scrollable overflow — that's what was clipping
+   the asterisk's tip against the container's top edge (and risked forcing
+   a scrollbar for either one). Both render their tooltip as a real,
+   body-appended fixed-position element instead (see .fixed-tribunal-tip
+   below and showFixedTooltip() in tribunal-lobby.js), positioned via JS so
+   it floats completely outside that container. This just turns off the
+   normal pseudo-element tooltip for both. */
+.setting-diff-asterisk.tribunal-tip::after,
+.advanced-rules-warning-icon.tribunal-tip::after {
+	content: none;
+}
+
+/* Fixed-position tooltip shared by the settings-diff asterisk and the
+   house-rules warning icon. Same look as .tribunal-tip::after above, just
+   positioned by JS (getBoundingClientRect) instead of anchored via
+   `position: relative` on an ancestor, since it's appended straight to
+   <body>. max-width a bit wider than the ::after version above so short
+   phrases (e.g. "By default this is set to 5") wrap onto two lines
+   instead of four. */
+.fixed-tribunal-tip {
+	position: fixed;
+	transform: translate(-50%, -100%);
+	padding: 0.35rem 0.55rem;
+	background: var(--color-ink);
+	color: var(--color-panel-light);
+	font-family: var(--font-body);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.2px;
+	max-width: 260px;
+	white-space: normal;
+	border: 1px solid var(--color-orange);
+	box-shadow: var(--shadow-stamp-sm);
+	opacity: 0;
+	pointer-events: none;
+	z-index: 500;
+	transition: opacity 0.12s ease;
+}
+
+.fixed-tribunal-tip.visible {
+	opacity: 1;
+}
+
+.tribunal-host-badge svg,
+.tribunal-ready-badge svg,
+.tribunal-forever-badge svg,
+.tribunal-kick-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.tribunal-kick-btn,
+.tribunal-promote-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--color-ink-muted);
+	cursor: pointer;
+	flex-shrink: 0;
+	opacity: 0;
+	pointer-events: none;
+	transform: scale(0.85);
+	transition: opacity 0.22s var(--tribunal-ease), transform 0.22s var(--tribunal-ease);
+}
+
+.tribunal-kick-btn:hover {
+	color: var(--color-alert);
+	border-color: var(--color-alert);
+}
+
+.tribunal-promote-btn {
+	font-family: var(--font-body);
+	font-size: 0.62rem;
+	font-weight: 700;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+	width: auto;
+	padding: 0.15rem 0.35rem;
+	border: 1px solid var(--color-ink);
+	color: var(--color-ink-muted);
+}
+
+.tribunal-promote-btn:hover {
+	color: var(--color-navy);
+	border-color: var(--color-orange);
+}
+
+.tribunal-sidebar-footer {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	padding-top: 0;
+	border-top: 1px solid transparent;
+	pointer-events: none;
+	transform: translateY(-6px);
+	transition:
+		max-height var(--tribunal-duration) var(--tribunal-ease),
+		opacity 0.28s var(--tribunal-ease),
+		transform var(--tribunal-duration) var(--tribunal-ease),
+		padding var(--tribunal-duration) var(--tribunal-ease),
+		border-color var(--tribunal-duration) var(--tribunal-ease);
+}
+
+.tribunal-sidebar-footer .medieval-btn {
+	margin-top: 0;
+	width: 100%;
+}
+
+.tribunal-ready-group {
+	position: relative;
+	display: flex;
+	align-items: stretch;
+	width: 100%;
+	gap: 0;
+	box-shadow: var(--shadow-stamp-sm);
+	z-index: 3;
+}
+
+.tribunal-ready-group .medieval-btn {
+	width: auto;
+	margin-top: 0;
+}
+
+.tribunal-ready-group .tribunal-ready-btn {
+	flex: 1 1 80%;
+	min-width: 0;
+	border-right: none;
+	box-shadow: none !important;
+	transform: none !important;
+	position: relative;
+	z-index: 1;
+}
+
+.tribunal-ready-group .tribunal-ready-btn:hover {
+	transform: none !important;
+	box-shadow: none !important;
+}
+
+.tribunal-ready-caret {
+	flex: 0 0 20%;
+	width: 20%;
+	max-width: 20%;
+	min-width: 0;
+	padding: 0.5rem 0.25rem !important;
+	border-left: 2px solid var(--color-ink) !important;
+	box-shadow: none !important;
+	transform: none !important;
+	position: relative;
+	z-index: 2;
+}
+
+.tribunal-ready-caret:hover {
+	transform: none !important;
+	box-shadow: none !important;
+}
+
+.tribunal-ready-caret svg {
+	width: 10px;
+	height: 7px;
+	transition: transform 0.15s ease;
+	position: relative;
+	z-index: 1;
+}
+
+.tribunal-ready-caret[aria-expanded="true"] svg {
+	transform: rotate(180deg);
+}
+
+.tribunal-ready-menu {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: calc(100% + 4px);
+	bottom: auto;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	background: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	box-shadow: var(--shadow-stamp-sm);
+}
+
+.tribunal-ready-menu-item {
+	width: 100%;
+	margin-top: 0 !important;
+	background: var(--color-panel-light) !important;
+	border: 2px solid var(--color-ink) !important;
+	color: var(--color-ink) !important;
+	box-shadow: none !important;
+}
+
+.tribunal-ready-menu-item:hover {
+	background: var(--color-ink) !important;
+	color: var(--color-panel-light) !important;
+	border-color: var(--color-orange) !important;
+}
+
+.tribunal-ready-menu-item:active {
+	background: var(--color-navy) !important;
+	border-color: var(--color-navy) !important;
+}
+
+.tribunal-sidebar-footer .medieval-btn:disabled,
+.tribunal-sidebar-footer .medieval-btn.is-blocked,
+.tribunal-ready-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: var(--shadow-stamp-sm);
+}
+
+.tribunal-ready-btn.is-ready {
+	background: var(--color-navy);
+	color: var(--color-panel-light);
+	border-color: var(--color-light-blue);
+}
+
+/* Desktop: right-edge dock, expand on hover (or .is-expanded for a11y) */
+@media (min-width: 721px) {
+	.tribunal-sidebar {
+		top: 50%;
+		/* Flush to the viewport edge; padding creates an invisible hit strip
+		   so hovering near the right edge still expands the menu. */
+		right: 0;
+		padding-right: var(--tribunal-edge-hit);
+		box-sizing: content-box;
+		transform: translateY(-50%);
+	}
+
+	/* .tribunal-sidebar itself is pointer-events: none (see base rule), so
+	   the padding-right hit strip above is otherwise dead space — nothing
+	   there can register :hover. This re-enables pointer events just for
+	   that strip so overshooting the cursor past the collapsed avatar
+	   column still keeps the sidebar expanded instead of collapsing it. */
+	.tribunal-sidebar::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		width: var(--tribunal-edge-hit);
+		pointer-events: auto;
+	}
+
+	.tribunal-sidebar-chrome {
+		width: 100%;
+	}
+
+	/* Collapsed: collapse the header so empty space/gap disappears with the code */
+	.tribunal-sidebar-header {
+		max-height: 0;
+		opacity: 0;
+		overflow: hidden;
+		margin: 0;
+		padding: 0;
+		pointer-events: none;
+		transition:
+			max-height var(--tribunal-duration) var(--tribunal-ease),
+			opacity 0.28s var(--tribunal-ease),
+			padding var(--tribunal-duration) var(--tribunal-ease);
+	}
+
+	.tribunal-sidebar.is-expanded,
+	.tribunal-sidebar:hover {
+		width: var(--tribunal-expanded-width);
+	}
+
+	.tribunal-sidebar:hover .tribunal-sidebar-chrome.corner-brackets::before {
+		opacity: 1;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-sidebar-header,
+	.tribunal-sidebar:hover .tribunal-sidebar-header {
+		max-height: 40px;
+		opacity: 1;
+		pointer-events: auto;
+		padding: 0;
+		/* Base .tribunal-sidebar-header above clips with overflow: hidden so
+		   the collapse animation has somewhere to hide the header. Once
+		   expanded, the join-code/copy-code tooltips (.tribunal-tip::after)
+		   pop up above this row and were getting clipped by that same
+		   leftover overflow: hidden -- .tribunal-code-block/.tribunal-
+		   player-meta below already reset this on expand, this one was
+		   just missed. */
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-code-block,
+	.tribunal-sidebar:hover .tribunal-code-block {
+		max-width: 220px;
+		opacity: 1;
+		pointer-events: auto;
+		transform: translateX(0);
+		/* Base .tribunal-code-block below clips with overflow: hidden so the
+		   collapse animation (driven by max-width/opacity, not overflow) has
+		   somewhere to hide the code when collapsed. Once expanded it's
+		   visible content again, so the join-code/copy-link tooltips
+		   (.tribunal-tip::after) shouldn't still get clipped by it. */
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-player-meta,
+	.tribunal-sidebar:hover .tribunal-player-meta {
+		max-width: 220px;
+		opacity: 1;
+		transform: translateX(0);
+		pointer-events: auto;
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-sidebar-footer,
+	.tribunal-sidebar:hover .tribunal-sidebar-footer {
+		max-height: 280px;
+		opacity: 1;
+		padding-top: 0.45rem;
+		border-top-color: var(--color-ink);
+		pointer-events: auto;
+		transform: translateY(0);
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-kick-btn.is-visible,
+	.tribunal-sidebar:hover .tribunal-kick-btn.is-visible,
+	.tribunal-sidebar.is-expanded .tribunal-promote-btn.is-visible,
+	.tribunal-sidebar:hover .tribunal-promote-btn.is-visible {
+		opacity: 1;
+		pointer-events: auto;
+		transform: scale(1);
+	}
+}
+
+/* Mobile: bottom sheet, tap to expand, avatar grid by max_players */
+@media (max-width: 720px) {
+	.tribunal-sidebar-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 119;
+		background: rgba(0, 0, 0, 0.45);
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.22s var(--tribunal-ease);
+	}
+
+	.tribunal-sidebar-backdrop.is-visible {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.tribunal-sidebar {
+		left: 12px;
+		right: 12px;
+		bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+		width: auto;
+		height: auto;
+		top: auto;
+		z-index: 120;
+		transition: none;
+	}
+
+	.tribunal-sidebar:not(.hidden) {
+		pointer-events: auto;
+	}
+
+	.tribunal-sidebar:not(.hidden) .tribunal-sidebar-chrome {
+		pointer-events: auto;
+	}
+
+	.tribunal-expand-toggle {
+		display: inline-flex;
+		align-self: center;
+	}
+
+	/* Collapsed: share one row — avatars on the left, Lobby toggle on the right */
+	.tribunal-sidebar:not(.is-expanded) .tribunal-sidebar-chrome {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-items: center;
+		align-content: center;
+		justify-items: center;
+		column-gap: 0.45rem;
+		cursor: pointer;
+		min-height: calc(var(--tribunal-avatar) + (var(--tribunal-collapsed-pad-y) * 2) + 4px);
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-sidebar-header {
+		grid-column: 2;
+		grid-row: 1;
+		min-height: 0;
+		margin: 0;
+		padding: 0;
+		align-self: center;
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-code-block {
+		display: none;
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-player-list {
+		grid-column: 1;
+		grid-row: 1;
+		align-self: center;
+		align-content: center;
+		justify-content: center;
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-player-slot {
+		min-height: 0;
+		height: var(--tribunal-avatar);
+		align-items: center;
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-expand-toggle {
+		align-self: center;
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-player-meta {
+		display: none;
+	}
+
+	.tribunal-sidebar:not(.is-expanded) .tribunal-sidebar-footer {
+		display: none;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-sidebar-chrome {
+		display: flex;
+		flex-direction: column;
+		max-height: min(56vh, 460px);
+		overflow: visible;
+		cursor: default;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-player-list {
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		min-height: 0;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.tribunal-sidebar.is-minimizing .tribunal-player-slot {
+		transition: none !important;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-sidebar-header {
+		min-height: 28px;
+		padding-right: 4px;
+	}
+
+	/* Collapsed mobile: hide code, keep the Lobby expand toggle */
+	.tribunal-code-block {
+		max-width: 0;
+		opacity: 0;
+	}
+
+	.tribunal-player-list {
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: var(--tribunal-gap);
+		align-items: center;
+		justify-content: center;
+	}
+
+	.tribunal-player-slot {
+		flex: 0 0 var(--tribunal-avatar);
+		width: var(--tribunal-avatar);
+		transition: flex-basis var(--tribunal-duration) var(--tribunal-ease),
+			width var(--tribunal-duration) var(--tribunal-ease);
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-code-block {
+		max-width: 220px;
+		opacity: 1;
+		pointer-events: auto;
+		transform: translateX(0);
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-player-slot {
+		flex: 1 1 100%;
+		width: 100%;
+		min-height: var(--tribunal-avatar);
+		height: auto;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-player-meta {
+		display: flex;
+		max-width: 100%;
+		opacity: 1;
+		transform: translateX(0);
+		pointer-events: auto;
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-sidebar-footer {
+		display: flex;
+		max-height: 280px;
+		opacity: 1;
+		padding-top: 0.45rem;
+		border-top-color: var(--color-ink);
+		pointer-events: auto;
+		transform: translateY(0);
+		overflow: visible;
+	}
+
+	.tribunal-sidebar.is-expanded .tribunal-kick-btn.is-visible,
+	.tribunal-sidebar.is-expanded .tribunal-promote-btn.is-visible {
+		opacity: 1;
+		pointer-events: auto;
+		transform: scale(1);
+	}
+}
+
+/* Match settings overlay */
+@media (max-width: 720px) {
+	/* Sit above the bottom-sheet sidebar (z-index 120) instead of under
+	   it, and reserve room at the bottom so the box stops above the
+	   sidebar's collapsed strip rather than covering the full screen. */
+	#match-settings-overlay {
+		z-index: 130;
+		padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+	}
+
+	.match-settings-scroll {
+		height: min(75vh, calc(100vh - 24px - 84px - env(safe-area-inset-bottom, 0px)));
+	}
+}
+
+/* Fixed height (not max-height): the box's on-screen size and position
+   never change when Advanced/House Rules is expanded or collapsed.
+   Only .match-settings-form (below) scrolls internally, so the header
+   and close button stay put. See btn-toggle-advanced-rules in
+   tribunal-lobby.js. */
+.match-settings-scroll {
+	max-width: 520px;
+	height: min(75vh, calc(100vh - 48px));
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.match-settings-scroll .scroll-header {
+	flex-shrink: 0;
+}
+
+.match-settings-form {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding-right: 0.25rem;
+}
+
+.match-settings-section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.7rem;
+	padding-bottom: 0.85rem;
+	border-bottom: 1px solid var(--color-ink);
+}
+
+.match-settings-section:last-of-type {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.match-settings-heading {
+	font-family: var(--font-display);
+	font-size: 0.9rem;
+	letter-spacing: 0.8px;
+	color: var(--color-ink);
+}
+
+.match-settings-form input[type="number"] {
+	font-family: var(--font-body);
+	font-size: 0.92rem;
+	width: 5.5rem;
+	padding: 0.4rem 0.55rem;
+	background-color: var(--color-panel-light);
+	border: 1px solid var(--color-ink);
+	border-radius: 0;
+	color: var(--color-ink);
+	outline: none;
+}
+
+.match-settings-form input[type="number"]:focus {
+	border-color: var(--color-orange);
+	box-shadow: 0 0 0 2px var(--color-orange) inset;
+}
+
+.match-settings-slider-row {
+	align-items: center;
+}
+
+.match-settings-slider-row label,
+.match-settings-slider-label {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Plain static text standing in for the row's <label> — used where the
+   live value display sits next to the slider itself rather than next to
+   the label text (see #setting-max-players-value / #setting-cards-per-
+   player-value), so there's nothing here for a <label for="..."> to point
+   at. Same typography as .config-row label:first-child (match-panels.css)
+   so it reads identically to every other row's label. */
+.match-settings-slider-label {
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.85rem;
+	letter-spacing: 0.5px;
+	color: var(--color-ink-muted);
+}
+
+.match-settings-slider {
+	flex: 1 1 160px;
+	max-width: 220px;
+	min-width: 120px;
+}
+
+.match-settings-slider-value {
+	flex-shrink: 0;
+	min-width: 1.6em;
+	text-align: right;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+	color: var(--color-ink);
+}
+
+.match-settings-form.is-readonly input,
+.match-settings-form.is-readonly select,
+.match-settings-form.is-readonly .toggle-switch {
+	pointer-events: none;
+	opacity: 0.7;
+}
+
+.match-advanced-toggle {
+	align-self: flex-start;
+	background: none;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+/* Only shown (see toggleAdvancedRulesWarning() in tribunal-lobby.js) when
+   at least one advanced setting has been pushed off its default — the
+   whole point being that a folded panel shouldn't be able to hide a wild
+   house rule from someone who hasn't opened it yet. Same triangle glyph
+   as the toast "warning" icon (settings.js icons.warning) for a
+   consistent visual vocabulary; color-alert-dark matches the shade that
+   icon already uses. */
+.advanced-rules-warning-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1rem;
+	height: 1rem;
+	flex-shrink: 0;
+	color: var(--color-alert-dark);
+}
+
+.advanced-rules-warning-icon svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+/* Sits inline right after any settings label whose value has drifted
+   from its default (see refreshSettingDiffMarkers() in
+   tribunal-lobby.js). Same alert shade as the warning icon above, but
+   plain text rather than an icon — small enough not to disrupt a
+   label's line height. Uses the shared .tribunal-tip custom tooltip
+   (data-tip) carrying the "By default this is set to ..." text, same
+   as everywhere else in this file. */
+.setting-diff-asterisk {
+	color: var(--color-alert-dark);
+	font-weight: 700;
+	margin-left: 0.2rem;
+	cursor: help;
+}
+
+.match-advanced-rules {
+	display: flex;
+	flex-direction: column;
+	gap: 0.7rem;
+	margin-top: 0.5rem;
+}
+
+.match-advanced-rules .config-row-numeric label {
+	flex: 1;
+	min-width: 0;
+}
+
+.match-advanced-rules .config-row-numeric input[type="number"] {
+	width: 4.5rem;
+}
+
+/* Sits right below the toggle button, darker than the muted body text
+   so it stands out a little, short of the alert-red used for the
+   "sealed" notice (this isn't an error, just worth noticing). */
+.match-advanced-rules-note {
+	font-size: 0.8rem;
+	color: var(--color-ink);
+	font-style: italic;
+	margin: 0 0 0.2rem;
+}
+
+.match-settings-locked-note {
+	font-size: 0.85rem;
+	color: var(--color-alert);
+	font-weight: 600;
+}
+
+.in-tribunal-notice {
+	margin-top: 1rem;
+	padding: 0.75rem 0.9rem;
+	border: 1px solid var(--color-ink);
+	background: var(--color-panel-light);
+	font-size: 0.9rem;
+	color: var(--color-ink-muted);
+}
+
+.lobby-container.in-tribunal #btn-auth-action,
+.lobby-container.in-tribunal #primary-actions {
+	display: none !important;
+}
+
+/* Sidebar is a pure overlay — do not shift the main lobby layout. */
