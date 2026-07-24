@@ -19,11 +19,11 @@
 	--color-ink-muted: #5c5347;
 
 	/* Accents */
-	--color-navy: #1b2a4a;
+	--color-navy: #1E2B41;
 	--color-navy-light: #2b3f63;
 	--color-navy-dark: #121d33;
-	--color-alert: #d2451c;
-	--color-alert-dark: #a6350f;
+	--color-alert: #CE5133;
+	--color-alert-dark: #C3453E;
 	--color-gold: #b8892f;
 	--color-light-blue: #6174af;
 
@@ -34,8 +34,8 @@
 	   focus rings, active-tab underline, lock badges). They read close
 	   in hue on purpose, same "official ink stamp" family, but they're
 	   not interchangeable, don't consolidate them. */
-	--color-orange: #d9631e;
-	--color-orange-dark: #ad4c15;
+	--color-orange: #CE5133;
+	--color-orange-dark: #C3453E;
 
 	/* Functional (status dots, not part of the ministry palette) */
 	--color-online: #3f8f4f;
