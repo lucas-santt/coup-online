@@ -1,22 +1,33 @@
-class Player:
-    def __init__(self, id: str, name: str, starting_coins):
-        self.id = id
-        self.name = name
-        self.coins = starting_coins
-        self.alive = True
-        self.cards = []
+from dataclasses import dataclass, field
 
-    # Returns a player's possible options given their number of coins
-    def get_action_options(self):
-        coins = self.coins
-        if coins >= 10:
-            return ["coup"]
-        elif coins >= 7:
-            return ["income", "foreign_aid", "coup", "tax", "assassinate", "steal", "exchange"]
-        elif coins >= 3:
-            return ["income", "foreign_aid", "tax", "assassinate", "steal", "exchange"]
-        else:
-            return ["income", "foreign_aid", "tax", "steal", "exchange"]
-        
-    def __repr__(self):
-        return f"ID: {self.id} | Name: {self.name} | Coins: {self.coins} \n| Alive: {self.alive} | Cards: {self.cards}"
+from backend.engine.enums import Card
+
+
+@dataclass
+class Player:
+	"""One seat in an engine.Match.
+
+	`displayname`/`avatar_url` are a snapshot taken from the seated
+	backend.models.player.Player row when the match is built (see
+	routers/websockets.py's handle_start_match), not a live reference to
+	that row: the DB session which loaded it is request-scoped and closes
+	long before this object does, since an engine.Match lives on in the
+	in-process registry for the whole match. A mid-match account
+	displayname/avatar change just won't retroactively update this seat --
+	same as most other online games.
+	"""
+
+	id: str
+	displayname: str
+	avatar_url: str
+	coins: int = 0
+	cards: list[Card] = field(default_factory=list)
+
+	@property
+	def alive(self) -> bool:
+		"""A player is alive iff they still have influence (unrevealed
+		cards) left. Deliberately not an independently-settable flag --
+		that would let it drift out of sync with `cards`, e.g. if a caller
+		forgot to flip it after the player's last card is lost."""
+		return len(self.cards) > 0
+	

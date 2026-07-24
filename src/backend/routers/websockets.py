@@ -11,6 +11,7 @@ from backend.auth.required import RequiredRegisteredOrGuestDep
 from backend.database import engine
 from backend.errors import ErrorCode
 from backend.engine.match import Match as EngineMatch
+from backend.engine.player import Player as EnginePlayer
 from backend.engine import registry as engine_registry
 from backend.models.match import Match, MatchBotFill, MatchSettings, MatchStatus, validate_settings_patch
 from backend.models.player import Player, make_bot_player
@@ -608,6 +609,13 @@ async def handle_start_match(session: Session, websocket: WebSocket, match_id: u
 			next_join_order += 1
 		match.player_count += len(bot_links)
 
+	# Real Coup needs at least 2 players — engine.Match enforces this too,
+	# but checking it here lets a too-small lobby (bot_fill=none, one lone
+	# human) fail with a clean, specific error instead of an unhandled
+	# ValueError out of the EngineMatch constructor below.
+	if len(required) + len(bot_links) < 2:
+		raise _WsError(ErrorCode.NOT_ENOUGH_PLAYERS, "At least 2 players are needed to start.")
+
 	match.status = MatchStatus.IN_PROGRESS
 	session.add(match)
 	session.commit()
@@ -621,8 +629,34 @@ async def handle_start_match(session: Session, websocket: WebSocket, match_id: u
 	# durable to persist engine state yet (game.html/the in-match router
 	# don't exist), same "lives only as long as this process does" shape as
 	# the ConnectionManager above.
+	#
+	# engine.Player is built here, from the seated DB rows, rather than
+	# inside EngineMatch: displayname/avatar_url are a one-time snapshot of
+	# that row (see engine/player.py's docstring for why), and the engine
+	# has no DB session of its own to look them up with later.
+	seated_engine_players: list[EnginePlayer] = []
+	for link in sorted(required, key=lambda l: l.join_order):
+		seated_player = session.get(Player, link.player_id)
+		if seated_player:
+			seated_engine_players.append(
+				EnginePlayer(id=str(seated_player.id), displayname=seated_player.displayname, avatar_url=seated_player.avatar_url)
+			)
+	for bot_link in bot_links:
+		bot_player = session.get(Player, bot_link.player_id)
+		if bot_player:
+			seated_engine_players.append(
+				EnginePlayer(id=str(bot_player.id), displayname=bot_player.displayname, avatar_url=bot_player.avatar_url)
+			)
+
+	# -1 (the schema's "infinite copies" sentinel, see constants.py) needs
+	# no translation here: engine.Deck already treats any non-positive
+	# character_copies as infinite, so it's passed straight through.
 	engine_match = EngineMatch(
 		id=str(match.id),
+		players=seated_engine_players,
+		cards_per_player=settings.cards_per_player,
+		character_copies=settings.character_copies,
+		starting_coins=settings.starting_coins,
 		coup_cost=settings.coup_cost,
 		forced_coup_threshold=settings.forced_coup_threshold,
 		income_coins=settings.income_coins,
@@ -635,18 +669,7 @@ async def handle_start_match(session: Session, websocket: WebSocket, match_id: u
 		declared_coup=settings.declared_coup,
 		declared_assassinate=settings.declared_assassinate,
 	)
-	for link in sorted(required, key=lambda l: l.join_order):
-		seated_player = session.get(Player, link.player_id)
-		if seated_player:
-			engine_match.add_player(str(seated_player.id), seated_player.displayname)
-	for bot_link in bot_links:
-		bot_player = session.get(Player, bot_link.player_id)
-		if bot_player:
-			engine_match.add_player(str(bot_player.id), bot_player.displayname)
-	engine_match.start_match(
-		copies_by_card=None if settings.character_copies == -1 else settings.character_copies,
-		starting_coins=settings.starting_coins,
-	)
+	engine_match.start_match()
 	engine_registry.set_match(str(match.id), engine_match)
 
 

@@ -1,35 +1,33 @@
 import random
 
-class Deck:
-    def __init__(self, copies_by_card: int, base_cards: list[str]):
-        self.copies_by_card = copies_by_card
-        self.base_cards = base_cards
-        self.deck = []
-        # If copies_by_card <= 0, then the deck has infinite copies of each influence
-        if copies_by_card > 0:
-            self.deck = self.copies_by_card * self.base_cards
-    
-    # Shuffles the deck of cards
-    def shuffle(self):
-        if self.copies_by_card > 0:
-            random.shuffle(self.deck)
-    
-    # Select a card from the deck
-    def pop_card(self):
-        if self.copies_by_card <= 0:
-            return random.choice(self.base_cards)
-        elif len(self.deck) < 1:
-            raise ValueError("The deck is empty.")
-        else: 
-            return self.deck.pop()
-    
-    # Returns a card to the deck
-    def push_card(self, card: str):
-        if self.copies_by_card > 0:
-            self.deck.append(card)
+from backend.engine.enums import Card
 
-    def __repr__(self):
-        if self.copies_by_card > 0:
-            return f"Deck: {self.deck}"
-        else:
-            return f"Deck: {self.base_cards}"
+
+class Deck:
+	def __init__(self, character_copies: int, base_cards: list[Card]) -> None:
+		self.character_copies = character_copies
+		self.base_cards = base_cards
+		# <= 0 copies means "infinite copies of each card" (see pop_card
+		# below) -- there's no finite list to build, so `deck` just stays
+		# empty and is never touched by shuffle/pop/push.
+		self.deck: list[Card] = self.character_copies * self.base_cards if character_copies > 0 else []
+
+	def shuffle(self) -> None:
+		if self.character_copies > 0:
+			random.shuffle(self.deck)
+
+	def pop_card(self) -> Card:
+		if self.character_copies <= 0:
+			return random.choice(self.base_cards)
+		if len(self.deck) < 1:
+			raise ValueError("The deck is empty.")
+		return self.deck.pop()
+
+	def push_card(self, card: Card) -> None:
+		if self.character_copies > 0:
+			self.deck.append(card)
+
+	def __repr__(self) -> str:
+		if self.character_copies > 0:
+			return f"Deck: {self.deck}"
+		return f"Deck: {self.base_cards}"
