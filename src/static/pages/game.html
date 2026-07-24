@@ -21,6 +21,8 @@
 	<link rel="stylesheet" href="/static/styles/game/contest-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/card-loss-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/exchange-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/declare-card-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/action-log.css?v=1">
 
 	<script type="module" src="/static/scripts/game/main.js"></script>
 </head>
@@ -62,6 +64,11 @@
 			<div id="hud-hand" class="hud-hand" aria-label="Your cards"></div>
 		</header>
 
+		<section id="action-log" class="hidden" aria-label="Action log">
+			<span class="action-log-title">Log</span>
+			<ul id="action-log-list"></ul>
+		</section>
+
 		<!-- ============================================================
 		     Action Menu (spec §7.1) -- radial menu of all 7 actions,
 		     shown whenever it becomes the local player's turn. See
@@ -89,6 +96,14 @@
 				<button id="target-menu-back" type="button" class="radial-menu-back">Back</button>
 			</div>
 			<div id="target-menu-wedges" class="radial-menu-wedges"></div>
+		</div>
+
+		<div id="declare-card-menu" class="hidden" role="dialog" aria-label="Declare target influence">
+			<div class="declare-card-panel corner-brackets">
+				<span id="declare-card-hint"></span>
+				<div id="declare-card-list"></div>
+				<button id="declare-card-back" type="button">Back</button>
+			</div>
 		</div>
 
 		<!-- ============================================================
@@ -122,15 +137,16 @@
 
 		<!-- ============================================================
 		     Exchange picker -- shown after a successful Ambassador
-		     Exchange, when the local player's hand contains their old
-		     cards plus the draw. The selected cards are the ones kept.
+		     Exchange or declared reveal, when the local player's hand
+		     contains their old cards plus the draw. The selected cards
+		     are returned to the deck.
 		     ============================================================ -->
-		<div id="exchange-menu" class="hidden" role="dialog" aria-label="Choose cards to keep">
+		<div id="exchange-menu" class="hidden" role="dialog" aria-label="Choose cards to return">
 			<div class="exchange-panel corner-brackets">
 				<span id="exchange-hint"></span>
 				<span id="exchange-count"></span>
 				<div id="exchange-list"></div>
-				<button id="exchange-confirm" type="button" disabled>Keep Selected</button>
+				<button id="exchange-confirm" type="button" disabled>Return Selected</button>
 			</div>
 		</div>
 

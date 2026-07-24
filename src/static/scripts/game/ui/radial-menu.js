@@ -116,6 +116,12 @@ export function bindTouchTooltips(container) {
 		const trigger = e.target.closest('.radial-tooltip-trigger');
 		if (!trigger) return;
 		e.stopPropagation();
+		const slot = trigger.closest('.radial-wedge-slot');
+		const wedge = slot?.querySelector('.radial-wedge');
+		if (wedge && wedge.getAttribute('aria-disabled') !== 'true') {
+			wedge.click();
+			return;
+		}
 		const wasOpen = trigger.classList.contains('is-tooltip-open');
 		container
 			.querySelectorAll('.radial-tooltip-trigger.is-tooltip-open')

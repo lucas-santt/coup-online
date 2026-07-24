@@ -7,7 +7,7 @@ const ExchangeMenu = (() => {
 	let isOpen = false;
 	let awaitingResponse = false;
 	let selectedIndexes = new Set();
-	let keepCount = 2;
+	let returnCount = 2;
 
 	function init() {
 		els = {
@@ -34,9 +34,10 @@ const ExchangeMenu = (() => {
 	}
 
 	function open(state) {
-		keepCount = state.settings?.cardsPerPlayer || 2;
+		const decision = describeDecision(state);
+		returnCount = decision.returnCount || state.settings?.exchangeDrawCards || 2;
 		selectedIndexes = new Set();
-		els.hint.textContent = `Choose ${keepCount} to keep`;
+		els.hint.textContent = `Choose ${returnCount} to return`;
 		els.list.innerHTML = state.yourHand.map(cardMarkup).join('');
 		els.list.querySelectorAll('.exchange-card').forEach((el) => {
 			el.addEventListener('click', () => toggleCard(Number(el.dataset.index)));
@@ -64,7 +65,7 @@ const ExchangeMenu = (() => {
 	function toggleCard(index) {
 		if (selectedIndexes.has(index)) {
 			selectedIndexes.delete(index);
-		} else if (selectedIndexes.size < keepCount) {
+		} else if (selectedIndexes.size < returnCount) {
 			selectedIndexes.add(index);
 		}
 		updateSelection();
@@ -76,12 +77,12 @@ const ExchangeMenu = (() => {
 			el.classList.toggle('is-selected', selected);
 			el.setAttribute('aria-pressed', selected ? 'true' : 'false');
 		});
-		els.count.textContent = `${selectedIndexes.size}/${keepCount} selected`;
-		els.confirm.disabled = selectedIndexes.size !== keepCount;
+		els.count.textContent = `${selectedIndexes.size}/${returnCount} selected`;
+		els.confirm.disabled = selectedIndexes.size !== returnCount;
 	}
 
 	function handleConfirm() {
-		if (selectedIndexes.size !== keepCount) return;
+		if (selectedIndexes.size !== returnCount) return;
 		const cards = Array.from(selectedIndexes)
 			.sort((a, b) => a - b)
 			.map((index) => els.list.querySelector(`.exchange-card[data-index="${index}"]`)?.dataset.card)

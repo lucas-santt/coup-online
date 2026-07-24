@@ -736,9 +736,12 @@ def _match_state_payload(engine_match: EngineMatch, viewer_id: str) -> dict:
 			"source_id": td["source_id"],
 			"target_id": td["target_id"],
 			"action": td["action"],
+			"declared_card": td["declared_card"],
 			"blocker_id": td["blocker_id"],
 			"challenger_id": td["challenger_id"],
 			"block_claimed_card": td["block_claimed_card"],
+			"exchange_player_id": td["exchange_player_id"],
+			"exchange_return_count": td["exchange_return_count"],
 			"players_passed_action": list(td["players_passed_action"]),
 			"players_passed_block": list(td["players_passed_block"]),
 			# Who's picking a card during WAITING_CARD_LOSS -- not
@@ -862,6 +865,7 @@ async def handle_chosen_action(session: Session, websocket: WebSocket, match_id:
 	await _handle_in_match_event(session, websocket, match_id, player_id, request_id, ClientEvent.CHOSEN_ACTION, {
 		"action": payload.get("action"),
 		"target_id": payload.get("target_player_id"),
+		"declared_card": payload.get("declared_card"),
 	})
 
 
@@ -881,6 +885,10 @@ async def handle_block(session: Session, websocket: WebSocket, match_id: uuid.UU
 
 async def handle_challenge(session: Session, websocket: WebSocket, match_id: uuid.UUID, player_id: uuid.UUID, request_id: str | None, payload: dict) -> None:
 	await _handle_in_match_event(session, websocket, match_id, player_id, request_id, ClientEvent.CHALLENGE, {})
+
+
+async def handle_reveal_cards(session: Session, websocket: WebSocket, match_id: uuid.UUID, player_id: uuid.UUID, request_id: str | None, payload: dict) -> None:
+	await _handle_in_match_event(session, websocket, match_id, player_id, request_id, ClientEvent.REVEAL_CARDS, {})
 
 
 async def handle_selected_card(session: Session, websocket: WebSocket, match_id: uuid.UUID, player_id: uuid.UUID, request_id: str | None, payload: dict) -> None:
@@ -960,6 +968,7 @@ _HANDLERS = {
 	"pass": handle_pass,
 	"block": handle_block,
 	"challenge": handle_challenge,
+	"reveal_cards": handle_reveal_cards,
 	"selected_card": handle_selected_card,
 	"selected_cards": handle_selected_cards,
 }

@@ -14,11 +14,13 @@ function stealBlocked(action, targetId, state) {
 const TargetMenu = (() => {
 	let els = null;
 	let onBack = null;
+	let onChooseTarget = null;
 	let unbindKeys = null;
 	let currentAction = null;
 
 	function init(options) {
 		onBack = options.onBack;
+		onChooseTarget = options.onChooseTarget;
 		els = {
 			menu: document.getElementById('target-menu'),
 			wedges: document.getElementById('target-menu-wedges'),
@@ -38,6 +40,9 @@ const TargetMenu = (() => {
 		const wedgeEls = Array.from(els.wedges.querySelectorAll('.radial-wedge'));
 		layoutWedges(els.wedges, wedgeEls);
 		wedgeEls.forEach((el) => {
+			el.addEventListener('click', () => handleChoose(el.dataset.targetId));
+		});
+		els.wedges.querySelectorAll('.radial-wedge-content[data-target-id]').forEach((el) => {
 			el.addEventListener('click', () => handleChoose(el.dataset.targetId));
 		});
 
@@ -72,7 +77,7 @@ const TargetMenu = (() => {
 				</button>
 				<div class="radial-wedge-overlay">
 					<div class="radial-wedge-anchor">
-						<div class="radial-wedge-content${blocked ? ' radial-tooltip-trigger' : ''}" tabindex="${blocked ? '0' : '-1'}">
+						<div class="radial-wedge-content${blocked ? ' radial-tooltip-trigger' : ''}" data-target-id="${escapeAttr(targetId)}" tabindex="${blocked ? '0' : '-1'}">
 							<span class="radial-wedge-label">${escapeHtml(player?.displayName || '')}</span>
 							${tooltip}
 						</div>
@@ -87,6 +92,10 @@ const TargetMenu = (() => {
 
 		const action = currentAction;
 		close();
+		if (onChooseTarget) {
+			onChooseTarget(action, targetId, GameState.getState());
+			return;
+		}
 		GameState.chooseAction(action, targetId).catch((err) => {
 			// Rejected -- bounce back to the Action Menu rather than
 			// leaving the player stuck on a dead-end screen. See

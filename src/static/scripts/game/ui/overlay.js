@@ -4,6 +4,7 @@ import ActionMenu from './action-menu.js';
 import ContestMenu from './contest-menu.js';
 import CardLossMenu from './card-loss-menu.js';
 import ExchangeMenu from './exchange-menu.js';
+import ActionLog from './action-log.js';
 
 const Overlay = (() => {
 	function init() {
@@ -23,6 +24,7 @@ const Overlay = (() => {
 		// entirely by GameState.phase/turnDescription like ContestMenu.
 		CardLossMenu.init();
 		ExchangeMenu.init();
+		ActionLog.init();
 	}
 
 	return { init };

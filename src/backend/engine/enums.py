@@ -76,6 +76,7 @@ class ClientEvent(StrEnum):
 	PASS = "pass"
 	BLOCK = "block"
 	CHALLENGE = "challenge"
+	REVEAL_CARDS = "reveal_cards"
 	SELECTED_CARD = "selected_card"
 	SELECTED_CARDS = "selected_cards"
 

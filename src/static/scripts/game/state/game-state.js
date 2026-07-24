@@ -80,9 +80,12 @@ const GameState = (() => {
 				sourceId: td.source_id,
 				targetId: td.target_id,
 				action: td.action,
+				declaredCard: td.declared_card,
 				blockerId: td.blocker_id,
 				challengerId: td.challenger_id,
 				blockClaimedCard: td.block_claimed_card,
+				exchangePlayerId: td.exchange_player_id,
+				exchangeReturnCount: td.exchange_return_count,
 				playersPassedAction: td.players_passed_action,
 				playersPassedBlock: td.players_passed_block,
 				cardLossPlayerId: td.card_loss_player_id,
@@ -179,8 +182,12 @@ const GameState = (() => {
 	// rejected INVALID_ACTION and show it, rather than this module making
 	// UI decisions on their behalf.
 
-	function chooseAction(action, targetPlayerId = null) {
-		return MatchSocket.sendRequest('chosen_action', { action, target_player_id: targetPlayerId });
+	function chooseAction(action, targetPlayerId = null, declaredCard = null) {
+		return MatchSocket.sendRequest('chosen_action', {
+			action,
+			target_player_id: targetPlayerId,
+			declared_card: declaredCard,
+		});
 	}
 
 	function pass() {
@@ -193,6 +200,10 @@ const GameState = (() => {
 
 	function challenge() {
 		return MatchSocket.sendRequest('challenge', {});
+	}
+
+	function revealCards() {
+		return MatchSocket.sendRequest('reveal_cards', {});
 	}
 
 	function selectCard(card) {
@@ -212,6 +223,7 @@ const GameState = (() => {
 		pass,
 		block,
 		challenge,
+		revealCards,
 		selectCard,
 		selectCards,
 	};

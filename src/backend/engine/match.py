@@ -32,6 +32,9 @@ class TurnDescription(TypedDict):
 	action: Action | None
 	blocker_id: str | None
 	challenger_id: str | None
+	declared_card: Card | None
+	exchange_player_id: str | None
+	exchange_return_count: int | None
 	players_passed_action: list[str]
 	players_passed_block: list[str]
 	# Which character a block claims. Only ever set for Steal, where the
@@ -132,7 +135,7 @@ class Match:
 		# ACTION_CHALLENGE_CONFIRMED: an action challenge has been initiated and will be resolved immediately;
 		# BLOCK_CHALLENGE_CONFIRMED: a block challenge has been initiated and will be resolved immediately;
 		# WAITING_CARD_LOSS: a player with more than one card has lost influence and must choose one of their cards;
-		# WAITING_EXCHANGE: a player used the "exchange" action and must choose which cards to keep;
+		# WAITING_EXCHANGE: a player used Exchange or revealed to a declared hit and must return drawn cards;
 		# TURN_RESOLVED: declares the current turn resolved. The next step is to start a new turn.
 
 		self.turn_description: TurnDescription = self._blank_turn_description()
@@ -166,6 +169,9 @@ class Match:
 			"action": None,
 			"blocker_id": None,
 			"challenger_id": None,
+			"declared_card": None,
+			"exchange_player_id": None,
+			"exchange_return_count": None,
 			"players_passed_action": [],
 			"players_passed_block": [],
 			"block_claimed_card": None,
@@ -292,6 +298,7 @@ class Match:
 		event = data.get("event")
 		action = data.get("action")
 		target_id = data.get("target_id")
+		declared_card = data.get("declared_card")
 
 		# Catch errors
 		if event != ClientEvent.CHOSEN_ACTION:
@@ -306,12 +313,17 @@ class Match:
 				raise ValueError("You can not do it with this player.")
 			if action == Action.STEAL and self.players[target_id].coins == 0:
 				raise ValueError("You can not steal from a player with no coins.")
+		if self._action_needs_declared_card(action):
+			if declared_card not in Card:
+				raise ValueError("You must declare which influence you are targeting.")
+			declared_card = Card(declared_card)
 
 		# Records the action's description
 		self.turn_description = self._blank_turn_description()
 		self.turn_description["source_id"] = player_id
 		self.turn_description["target_id"] = target_id
 		self.turn_description["action"] = action
+		self.turn_description["declared_card"] = declared_card
 
 		# If the action can not be blocked or challenged
 		if action in UNCONTESTABLE_ACTIONS:
@@ -333,7 +345,14 @@ class Match:
 			"action": action,
 			"player_id": player_id,
 			"target_id": target_id,
+			"declared_card": declared_card,
 		}
+
+	def _action_needs_declared_card(self, action: Action) -> bool:
+		return (
+			(action == Action.COUP and self.declared_coup)
+			or (action == Action.ASSASSINATE and self.declared_assassinate)
+		)
 
 	# Returns a player's possible options given their number of coins.
 	# Thresholds come from this match's own ruleset (self.coup_cost,
@@ -357,14 +376,24 @@ class Match:
 		action = self.turn_description["action"]
 		source_id = self.turn_description["source_id"]
 		target_id = self.turn_description["target_id"]
+		declared_card = self.turn_description["declared_card"]
 
-		if event not in (ClientEvent.PASS, ClientEvent.BLOCK, ClientEvent.CHALLENGE):
+		if event not in (ClientEvent.PASS, ClientEvent.BLOCK, ClientEvent.CHALLENGE, ClientEvent.REVEAL_CARDS):
 			raise ValueError("You can not do it right now.")
+
+		if event == ClientEvent.REVEAL_CARDS:
+			if action != Action.ASSASSINATE or not self.declared_assassinate:
+				raise ValueError("You can not reveal for this action.")
+			if player_id != target_id:
+				raise ValueError("Only the target player can reveal.")
+			return self._resolve_declared_reveal()
 
 		if event == ClientEvent.PASS:
 			# Catch errors
 			if player_id == source_id:
 				raise ValueError("You can not pass your own action.")
+			if action == Action.ASSASSINATE and self.declared_assassinate and player_id == target_id:
+				raise ValueError("You must contest, block, or reveal.")
 			if player_id in self.turn_description["players_passed_action"]:
 				raise ValueError("You have already done this.")
 
@@ -379,6 +408,7 @@ class Match:
 					"action": action,
 					"player_id": source_id,
 					"target_id": target_id,
+					"declared_card": declared_card,
 				}
 			return {"event": MatchEvent.ACTION_PASS_REGISTERED, "player_id": player_id}
 
@@ -414,6 +444,7 @@ class Match:
 				"target_id": target_id,
 				"blocker_id": player_id,
 				"claimed_card": claimed_card,
+				"declared_card": declared_card,
 			}
 
 		# event == ClientEvent.CHALLENGE
@@ -431,6 +462,7 @@ class Match:
 			"player_id": source_id,
 			"target_id": target_id,
 			"challenger_id": player_id,
+			"declared_card": declared_card,
 		}
 
 	# Processes the action while the state is BLOCK_DECLARED
@@ -552,14 +584,15 @@ class Match:
 	# Processes the action while the state is WAITING_EXCHANGE
 	def process_event_while_waiting_exchange(self, player_id: str, data: dict[str, Any]) -> dict[str, Any]:
 		event = data.get("event")
-		source_id = self.turn_description["source_id"]
+		exchange_player_id = self.turn_description["exchange_player_id"] or self.turn_description["source_id"]
+		return_count = self.turn_description["exchange_return_count"] or self.exchange_draw_cards
 		selected_cards = data.get("selected_cards")
 
 		# Catch errors
-		if player_id != source_id:
+		if player_id != exchange_player_id:
 			raise ValueError("It is not your turn.")
-		if event != ClientEvent.SELECTED_CARDS or not selected_cards or len(selected_cards) != self.cards_per_player:
-			raise ValueError(f"You must choose {self.cards_per_player} cards to keep.")
+		if event != ClientEvent.SELECTED_CARDS or not selected_cards or len(selected_cards) != return_count:
+			raise ValueError(f"You must choose {return_count} cards to return.")
 
 		player = self.players[player_id]
 		hand_counts = Counter(player.cards)
@@ -567,15 +600,16 @@ class Match:
 		if any(selected_counts[card] > hand_counts[card] for card in selected_counts):
 			raise ValueError("You need to select cards that you own.")
 
-		returned_cards = list(player.cards)
 		for card in selected_cards:
-			returned_cards.remove(card)
-		player.cards = list(selected_cards)
-		for card in returned_cards:
+			player.cards.remove(card)
 			self.deck.push_card(card)
 		self.deck.shuffle()
 		self.status["current_match_state"] = MatchEvent.TURN_RESOLVED
-		return {"event": MatchEvent.TURN_RESOLVED, "action": Action.EXCHANGE, "player_id": player_id}
+		return {
+			"event": MatchEvent.TURN_RESOLVED,
+			"action": self.turn_description["action"] or Action.EXCHANGE,
+			"player_id": player_id,
+		}
 
 	# Resets the state of the match and starts a new turn
 	def end_current_turn(self) -> None:
@@ -600,6 +634,9 @@ class Match:
 			self.add_coins_to_player(source_id, self.tax_coins)
 			return self._resolve_turn(action, source_id, target_id)
 
+		if action == Action.COUP and self.declared_coup:
+			return self._resolve_declared_reveal()
+
 		if action in (Action.COUP, Action.ASSASSINATE):
 			return self._resolve_card_loss(action, source_id, target_id)
 
@@ -609,15 +646,59 @@ class Match:
 			return self._resolve_turn(action, source_id, target_id)
 
 		# action == Action.EXCHANGE
+		return self._start_exchange(source_id)
+
+	def _start_exchange(self, player_id: str, reveal: dict[str, Any] | None = None) -> dict[str, Any]:
 		new_cards = [self.deck.pop_card() for _ in range(self.exchange_draw_cards)]
-		self.players[source_id].cards += new_cards
+		self.players[player_id].cards += new_cards
+		self.turn_description["exchange_player_id"] = player_id
+		self.turn_description["exchange_return_count"] = self.exchange_draw_cards
 		self.status["current_match_state"] = MatchEvent.WAITING_EXCHANGE
-		return {
+		event = {
 			"event": MatchEvent.WAITING_EXCHANGE,
-			"player_id": source_id,
+			"action": self.turn_description["action"] or Action.EXCHANGE,
+			"player_id": player_id,
 			"new_cards": new_cards,
-			"cards": self.players[source_id].cards,
+			"cards": self.players[player_id].cards,
+			"return_count": self.exchange_draw_cards,
 		}
+		if reveal:
+			event["reveal"] = reveal
+		return event
+
+	def _resolve_declared_reveal(self) -> dict[str, Any]:
+		action = self.turn_description["action"]
+		source_id = self.turn_description["source_id"]
+		target_id = self.turn_description["target_id"]
+		declared_card = self.turn_description["declared_card"]
+		target = self.players[target_id]
+		revealed_cards = list(target.cards)
+		lost_card = None
+
+		if declared_card in target.cards:
+			target.cards.remove(declared_card)
+			target.lost_cards.append(declared_card)
+			lost_card = declared_card
+
+		reveal = {
+			"player_id": target_id,
+			"cards": revealed_cards,
+			"declared_card": declared_card,
+			"lost_card": lost_card,
+		}
+		if not target.alive:
+			self.status["current_match_state"] = MatchEvent.TURN_RESOLVED
+			return {
+				"event": MatchEvent.TURN_RESOLVED,
+				"action": action,
+				"source_id": source_id,
+				"target_id": target_id,
+				"declared_card": declared_card,
+				"lost_card": lost_card,
+				"reveal": reveal,
+			}
+
+		return self._start_exchange(target_id, reveal)
 
 	# Shared by income/foreign_aid/tax/steal: the action just resolves, no
 	# card is lost.

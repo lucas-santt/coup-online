@@ -8,6 +8,7 @@ const CONTEST_ICONS = {
 	pass: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5L10 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 	challenge: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="2.2"/><path d="M15 15L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 10.5H13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
 	block: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L19 6V11.5C19 16 16.2 19.2 12 21C7.8 19.2 5 16 5 11.5V6L12 3Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 12H15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+	reveal: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M3 12C5.2 7.8 8.2 6 12 6C15.8 6 18.8 7.8 21 12C18.8 16.2 15.8 18 12 18C8.2 18 5.2 16.2 3 12Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.2"/></svg>',
 };
 
 // Spec §7.3's table, as code: a challengeable action gets a Contest wedge
@@ -112,7 +113,11 @@ const ContestMenu = (() => {
 			];
 		}
 
-		const wedges = [{ choice: 'pass', label: 'Pass' }];
+		const isDeclaredAssassinateTarget =
+			need.action === 'assassinate'
+			&& state.settings?.declaredAssassinate
+			&& need.targetId === state.localPlayerId;
+		const wedges = isDeclaredAssassinateTarget ? [] : [{ choice: 'pass', label: 'Pass' }];
 		if (ACTION_CLAIMS[need.action]) {
 			wedges.push({ choice: 'challenge', label: 'Contest' });
 		}
@@ -127,6 +132,9 @@ const ContestMenu = (() => {
 					wedges.push({ choice: `block:${card}`, label: 'Block', sub: card });
 				}
 			}
+		}
+		if (isDeclaredAssassinateTarget) {
+			wedges.push({ choice: 'reveal', label: 'Reveal' });
 		}
 		return wedges;
 	}
@@ -158,6 +166,8 @@ const ContestMenu = (() => {
 			request = GameState.pass();
 		} else if (choice === 'challenge') {
 			request = GameState.challenge();
+		} else if (choice === 'reveal') {
+			request = GameState.revealCards();
 		} else if (choice.startsWith('block:')) {
 			request = GameState.block(choice.slice('block:'.length));
 		} else {

@@ -36,6 +36,7 @@ export function describeDecision(state) {
 				actorId: td?.sourceId,
 				targetId: td?.targetId,
 				action: td?.action,
+				declaredCard: td?.declaredCard || state.lastEvent?.declared_card,
 				claim: td?.action ? ACTION_CLAIMS[td.action] : null,
 			};
 
@@ -51,7 +52,7 @@ export function describeDecision(state) {
 			return { kind: 'card-loss', playerId: td?.cardLossPlayerId };
 
 		case 'waiting_exchange':
-			return { kind: 'exchange', playerId: td?.sourceId };
+			return { kind: 'exchange', playerId: td?.exchangePlayerId || td?.sourceId, returnCount: td?.exchangeReturnCount };
 
 		// action_confirmed / block_confirmed / action_challenge_confirmed /
 		// block_challenge_confirmed / turn_resolved: transient states the
@@ -75,6 +76,11 @@ export function headline(decision, players, localPlayerId) {
 		case 'turn':
 			return decision.playerId === localPlayerId ? 'Your Turn' : `${name(decision.playerId)}'s Turn`;
 		case 'pending-claim':
+			if (decision.declaredCard) {
+				return decision.actorId === localPlayerId
+					? `You declare ${actionLabel(decision.action)}\nagainst ${decision.declaredCard}`
+					: `${name(decision.actorId)} declares ${actionLabel(decision.action)}\nagainst ${decision.declaredCard}`;
+			}
 			return decision.actorId === localPlayerId
 				? `You declare\n${actionLabel(decision.action)}`
 				: `${name(decision.actorId)} declares\n${actionLabel(decision.action)}`;

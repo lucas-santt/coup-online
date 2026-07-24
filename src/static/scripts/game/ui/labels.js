@@ -49,7 +49,7 @@ export function actionDescription(action, settings) {
 		case 'steal':
 			return `Claim Captain to take ${s.extortCoins} coins from the target. They may block with Captain or Ambassador.`;
 		case 'exchange':
-			return `Claim Ambassador to draw ${s.exchangeDrawCards} cards and choose which to keep.`;
+			return `Claim Ambassador to draw ${s.exchangeDrawCards} cards, then return ${s.exchangeDrawCards}.`;
 		default:
 			return '';
 	}

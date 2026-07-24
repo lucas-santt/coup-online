@@ -3,6 +3,7 @@ import { escapeHtml, escapeAttr } from './dom-utils.js';
 import { actionLabel, actionDescription, ACTION_CLAIMS, TARGETED_ACTIONS, cardArtUrl } from './labels.js';
 import { layoutWedges, bindRadialKeys, bindTouchTooltips, bindPointerTooltips } from './radial-menu.js';
 import TargetMenu from './target-menu.js';
+import DeclareCardMenu from './declare-card-menu.js';
 
 // Fixed wedge order, 1-7 (spec §7.1's "Keyboard shortcuts"): Income,
 // Foreign Aid, Coup, Tax, Assassinate, Extort, Exchange.
@@ -41,7 +42,8 @@ const ActionMenu = (() => {
 		els.menu.classList.toggle('is-touch', isTouch);
 		bindTouchTooltips(els.menu);
 		bindPointerTooltips(els.menu);
-		TargetMenu.init({ onBack: reopenAfterBack });
+		TargetMenu.init({ onBack: reopenAfterBack, onChooseTarget: handleTargetSelected });
+		DeclareCardMenu.init({ onBack: reopenAfterBack });
 		GameState.subscribe(render);
 	}
 
@@ -90,8 +92,8 @@ const ActionMenu = (() => {
 
 	function wedgeMarkup(action, state, me) {
 		const claim = ACTION_CLAIMS[action] || null;
-		const affordable = isAffordable(action, me.coins, state.settings);
-		const reason = affordable ? '' : disabledReason(action, me.coins, state.settings);
+		const affordable = isAffordable(action, me, state);
+		const reason = affordable ? '' : disabledReason(action, me, state);
 		const owned = claim ? (state.yourHand || []).includes(claim) : null;
 		const art = claim
 			? `<img class="radial-wedge-art" src="${escapeAttr(cardArtUrl(claim))}" alt="" aria-hidden="true">`
@@ -162,7 +164,7 @@ const ActionMenu = (() => {
 			// Spec §7.2: with only one possible opponent there's nothing to
 			// choose between -- Target Selection is skipped and the sole
 			// opponent is auto-targeted immediately.
-			submit(action, eligible[0] ?? null);
+			handleTargetSelected(action, eligible[0] ?? null, state);
 			return;
 		}
 
@@ -171,10 +173,20 @@ const ActionMenu = (() => {
 		TargetMenu.open(action, eligible, state);
 	}
 
-	function submit(action, targetPlayerId) {
+	function handleTargetSelected(action, targetPlayerId, state) {
+		if (requiresDeclaredCard(action, state)) {
+			awaitingTarget = true;
+			close();
+			DeclareCardMenu.open(action, targetPlayerId, state);
+			return;
+		}
+		submit(action, targetPlayerId);
+	}
+
+	function submit(action, targetPlayerId, declaredCard = null) {
 		awaitingTarget = true;
 		close();
-		GameState.chooseAction(action, targetPlayerId).catch((err) => {
+		GameState.chooseAction(action, targetPlayerId, declaredCard).catch((err) => {
 			// Rejected (stale affordability, race with a concurrent state
 			// change, ...) -- the server never advanced, so the next
 			// GameState update still says it's our turn and this menu
@@ -191,28 +203,47 @@ const ActionMenu = (() => {
 		render(GameState.getState());
 	}
 
+	function requiresDeclaredCard(action, state) {
+		return (
+			(action === 'coup' && state.settings?.declaredCoup)
+			|| (action === 'assassinate' && state.settings?.declaredAssassinate)
+		);
+	}
+
 	// ---- Affordability -----------------------------------------------
 	// Mirrors backend/engine/match.py's get_options() exactly, using this
 	// match's own settings rather than hardcoded thresholds -- purely a
 	// display computation (spec §7.1's "Disabled actions"). The server
 	// re-validates independently; this never lets the client skip that.
 
-	function isAffordable(action, coins, settings) {
+	function isAffordable(action, me, state) {
+		const settings = state.settings;
+		const coins = me.coins;
 		if (!settings) return false;
 		if (coins >= settings.forcedCoupThreshold) return action === 'coup';
 		if (action === 'coup') return coins >= settings.coupCost;
 		if (action === 'assassinate') return coins >= settings.assassinateCost;
+		if (action === 'steal') return hasStealableTarget(state);
 		return true;
 	}
 
-	function disabledReason(action, coins, settings) {
+	function disabledReason(action, me, state) {
+		const settings = state.settings;
+		const coins = me.coins;
 		if (!settings) return '';
 		if (coins >= settings.forcedCoupThreshold && action !== 'coup') {
 			return `You have ${coins} coins — you must Coup.`;
 		}
 		if (action === 'coup') return `Requires ${settings.coupCost} coins.`;
 		if (action === 'assassinate') return `Requires ${settings.assassinateCost} coins.`;
+		if (action === 'steal') return 'No opponent has coins to extort.';
 		return '';
+	}
+
+	function hasStealableTarget(state) {
+		return state.turnOrder.some(
+			(id) => id !== state.localPlayerId && state.players[id]?.alive && (state.players[id]?.coins ?? 0) > 0
+		);
 	}
 
 	return { init };
