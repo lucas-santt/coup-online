@@ -126,10 +126,17 @@ const ContestMenu = (() => {
 
 	function wedgeMarkup({ choice, label, sub }) {
 		return `
-			<button type="button" class="radial-wedge" data-choice="${escapeAttr(choice)}" role="menuitem">
-				<span class="radial-wedge-label">${escapeHtml(label)}</span>
-				${sub ? `<span class="contest-wedge-sub">${escapeHtml(sub)}</span>` : ''}
-			</button>`;
+			<div class="radial-wedge-slot">
+				<button type="button" class="radial-wedge" data-choice="${escapeAttr(choice)}" role="menuitem"></button>
+				<div class="radial-wedge-overlay">
+					<div class="radial-wedge-anchor">
+						<div class="radial-wedge-content">
+							<span class="radial-wedge-label">${escapeHtml(label)}</span>
+							${sub ? `<span class="contest-wedge-sub">${escapeHtml(sub)}</span>` : ''}
+						</div>
+					</div>
+				</div>
+			</div>`;
 	}
 
 	function handleChoose(choice) {

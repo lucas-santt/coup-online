@@ -153,8 +153,9 @@ const SummaryPanel = (() => {
 		// Spent-token tracking isn't implemented server-side yet (see the
 		// spec's "known engine gaps" -- timers/time bank spending land in
 		// a later pass), so every token renders as available for now.
-		const tokens = `<span class="summary-token" title="Time bank token">${HOURGLASS_ICON}</span>`.repeat(count);
-		return `<div class="summary-time-bank"><span class="summary-cards-label">Time Bank:</span> ${tokens}</div>`;
+		const tokens = `<span class="summary-token">${HOURGLASS_ICON}</span>`.repeat(count);
+		const label = `This player has ${count} time bank${count === 1 ? '' : 's'} left`;
+		return `<div class="summary-time-bank" title="${escapeAttr(label)}"><span class="summary-cards-label">Time Bank:</span> ${tokens}</div>`;
 	}
 
 	return { init };

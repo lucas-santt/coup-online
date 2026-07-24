@@ -97,34 +97,42 @@ const ActionMenu = (() => {
 			: `<span class="radial-wedge-icon" aria-hidden="true">${ACTION_ICONS[action]}</span>`;
 
 		const badge = claim
-			? `<span class="radial-wedge-badge radial-tooltip-trigger${owned ? ' is-owned' : ''}" tabindex="0">
-					${owned ? '✓' : '?'}
-					<span class="radial-tooltip">${owned ? `You have the ${escapeHtml(claim)}` : `You don't have the ${escapeHtml(claim)}`}</span>
-				</span>`
+			? `<span class="radial-wedge-badge${owned ? ' is-owned' : ''}" aria-hidden="true">${owned ? '✓' : '?'}</span>`
 			: '';
 
 		// Disabled always wins (the player needs to know why they can't
 		// click it more than what it does); otherwise show what the action
-		// does, with this match's own settings filled in -- every wedge is
-		// a tooltip trigger now, not just disabled ones.
-		const tooltipText = reason || actionDescription(action, state.settings);
-		const tooltip = tooltipText
-			? `<span class="radial-tooltip">${escapeHtml(tooltipText)}</span>`
-			: '';
+		// does, with this match's own settings filled in. This used to be
+		// a second, separately-triggered tooltip from the badge's
+		// owned/not-owned one below -- both could pop open at once and
+		// overlap -- so now they're one tooltip, stacked as two lines.
+		const lines = [reason || actionDescription(action, state.settings)];
+		if (claim) lines.push(owned ? `You have the ${claim}.` : `You don't have the ${claim}.`);
+		const tooltip = `<span class="radial-tooltip">${lines.map((l) => `<span class="radial-tooltip-line">${escapeHtml(l)}</span>`).join('')}</span>`;
 
 		return `
-			<button
-				type="button"
-				class="radial-wedge radial-tooltip-trigger${affordable ? '' : ' is-disabled'}"
-				data-action="${escapeAttr(action)}"
-				aria-disabled="${affordable ? 'false' : 'true'}"
-				role="menuitem"
-			>
-				${art}
-				${badge}
-				<span class="radial-wedge-label">${escapeHtml(actionLabel(action))}</span>
-				${tooltip}
-			</button>`;
+			<div class="radial-wedge-slot">
+				<button
+					type="button"
+					class="radial-wedge${affordable ? '' : ' is-disabled'}"
+					data-action="${escapeAttr(action)}"
+					aria-disabled="${affordable ? 'false' : 'true'}"
+					role="menuitem"
+				>
+					${art}
+				</button>
+				<div class="radial-wedge-overlay">
+					<div class="radial-wedge-anchor">
+						<div class="radial-wedge-content radial-tooltip-trigger" tabindex="0">
+							<span class="radial-wedge-label-row">
+								${badge}
+								<span class="radial-wedge-label">${escapeHtml(actionLabel(action))}</span>
+							</span>
+							${tooltip}
+						</div>
+					</div>
+				</div>
+			</div>`;
 	}
 
 	function handleChoose(action, state) {

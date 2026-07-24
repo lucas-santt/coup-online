@@ -19,6 +19,7 @@
 	<link rel="stylesheet" href="/static/styles/game/action-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/target-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/contest-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/card-loss-menu.css?v=1">
 
 	<script type="module" src="/static/scripts/game/main.js"></script>
 </head>
@@ -102,6 +103,20 @@
 				<span id="contest-menu-hint" class="radial-menu-hint"></span>
 			</div>
 			<div id="contest-menu-wedges" class="radial-menu-wedges"></div>
+		</div>
+
+		<!-- ============================================================
+		     Card Loss picker -- a plain DOM fallback/companion to
+		     picking a card to lose in the 3D scene (important for
+		     mobile, where the WebGL view isn't very touch-friendly).
+		     Shown only to whoever currently owes a card (see
+		     ui/card-loss-menu.js), one button per card still in hand.
+		     ============================================================ -->
+		<div id="card-loss-menu" class="hidden" role="dialog" aria-label="Choose a card to lose">
+			<div class="card-loss-panel corner-brackets">
+				<span id="card-loss-hint"></span>
+				<div id="card-loss-list"></div>
+			</div>
 		</div>
 
 		<!-- ============================================================

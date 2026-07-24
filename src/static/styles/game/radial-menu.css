@@ -1,7 +1,8 @@
 /* radial-menu.css
    Shared scaffold for every radial menu in the match view -- the Action
-   Menu (action-menu.css) and Target Selection (target-menu.css) each
-   layer their own decoration on top of this. See spec §7.1/§7.2. */
+   Menu (action-menu.css), Target Selection (target-menu.css), and
+   Contestation (contest-menu.css) each layer their own decoration on
+   top of this. See spec §7.1/§7.2/§7.3. */
 
 .radial-menu {
 	position: fixed;
@@ -17,22 +18,34 @@
 	position: relative;
 	width: min(80vw, 460px);
 	height: min(80vw, 460px);
-	--wedge-radius: 165px;
+	/* Radius (in px, not %) used to position the unclipped label/icon
+	   layer -- a breakpoint-based constant like the rest of this page's
+	   sizing, not literally proportional to the container. The pie
+	   slices themselves (radial-menu.js's clip-path) use percentages
+	   instead, since those need to stay exact regardless of screen size. */
+	--label-radius: 155px;
+	--icon-radius: 128px;
 }
 
 @media (max-width: 640px) {
 	.radial-menu-wedges {
-		--wedge-radius: 120px;
+		--label-radius: 112px;
+		--icon-radius: 90px;
 	}
 }
 
 /* Center hub -- a static label (Action Menu) or label + Back button
-   (Target Selection), never itself a wedge. */
+   (Target Selection), never itself a wedge. Sits above the wedges in
+   paint order (both are positioned elements with the hub coming first
+   in DOM order, so without this the pie slices -- which now cover
+   nearly the whole circle, not just small squares with gaps between
+   them -- would paint over it). */
 .radial-menu-hub {
 	position: absolute;
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);
+	z-index: 4;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -66,47 +79,54 @@
 	box-shadow: var(--shadow-stamp-sm-hover);
 }
 
-/* One wedge -- a flat square stamp positioned around the circle by
-   rotating to its angle, pushing out by the radius, then rotating back
-   so its own content stays upright. --wedge-count/--wedge-index are set
-   per-instance by ui/radial-menu.js's layoutWedges(); --wedge-radius is
-   the presentational constant above. */
-.radial-wedge {
-	--wedge-angle: calc(360deg / var(--wedge-count, 1) * var(--wedge-index, 0));
+/* ============================================================
+   Wedges -- true pie slices, one equal-angle slice per action/target/
+   response (spec's "CS:GO-style" describes the interaction model --
+   angle as direction, number keys as shortcuts -- not a literal
+   rendering requirement, so this is free to actually look like a pie).
+
+   Each slot holds two siblings:
+     .radial-wedge          the clickable, clipped slice: background,
+                             card art / avatar / icon all live here and
+                             get visually clipped to the slice shape
+                             along with everything else in the box.
+     .radial-wedge-overlay  NOT clipped -- label chip, owned/not-owned
+                             badge, and the combined tooltip, floated at
+                             a fixed radius along the slice's own
+                             bisector via --wedge-angle (set per-slot by
+                             radial-menu.js's layoutWedges).
+   ============================================================ */
+
+.radial-wedge-slot {
 	position: absolute;
-	top: 50%;
-	left: 50%;
-	width: 88px;
-	height: 88px;
-	margin: -44px 0 0 -44px;
-	transform: rotate(var(--wedge-angle)) translateY(calc(-1 * var(--wedge-radius))) rotate(calc(-1 * var(--wedge-angle)));
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 0.2rem;
-	padding: 0.3rem;
-	background: var(--color-panel);
-	border: 2px solid var(--color-ink);
-	box-shadow: var(--shadow-stamp-sm);
-	cursor: pointer;
-	overflow: visible;
-	transition: box-shadow 0.15s ease, filter 0.15s ease;
+	inset: 0;
+	pointer-events: none;
 }
 
-@media (max-width: 640px) {
-	.radial-wedge {
-		width: 68px;
-		height: 68px;
-		margin: -34px 0 0 -34px;
-	}
+.radial-wedge {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+	padding: 0;
+	background: var(--color-panel);
+	border: none;
+	/* clip-path already cuts the slice's own outline out of everything
+	   painted on this box, including a border -- inset box-shadow reads
+	   as a clean stroke along whatever edges survive the clip instead. */
+	box-shadow: inset 0 0 0 2px var(--color-ink);
+	cursor: pointer;
+	pointer-events: auto;
+	transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 .radial-wedge:hover,
 .radial-wedge:focus-visible {
-	box-shadow: var(--shadow-stamp-sm-hover);
-	filter: brightness(1.08);
+	filter: brightness(1.1);
+	box-shadow: inset 0 0 0 3px var(--color-orange);
 	outline: none;
+	z-index: 2;
 }
 
 .radial-wedge.is-disabled {
@@ -115,30 +135,10 @@
 	cursor: not-allowed;
 }
 
-.radial-wedge-label {
-	font-family: var(--font-body);
-	font-weight: 700;
-	font-size: 0.62rem;
-	letter-spacing: 0.3px;
-	color: var(--color-ink);
-	text-align: center;
-	line-height: 1.1;
-}
-
-.radial-wedge-icon {
-	width: 28px;
-	height: 28px;
-	color: var(--color-navy);
-}
-
-.radial-wedge-icon svg {
-	width: 100%;
-	height: 100%;
-}
-
-/* Card art (Action Menu) / avatar (Target Selection) filling the wedge
-   behind everything else -- see .radial-wedge-art modifiers in
-   action-menu.css/target-menu.css for the two different treatments. */
+/* Card art (Action Menu) / avatar (Target Selection), filling the whole
+   slice's bounding box and clipped to its shape along with it -- see
+   .radial-wedge-art modifiers in action-menu.css/target-menu.css for
+   the two different opacity treatments. */
 .radial-wedge-art {
 	position: absolute;
 	inset: 0;
@@ -147,10 +147,141 @@
 	object-fit: cover;
 }
 
+/* Custom action icons (income/foreign_aid/coup, see action-menu.js) --
+   fixed-size, floated at --icon-radius along the slice's own bisector
+   with the same rotate/translate/counter-rotate trick .radial-wedge-anchor
+   below uses, so the icon stays upright and roughly centered in the
+   slice regardless of how many wedges there are. Some clipping at the
+   slice edges is expected and fine -- the icon's core stays visible. */
+.radial-wedge-icon {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 28px;
+	height: 28px;
+	margin: -14px 0 0 -14px;
+	transform: rotate(var(--wedge-angle)) translateY(calc(-1 * var(--icon-radius))) rotate(calc(-1 * var(--wedge-angle)));
+	color: var(--color-navy);
+}
+
+.radial-wedge-icon svg {
+	width: 100%;
+	height: 100%;
+}
+
+@media (max-width: 640px) {
+	.radial-wedge-icon {
+		width: 22px;
+		height: 22px;
+		margin: -11px 0 0 -11px;
+	}
+}
+
 /* ============================================================
-   Tooltips -- shared by disabled-wedge cost/reason text and the
-   character-owned badge. Desktop: plain CSS hover/focus. Touch: JS
-   toggles .is-tooltip-open (see ui/radial-menu.js's bindTouchTooltips).
+   Overlay layer -- label chip, badge, tooltip. Unclipped, and raised
+   above every slice (z-index: 3) so it stays fully legible no matter
+   what's happening underneath.
+   ============================================================ */
+
+.radial-wedge-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	pointer-events: none;
+}
+
+/* Zero-size anchor at the target point along the slice's bisector --
+   same rotate/translate/counter-rotate technique as the old square
+   wedges used, just applied to an invisible point instead of the whole
+   button, since .radial-wedge-content's own size (label text length)
+   varies and can't use a fixed negative-margin self-centering trick. */
+.radial-wedge-anchor {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 0;
+	height: 0;
+	transform: rotate(var(--wedge-angle)) translateY(calc(-1 * var(--label-radius))) rotate(calc(-1 * var(--wedge-angle)));
+}
+
+.radial-wedge-content {
+	position: absolute;
+	top: 0;
+	left: 0;
+	transform: translate(-50%, -50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	pointer-events: auto;
+}
+
+/* Raises this wedge's label/tooltip above any neighbor's when either
+   the slice itself or the label chip is hovered/focused -- neighbors
+   are equally-sized pie slices now (not small squares with gaps), so
+   without this a tooltip near the rim could still paint under an
+   adjacent wedge's own label chip. */
+.radial-wedge-slot:has(.radial-wedge:hover) .radial-wedge-content,
+.radial-wedge-slot:has(.radial-wedge:focus-visible) .radial-wedge-content,
+.radial-wedge-content:hover,
+.radial-wedge-content:focus-within {
+	z-index: 6;
+}
+
+.radial-wedge-label-row {
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.radial-wedge-label {
+	font-family: var(--font-body);
+	font-weight: 700;
+	font-size: 0.62rem;
+	letter-spacing: 0.3px;
+	color: var(--color-panel-light);
+	text-align: center;
+	line-height: 1.1;
+	padding: 0.22rem 0.4rem;
+	background: var(--color-navy);
+	border: 1px solid var(--color-ink);
+	box-shadow: 2px 2px 0 var(--color-ink);
+	white-space: nowrap;
+}
+
+/* Character-owned indicator badge (Action Menu only) -- now sits inline
+   next to the label instead of pinned to the wedge's corner, which is
+   what used to put it on top of the always-on description tooltip and
+   trigger both at once (see the combined tooltip below instead). */
+.radial-wedge-badge {
+	font-family: var(--font-display);
+	font-size: 0.62rem;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--color-panel-dim);
+	color: var(--color-ink-muted);
+	border: 1px solid var(--color-ink);
+}
+
+.radial-wedge-badge.is-owned {
+	background: var(--color-online);
+	color: var(--color-panel-light);
+}
+
+/* ============================================================
+   Tooltip -- one per wedge now (combined "what this does"/"why it's
+   disabled" + "do I own this character" into a single box, stacked as
+   separate lines, instead of two separately-triggered tooltips that
+   could pop open at the same time and overlap). Desktop: plain CSS
+   hover/focus, on either the label chip itself (.radial-wedge-content)
+   or -- via the general sibling combinator, since the overlay is a
+   sibling of the clipped wedge, not a descendant -- the pie slice
+   underneath it. Touch: JS toggles .is-tooltip-open on the trigger (see
+   ui/radial-menu.js's bindTouchTooltips).
    ============================================================ */
 .radial-tooltip {
 	position: absolute;
@@ -171,43 +302,22 @@
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.1s ease;
-	z-index: 5;
 }
 
-.radial-tooltip-trigger:hover .radial-tooltip,
-.radial-tooltip-trigger:focus-visible .radial-tooltip,
-.radial-tooltip-trigger.is-tooltip-open .radial-tooltip {
+.radial-tooltip-line {
+	display: block;
+}
+
+.radial-tooltip-line + .radial-tooltip-line {
+	margin-top: 0.25rem;
+	padding-top: 0.25rem;
+	border-top: 1px solid rgba(237, 230, 214, 0.3);
+}
+
+.radial-wedge:hover ~ .radial-wedge-overlay .radial-tooltip,
+.radial-wedge:focus-visible ~ .radial-wedge-overlay .radial-tooltip,
+.radial-wedge-content:hover .radial-tooltip,
+.radial-wedge-content:focus-within .radial-tooltip,
+.radial-wedge-content.is-tooltip-open .radial-tooltip {
 	opacity: 1;
-}
-
-/* The badge is itself a nested tooltip trigger inside the wedge, which
-   is now also a trigger for its own (always-on) description tooltip --
-   hovering the badge would otherwise show both stacked at the same
-   centered spot. Shifting the badge's tooltip to the right keeps them
-   legible side by side instead of overlapping. */
-.radial-wedge-badge .radial-tooltip {
-	left: auto;
-	right: -6px;
-	transform: none;
-}
-
-/* Character-owned indicator badge (Action Menu only, see action-menu.css
-   for its positioning) -- base look lives here since it's just another
-   tooltip trigger. */
-.radial-wedge-badge {
-	font-family: var(--font-display);
-	font-size: 0.65rem;
-	width: 18px;
-	height: 18px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: var(--color-panel-dim);
-	color: var(--color-ink-muted);
-	border: 1px solid var(--color-ink);
-}
-
-.radial-wedge-badge.is-owned {
-	background: var(--color-online);
-	color: var(--color-panel-light);
 }

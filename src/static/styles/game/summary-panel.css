@@ -8,6 +8,15 @@
 	z-index: 30;
 	display: flex;
 	align-items: stretch;
+	/* #game-overlay defaults every descendant to pointer-events: none and
+	   only opts links/buttons back in individually (see overlay.css) --
+	   the panel's body is plain divs, so without this the mouse only
+	   ever registered over the tab/pin buttons themselves, and the panel
+	   would close the instant the cursor left that tiny area instead of
+	   staying open anywhere over the panel (see summary-panel.js's
+	   mouseenter/mouseleave, which are bound to the whole #summary-panel
+	   and were never getting the events to begin with). */
+	pointer-events: auto;
 }
 
 .summary-panel-tab {

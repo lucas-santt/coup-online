@@ -35,6 +35,14 @@
 	padding: 0;
 }
 
+html {
+	/* Nearly everything in the overlay is sized in rem, so bumping the
+	   root size here scales the whole thing at once. This page only
+	   ever hosts the match view, so there's no other layout on the page
+	   this could throw off. */
+	font-size: 118%;
+}
+
 html, body {
 	width: 100%;
 	height: 100%;

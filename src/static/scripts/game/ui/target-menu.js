@@ -56,21 +56,29 @@ const TargetMenu = (() => {
 		const player = state.players[targetId];
 		const blocked = stealBlocked(action, targetId, state);
 		const tooltip = blocked
-			? '<span class="radial-tooltip">No coins to steal.</span>'
+			? '<span class="radial-tooltip"><span class="radial-tooltip-line">No coins to steal.</span></span>'
 			: '';
 
 		return `
-			<button
-				type="button"
-				class="radial-wedge${blocked ? ' is-disabled radial-tooltip-trigger' : ''}"
-				data-target-id="${escapeAttr(targetId)}"
-				aria-disabled="${blocked ? 'true' : 'false'}"
-				role="menuitem"
-			>
-				<img class="radial-wedge-art radial-wedge-avatar" src="${escapeAttr(avatarSrc(player?.avatarUrl))}" alt="">
-				<span class="radial-wedge-label">${escapeHtml(player?.displayName || '')}</span>
-				${tooltip}
-			</button>`;
+			<div class="radial-wedge-slot">
+				<button
+					type="button"
+					class="radial-wedge${blocked ? ' is-disabled' : ''}"
+					data-target-id="${escapeAttr(targetId)}"
+					aria-disabled="${blocked ? 'true' : 'false'}"
+					role="menuitem"
+				>
+					<img class="radial-wedge-art radial-wedge-avatar" src="${escapeAttr(avatarSrc(player?.avatarUrl))}" alt="">
+				</button>
+				<div class="radial-wedge-overlay">
+					<div class="radial-wedge-anchor">
+						<div class="radial-wedge-content${blocked ? ' radial-tooltip-trigger' : ''}" tabindex="${blocked ? '0' : '-1'}">
+							<span class="radial-wedge-label">${escapeHtml(player?.displayName || '')}</span>
+							${tooltip}
+						</div>
+					</div>
+				</div>
+			</div>`;
 	}
 
 	function handleChoose(targetId) {
