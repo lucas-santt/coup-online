@@ -49,7 +49,7 @@ class Match:
 		return self.interaction_resolver.resolve_block_challenge()
 
 
-# Shuffles turn order and the deck, deals hands, hands out starting
+	# Shuffles turn order and the deck, deals hands, hands out starting
 	# coins, and returns the first turn's info.
 	def start_match(self) -> dict[str, Any]:
 		random.shuffle(self.state.order)

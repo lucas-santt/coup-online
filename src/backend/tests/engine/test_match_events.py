@@ -254,3 +254,30 @@ class TestMatchEvents:
         processor.process_event("PLAYER1", {"event": ClientEvent.SELECTED_CARDS, "selected_cards": [Card.DUKE, Card.CAPTAIN]})
         assert state.status["current_match_state"] == MatchEvent.TURN_RESOLVED
         assert len(state.players["PLAYER1"].cards) == 2
+
+    def test_process_event_while_examine(self):
+        state, processor = self._setup_processor()
+        state.status["current_match_state"] = MatchEvent.WAITING_EXAMINE_CARD_SELECTION
+        state.turn_description["action"] = Action.EXAMINE
+        state.turn_description["source_id"] = "PLAYER1"
+        state.turn_description["target_id"] = "PLAYER2"
+        # Tests when some other player selects some card
+        with pytest.raises(ValueError, match="It is not your turn."):
+            processor.process_event("PLAYER1", {"selected_card": Card.DUKE})
+        # Tests choosing unowned card
+        with pytest.raises(ValueError, match="You need to select a card that you own."):
+            processor.process_event("PLAYER2", {"selected_card": Card.CAPTAIN}) 
+        # Tests successfully selecting the card
+        res = processor.process_event("PLAYER2", {"selected_card": Card.DUKE})
+        assert res["event"] == MatchEvent.WAITING_EXAMINE_DECISION
+        assert state.turn_description["declared_card"] == Card.DUKE
+        assert state.status["current_match_state"] == MatchEvent.WAITING_EXAMINE_DECISION
+
+        # Tests when some other player tries to force_exchange
+        with pytest.raises(ValueError, match="It is not your turn."):
+            processor.process_event("PLAYER2", {"force_exchange": True})
+        # Tests successfully forcing exchange
+        res = processor.process_event("PLAYER1", {"force_exchange": True})
+        assert res["event"] == MatchEvent.TURN_RESOLVED
+        assert res["force_exchange"] is True
+        assert state.status["current_match_state"] == MatchEvent.TURN_RESOLVED

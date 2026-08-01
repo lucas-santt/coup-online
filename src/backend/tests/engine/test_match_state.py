@@ -118,33 +118,41 @@ class TestMatchState:
         state.turn_description["declared_card"] = Card.DUKE
         
         # Tests when the player has the declared card and has two cards
-        ans = state._resolve_declared_reveal()
-        assert ans["event"] == MatchEvent.WAITING_EXCHANGE
+        res = state._resolve_declared_reveal()
+        assert res["event"] == MatchEvent.WAITING_EXCHANGE
         assert Card.DUKE in state.players["PLAYER2"].lost_cards
-        assert ans["reveal"]["lost_card"] == Card.DUKE
+        assert res["reveal"]["lost_card"] == Card.DUKE
         
         # Tests when the player has the declared card and has one cards
         state.players["PLAYER2"].cards = [Card.ASSASSIN]
         state.turn_description["declared_card"] = Card.ASSASSIN
-        ans = state._resolve_declared_reveal()
-        assert ans["event"] == MatchEvent.TURN_RESOLVED
-        assert ans["lost_card"] == Card.ASSASSIN
+        res = state._resolve_declared_reveal()
+        assert res["event"] == MatchEvent.TURN_RESOLVED
+        assert res["lost_card"] == Card.ASSASSIN
         assert not state.players["PLAYER2"].alive
         
         # Tests when the player does not have the declared card
         state.players["PLAYER1"].cards = [Card.CONTESSA]
         state.turn_description["target_id"] = "PLAYER1"
         state.turn_description["declared_card"] = Card.DUKE
-        ans = state._resolve_declared_reveal()
-        assert ans["event"] == MatchEvent.WAITING_EXCHANGE
-        assert ans["reveal"]["lost_card"] is None
+        res = state._resolve_declared_reveal()
+        assert res["event"] == MatchEvent.WAITING_EXCHANGE
+        assert res["reveal"]["lost_card"] is None
 
     def test_start_exchange(self):
         state = MatchState(id="MATCH_0350", players=self._get_standard_players())
         state.players["PLAYER1"].cards = [Card.DUKE]
         state.turn_description["action"] = Action.EXCHANGE
-        ans = state._start_exchange("PLAYER1")
-        assert ans["event"] == MatchEvent.WAITING_EXCHANGE
+        res = state._start_exchange("PLAYER1")
+        assert res["event"] == MatchEvent.WAITING_EXCHANGE
         assert state.turn_description["exchange_player_id"] == "PLAYER1"
         assert state.turn_description["exchange_return_count"] == 2
         assert len(state.players["PLAYER1"].cards) == 3
+
+    def test_start_examine(self):
+        state = MatchState(id="MATCH_0350", players=self._get_standard_players())
+        state.turn_description["action"] = Action.EXAMINE
+        res = state._start_examine("PLAYER1", "PLAYER2")
+        assert res["event"] == MatchEvent.WAITING_EXAMINE_CARD_SELECTION
+        assert res["target_id"] == "PLAYER2"
+        assert state.status["current_match_state"] == MatchEvent.WAITING_EXAMINE_CARD_SELECTION

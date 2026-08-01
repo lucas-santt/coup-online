@@ -58,6 +58,7 @@ MATCH_SETTINGS_SCHEMA: dict[str, dict[str, int]] = {
 	# cross-field interaction belongs with the rest of match-start
 	# validation, not here.
 	"exchange_draw_cards": {"min": 1, "max": 5, "default": 2},
+    "inquisitor_exchange_draw_cards": {"min": 1, "max": 5, "default": 1},
 	# Poker-style time bank tokens: how many times a player can dip into
 	# time_bank (above) before their per-turn timer just runs out. Distinct
 	# from time_bank itself, which is the duration of each one.

@@ -175,3 +175,16 @@ class TestMatchInteractions:
         assert res["reveal"]["proven"] is True
         assert state.turn_description["card_loss_player_id"] == "PLAYER1"
         assert state.turn_description["pending_resolution"] == "action_cancelled"
+
+    def test_make_action_inquisitor(self):
+        state, resolver = self._setup_resolver()
+        state.turn_description["source_id"] = "PLAYER1"
+        state.turn_description["target_id"] = "PLAYER2"
+        # Tests examine
+        state.turn_description["action"] = Action.EXAMINE
+        res_examine = resolver.make_action()
+        assert res_examine["event"] == MatchEvent.WAITING_EXAMINE_CARD_SELECTION
+        # Tests exchange
+        state.turn_description["action"] = Action.INQUISITOR_EXCHANGE
+        res_exchange = resolver.make_action()
+        assert res_exchange["event"] == MatchEvent.WAITING_EXCHANGE

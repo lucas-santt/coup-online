@@ -76,6 +76,7 @@ class MatchState:
         self_conversion_coins: int = constants.MATCH_SETTINGS_SCHEMA["self_conversion_coins"]["default"],
         force_conversion_coins: int = constants.MATCH_SETTINGS_SCHEMA["force_conversion_coins"]["default"],
 		exchange_draw_cards: int = constants.MATCH_SETTINGS_SCHEMA["exchange_draw_cards"]["default"],
+		inquisitor_exchange_draw_cards: int = constants.MATCH_SETTINGS_SCHEMA["inquisitor_exchange_draw_cards"]["default"],
 		reformation: bool = False,
 		declared_coup: bool = False,
 		declared_assassinate: bool = False,
@@ -88,6 +89,12 @@ class MatchState:
 
 		self.id = id
 		self.base_cards: list[Card] = base_cards if base_cards is not None else list(Card)
+		self.reformation = reformation
+		if self.reformation and Card.AMBASSADOR in self.base_cards:
+			self.base_cards.remove(Card.AMBASSADOR)
+		elif Card.INQUISITOR in self.base_cards:
+			self.base_cards.remove(Card.INQUISITOR)
+
 		self.base_religions: list[Religion] = base_religions if base_religions is not None else list(Religion)
 		# <= 0 character_copies means an infinite deck (see engine.deck.Deck)
 		# -- always enough cards, nothing to check. Otherwise the deck must
@@ -144,6 +151,7 @@ class MatchState:
 		self.self_conversion_coins = self_conversion_coins
 		self.force_conversion_coins = force_conversion_coins
 		self.exchange_draw_cards = exchange_draw_cards
+		self.inquisitor_exchange_draw_cards = inquisitor_exchange_draw_cards
 		self.reformation = reformation
 		self.declared_coup = declared_coup
 		self.declared_assassinate = declared_assassinate
@@ -193,8 +201,7 @@ class MatchState:
             Action.FOREIGN_AID,
             Action.TAX,
             Action.STEAL,
-            Action.EXCHANGE
-        ]
+		]
 
         # Adds actions based on the player's coins
 		if player.coins >= self.coup_cost:
@@ -202,12 +209,15 @@ class MatchState:
 		if player.coins >= self.assassinate_cost:
 			options.append(Action.ASSASSINATE)
 		if self.reformation:
+			options += [Action.EXAMINE, Action.INQUISITOR_EXCHANGE]
 			if player.coins >= self.self_conversion_coins:
 				options.append(Action.SELF_CONVERSION)
 			if player.coins >= self.force_conversion_coins:
 				options.append(Action.FORCE_CONVERSION)
 			if self.treasury > 0:
 				options.append(Action.EMBEZZLE)
+		else:
+			options.append(Action.EXCHANGE)
 
 		return options
 		
@@ -266,10 +276,14 @@ class MatchState:
 		return self._start_exchange(target_id, reveal)
 	
 	def _start_exchange(self, player_id: str, reveal: dict[str, Any] | None = None) -> dict[str, Any]:
-		new_cards = [self.deck.pop_card() for _ in range(self.exchange_draw_cards)]
+		if self.reformation:
+			draw_cards = self.inquisitor_exchange_draw_cards
+		else:
+			draw_cards = self.exchange_draw_cards
+		new_cards = [self.deck.pop_card() for _ in range(draw_cards)]
 		self.players[player_id].cards += new_cards
 		self.turn_description["exchange_player_id"] = player_id
-		self.turn_description["exchange_return_count"] = self.exchange_draw_cards
+		self.turn_description["exchange_return_count"] = draw_cards
 		self.status["current_match_state"] = MatchEvent.WAITING_EXCHANGE
 		event = {
 			"event": MatchEvent.WAITING_EXCHANGE,
@@ -277,8 +291,17 @@ class MatchState:
 			"player_id": player_id,
 			"new_cards": new_cards,
 			"cards": self.players[player_id].cards,
-			"return_count": self.exchange_draw_cards,
+			"return_count": draw_cards,
 		}
 		if reveal:
 			event["reveal"] = reveal
 		return event
+
+	def _start_examine(self, player_id: str, target_id: str, reveal: dict[str, Any] | None = None) -> dict[str, Any]:
+		self.status["current_match_state"] = MatchEvent.WAITING_EXAMINE_CARD_SELECTION
+		return {
+			"event": MatchEvent.WAITING_EXAMINE_CARD_SELECTION,
+			"action": self.turn_description["action"] or Action.EXAMINE,
+			"player_id": player_id,
+			"target_id": target_id
+		}

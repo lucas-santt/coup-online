@@ -104,3 +104,11 @@ class TestMatch:
         current_player_id = match.state.order[0] 
         with pytest.raises(ValueError, match="You can not do it with this player."):
             match.process_event(current_player_id, {"event": ClientEvent.CHOSEN_ACTION, "action": Action.STEAL, "target_id": current_player_id})
+
+        # Tests block_challenge
+        match.state.turn_description["action"] = Action.STEAL
+        match.state.turn_description["challenger_id"] = "PLAYER1"
+        match.state.turn_description["blocker_id"] = "PLAYER2"
+        match.state.turn_description["block_claimed_card"] = Card.CAPTAIN
+        ans_block = match.resolve_block_challenge()
+        assert ans_block["event"] == MatchEvent.WAITING_CARD_LOSS

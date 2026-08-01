@@ -51,7 +51,10 @@ class MatchInteractionResolver:
 			self.state.treasury = 0
 			return self._resolve_turn(action, source_id, target_id)
 
-		# action == Action.EXCHANGE
+		if action == Action.EXAMINE:
+			return self.state._start_examine(source_id, target_id)
+		
+		# action == Action.EXCHANGE or Action.INQUISITOR_EXCHANGE
 		return self.state._start_exchange(source_id)
 
 	# Shared by income/foreign_aid/tax/steal/self_conversion/force_conversion/embezzle: 
@@ -135,10 +138,10 @@ class MatchInteractionResolver:
 	# by pending_resolution, not here.
 	def resolve_action_challenge(self) -> dict[str, Any]:
 		action = self.state.turn_description["action"]
-            
+
 		if action == Action.EMBEZZLE:
 			return self._resolve_embezzle_challenge()
-
+		
 		source_id = self.state.turn_description["source_id"]
 		challenger_id = self.state.turn_description["challenger_id"]
 		claimed_card = ACTION_CLAIMS[action]

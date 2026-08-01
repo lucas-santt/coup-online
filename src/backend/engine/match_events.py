@@ -37,6 +37,10 @@ class MatchEventProcessor:
             return self._process_event_while_card_loss(player_id, data)
         if current_state == MatchEvent.WAITING_EXCHANGE:
             return self._process_event_while_waiting_exchange(player_id, data)
+        if current_state == MatchEvent.WAITING_EXAMINE_CARD_SELECTION:
+            return self._process_event_while_waiting_examine_card_selection(player_id, data)
+        if current_state == MatchEvent.WAITING_EXAMINE_DECISION:
+            return self._process_event_while_waiting_examine_decision(player_id, data)
         # ACTION_CHALLENGE_CONFIRMED / BLOCK_CHALLENGE_CONFIRMED: no further
         # player input is expected here -- the caller is expected to call
         # resolve_action_challenge()/resolve_block_challenge() directly
@@ -351,4 +355,50 @@ class MatchEventProcessor:
             "event": MatchEvent.TURN_RESOLVED,
             "action": self.state.turn_description["action"] or Action.EXCHANGE,
             "player_id": player_id,
+        }
+
+    # Processes the action while the state is WAITING_EXAMINE_CARD_SELECTION
+    def _process_event_while_waiting_examine_card_selection(self, player_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        target_id = self.state.turn_description["target_id"]
+        if player_id != target_id:
+            raise ValueError("It is not your turn.")
+        
+        selected_card = Card(data.get("selected_card"))
+        if selected_card not in self.state.players[player_id].cards:
+            raise ValueError("You need to select a card that you own.")
+
+        self.state.turn_description["declared_card"] = selected_card 
+        self.state.status["current_match_state"] = MatchEvent.WAITING_EXAMINE_DECISION
+        return {
+            "event": MatchEvent.WAITING_EXAMINE_DECISION,
+            "player_id": self.state.turn_description["source_id"],
+            "target_id": target_id,
+            "revealed_card": selected_card
+        }
+    
+    # Processes the action while the state is WAITING_EXCHANGE_DECISION
+    def _process_event_while_waiting_examine_decision(self, player_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        source_id = self.state.turn_description["source_id"]
+        
+        if player_id != source_id:
+            raise ValueError("It is not your turn.")
+        
+        force_exchange = data.get("force_exchange", False)
+        target_id = self.state.turn_description["target_id"]
+        target_player = self.state.players[target_id]
+        revealed_card = self.state.turn_description["declared_card"]
+        
+        if force_exchange:
+            target_player.cards.remove(revealed_card)
+            self.state.deck.push_card(revealed_card)
+            self.state.deck.shuffle()
+            target_player.cards.append(self.state.deck.pop_card())
+        
+        self.state.status["current_match_state"] = MatchEvent.TURN_RESOLVED
+        return {
+            "event": MatchEvent.TURN_RESOLVED,
+            "action": self.state.turn_description["action"],
+            "source_id": source_id,
+            "target_id": target_id,
+            "force_exchange": force_exchange
         }
