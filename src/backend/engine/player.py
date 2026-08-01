@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from backend.engine.enums import Card
+from backend.engine.enums import Card, Religion
 
 
 @dataclass
@@ -29,6 +29,7 @@ class Player:
 	# deck and they draw a replacement (see Match.resolve_action_challenge/
 	# resolve_block_challenge), so that case never touches this list.
 	lost_cards: list[Card] = field(default_factory=list)
+	religion: Religion | None = None
 
 	@property
 	def alive(self) -> bool:

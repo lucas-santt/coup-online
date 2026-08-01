@@ -12,6 +12,7 @@ class Card(StrEnum):
 	CAPTAIN = "Captain"
 	CONTESSA = "Contessa"
 	DUKE = "Duke"
+	INQUISITOR = "Inquisitor"
 
 
 class Action(StrEnum):
@@ -22,14 +23,23 @@ class Action(StrEnum):
 	ASSASSINATE = "assassinate"
 	STEAL = "steal"
 	EXCHANGE = "exchange"
+	INQUISITOR_EXCHANGE = "inquisitor_exchange"
+	SELF_CONVERSION = "self_conversion"
+	FORCE_CONVERSION = "force_conversion"
+	EMBEZZLE = "embezzle"
+	EXAMINE = "examine"
+
+class Religion(StrEnum):
+	LOYALIST = "loyalist"
+	REFORMIST = "reformist"
 
 
 # Actions nobody can block or challenge -- they resolve the instant they're
 # declared (see process_event_while_waiting_action).
-UNCONTESTABLE_ACTIONS: frozenset[Action] = frozenset({Action.INCOME, Action.COUP})
+UNCONTESTABLE_ACTIONS: frozenset[Action] = frozenset({Action.INCOME, Action.COUP, Action.SELF_CONVERSION, Action.FORCE_CONVERSION})
 
 # Actions that take a target player (coup/assassinate/steal).
-TARGETED_ACTIONS: frozenset[Action] = frozenset({Action.COUP, Action.ASSASSINATE, Action.STEAL})
+TARGETED_ACTIONS: frozenset[Action] = frozenset({Action.COUP, Action.ASSASSINATE, Action.STEAL, Action.FORCE_CONVERSION, Action.EXAMINE})
 
 # Actions any living player besides the source may block.
 BLOCKABLE_ACTIONS: frozenset[Action] = frozenset({Action.FOREIGN_AID, Action.ASSASSINATE, Action.STEAL})
@@ -41,8 +51,28 @@ TARGETED_BLOCK_ONLY_ACTIONS: frozenset[Action] = frozenset({Action.ASSASSINATE, 
 
 # Actions any living player besides the source may challenge.
 CHALLENGEABLE_ACTIONS: frozenset[Action] = frozenset(
-	{Action.TAX, Action.ASSASSINATE, Action.STEAL, Action.EXCHANGE}
+	{Action.TAX, Action.ASSASSINATE, Action.STEAL, Action.EXCHANGE, Action.EMBEZZLE, Action.EXAMINE, Action.INQUISITOR_EXCHANGE}
 )
+
+# Actions exclusive to the Reformation expansion
+REFORMATION_ACTIONS: frozenset[Action] = frozenset({
+    Action.SELF_CONVERSION, 
+    Action.FORCE_CONVERSION, 
+    Action.EMBEZZLE,
+	Action.INQUISITOR_EXCHANGE,
+	Action.EXAMINE
+})
+
+ACTION_RESTRICTIONS_AMONG_FELLOWS: frozenset[Action] = frozenset({
+	Action.ASSASSINATE,
+	Action.COUP,
+	Action.STEAL,
+	Action.EXAMINE
+})
+
+BLOCK_RESTRICTIONS_AMONG_FELLOWS: frozenset[Action] = frozenset({
+    Action.FOREIGN_AID
+})
 
 # The character an action's own claim is pinned to -- what a challenge on
 # the *action itself* (ACTION_DECLARED -> challenge) is actually checking
@@ -52,7 +82,9 @@ ACTION_CLAIMS: dict[Action, Card] = {
 	Action.TAX: Card.DUKE,
 	Action.STEAL: Card.CAPTAIN,
 	Action.ASSASSINATE: Card.ASSASSIN,
-	Action.EXCHANGE: Card.AMBASSADOR,
+	Action.EXCHANGE: Card.AMBASSADOR, 
+	Action.INQUISITOR_EXCHANGE: Card.INQUISITOR,
+	Action.EXAMINE: Card.INQUISITOR
 }
 
 # The character(s) a *block* may claim, per action. Foreign Aid and
@@ -64,7 +96,7 @@ ACTION_CLAIMS: dict[Action, Card] = {
 BLOCK_CLAIMS: dict[Action, frozenset[Card]] = {
 	Action.FOREIGN_AID: frozenset({Card.DUKE}),
 	Action.ASSASSINATE: frozenset({Card.CONTESSA}),
-	Action.STEAL: frozenset({Card.CAPTAIN, Card.AMBASSADOR}),
+	Action.STEAL: frozenset({Card.CAPTAIN, Card.AMBASSADOR, Card.INQUISITOR}),
 }
 
 
@@ -100,6 +132,8 @@ class MatchEvent(StrEnum):
 	ACTION_CHALLENGE_CONFIRMED = "action_challenge_confirmed"
 	BLOCK_CHALLENGE_CONFIRMED = "block_challenge_confirmed"
 	WAITING_CARD_LOSS = "waiting_card_loss"
+	WAITING_EXAMINE_CARD_SELECTION = "waiting_examine_card_selection"
+	WAITING_EXAMINE_DECISION = "waiting_examine_decision"
 	WAITING_EXCHANGE = "waiting_exchange"
 	TURN_RESOLVED = "turn_resolved"
 	END_OF_MATCH = "end_of_match"
