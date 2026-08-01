@@ -5,10 +5,10 @@ import { describeDecision, headline } from './match-text.js';
 import { layoutWedges, bindRadialKeys, bindTouchTooltips, bindPointerTooltips } from './radial-menu.js';
 
 const CONTEST_ICONS = {
-	pass: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5L10 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-	challenge: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="2.2"/><path d="M15 15L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 10.5H13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
-	block: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L19 6V11.5C19 16 16.2 19.2 12 21C7.8 19.2 5 16 5 11.5V6L12 3Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 12H15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
-	reveal: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M3 12C5.2 7.8 8.2 6 12 6C15.8 6 18.8 7.8 21 12C18.8 16.2 15.8 18 12 18C8.2 18 5.2 16.2 3 12Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.2"/></svg>',
+	Ambassador: "ambassador_icon_trim.png", //pass: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5L10 17L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+	Captain: "captain_icon_trim.png", // challenge: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="2.2"/><path d="M15 15L20 20" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8 10.5H13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+	Duke: "duke_icon_trim.png", // block: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 3L19 6V11.5C19 16 16.2 19.2 12 21C7.8 19.2 5 16 5 11.5V6L12 3Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 12H15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+	Contessa: "contessa_icon_trim.png", //reveal: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M3 12C5.2 7.8 8.2 6 12 6C15.8 6 18.8 7.8 21 12C18.8 16.2 15.8 18 12 18C8.2 18 5.2 16.2 3 12Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.2"/></svg>',
 };
 
 // Spec §7.3's table, as code: a challengeable action gets a Contest wedge
@@ -34,6 +34,7 @@ const ContestMenu = (() => {
 		els = {
 			menu: document.getElementById('contest-menu'),
 			wedges: document.getElementById('contest-menu-wedges'),
+			sections: document.getElementById('contest-menu-sections'),
 			hint: document.getElementById('contest-menu-hint'),
 		};
 		els.menu.classList.toggle('is-touch', window.matchMedia('(hover: none)').matches);
@@ -78,18 +79,26 @@ const ContestMenu = (() => {
 	}
 
 	function open(need, decision, state) {
-		els.hint.textContent = headline(decision, state.players, state.localPlayerId);
-		els.wedges.innerHTML = wedgeList(need, state).map(wedgeMarkup).join('');
+		//els.hint.textContent = headline(decision, state.players, state.localPlayerId);
 
-		const wedgeEls = Array.from(els.wedges.querySelectorAll('.radial-wedge'));
-		layoutWedges(els.wedges, wedgeEls);
-		wedgeEls.forEach((el) => {
-			el.addEventListener('click', () => handleChoose(el.dataset.choice));
-		});
+		els.sections.innerHTML = getSections(need, state);
+
+		const options = Array.from(els.sections.querySelectorAll('.menu-option'))
+		for (let option of options){
+			option.addEventListener('click', () => handleChoose(option.dataset.choice));
+		}
+
+		// els.wedges.innerHTML = wedgeList(need, state).map(wedgeMarkup).join('');
+		//
+		// const wedgeEls = Array.from(els.wedges.querySelectorAll('.radial-wedge'));
+		// layoutWedges(els.wedges, wedgeEls);
+		// wedgeEls.forEach((el) => {
+		// 	el.addEventListener('click', () => handleChoose(el.dataset.choice));
+		// });
 
 		els.menu.classList.remove('hidden');
 		if (!isOpen) {
-			unbindKeys = bindRadialKeys(els.wedges);
+			//unbindKeys = bindRadialKeys(els.wedges);
 		}
 		isOpen = true;
 	}
@@ -97,11 +106,112 @@ const ContestMenu = (() => {
 	function close() {
 		if (!isOpen) return;
 		els.menu.classList.add('hidden');
-		els.wedges.innerHTML = '';
+		els.sections.innerHTML = '';
 		unbindKeys?.();
 		unbindKeys = null;
 		isOpen = false;
 	}
+
+	function getSections(need, state) {
+		let sections = {
+			cards: `<div class="section-title">Your Cards</div>`,
+			bluff: `<div class="section-title">Bluff</div>`,
+			neutral: ``,
+		};
+
+		let choices;
+
+		// BLOCK_DECLARED: process_event_while_block_declared only ever
+		// accepts PASS or CHALLENGE (no blocking a block) -- see match.py.
+		if (need.kind === 'block') {
+			choices = [
+				{ choice: 'pass', label: 'Pass' },
+				{ choice: 'challenge', label: 'Contest' },
+			];
+		}
+		else{
+			const isDeclaredAssassinateTarget =
+				need.action === 'assassinate'
+				&& state.settings?.declaredAssassinate
+				&& need.targetId === state.localPlayerId;
+			choices = isDeclaredAssassinateTarget ? [] : [{ choice: 'pass', label: 'Pass' }];
+			if (ACTION_CLAIMS[need.action]) {
+				choices.push({ choice: 'challenge', label: 'Contest' });
+			}
+			const blockClaims = BLOCK_CLAIMS[need.action];
+			if (blockClaims) {
+				// Foreign Aid has no target (need.targetId is null) so anyone
+				// blockable-eligible may claim Duke; Assassinate/Extort are
+				// target-only per TARGETED_BLOCK_ONLY_ACTIONS server-side.
+				const canBlock = !need.targetId || need.targetId === state.localPlayerId;
+				if (canBlock) {
+					for (const card of blockClaims) {
+						choices.push({ choice: `block:${card}`, label: 'Block', sub: card });
+					}
+				}
+			}
+			if (isDeclaredAssassinateTarget) {
+				choices.push({ choice: 'reveal', label: 'Reveal' });
+			}
+		}
+
+
+		let hasCards = false;
+		let hasBluff = false;
+		let hasNeutral = false;
+
+		for (let choice of choices) {
+
+			const neutral = ['pass', 'challenge', 'reveal'].includes(choice.choice)
+			const owned = choice.sub && !neutral ? (state.yourHand || []).includes(choice.sub) : null;
+
+			const icon = CONTEST_ICONS[choice.sub]
+				? `<img class="menu-icon menu-icon-img" src="/static/assets/img/game/action-icons/${escapeAttr(CONTEST_ICONS[choice.sub])}" alt="" aria-hidden="true">`
+				: '';
+
+			const extra = neutral ? '' : `
+				<div>${icon}</div>
+				<div class="menu-vertical-line-white"></div>
+			`;
+
+			const option = `
+				<div class="menu-option-name">${choice.sub ? choice.sub : ''}</div>
+				<button type="button"
+						class="menu-option ${choice.sub ? choice.sub.toLowerCase() : "neutral"}-card"
+						data-choice="${escapeAttr(choice.choice)}"
+						role="menuitem">
+					${extra}
+					<div class="menu-option-desc">${choice.label}</div>
+				</button>
+			`;
+
+			switch (owned){
+				case true:	// Has card
+					hasCards = true;
+					sections.cards += option;
+					break;
+				case false: // Bluff card
+					hasBluff = true;
+					sections.bluff += option;
+					break;
+				case null:	// Neutral card
+					hasNeutral = true;
+					sections.neutral += option;
+					break;
+			}
+		}
+
+		return `
+			<div class="contest-menu-title">Choose Reaction</div>
+			<div class="menu-horizontal-line${hasNeutral ? "": " hidden"}"></div>
+			<div class="menu-neutral-section${hasNeutral ? "": " hidden"}">${sections.neutral}</div>
+			<div class="menu-horizontal-line${hasCards ? "": " hidden"}"></div>
+			<div class="menu-cards-section${hasCards ? "": " hidden"}">${sections.cards}</div>
+			<div class="menu-horizontal-line${hasBluff ? "": " hidden"}"></div>
+			<div class="menu-bluff-section${hasBluff ? "": " hidden"}">${sections.bluff}</div>
+		`
+	}
+
 
 	function wedgeList(need, state) {
 		// BLOCK_DECLARED: process_event_while_block_declared only ever
@@ -160,6 +270,7 @@ const ContestMenu = (() => {
 	function handleChoose(choice) {
 		awaitingResponse = true;
 		close();
+
 
 		let request;
 		if (choice === 'pass') {

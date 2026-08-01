@@ -58,7 +58,7 @@ const ExchangeMenu = (() => {
 	function cardMarkup(card, index) {
 		return `
 			<button type="button" class="exchange-card" data-index="${index}" data-card="${escapeAttr(card)}" aria-pressed="false">
-				<span class="exchange-card-name">${escapeHtml(card)}</span>
+				<img class="exchange-menu-img" src="/static/assets/img/game/Card-${escapeHtml(card)}_v2.0.png" alt="${escapeHtml(card)}">
 			</button>`;
 	}
 

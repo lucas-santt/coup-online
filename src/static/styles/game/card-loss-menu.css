@@ -48,11 +48,14 @@
 	font-family: var(--font-display);
 	font-size: 0.95rem;
 	letter-spacing: 1.5px;
-	padding: 0.9rem 1.6rem;
-	background: var(--color-navy);
+	width: 8em;
+	height: 12em;
+	/*padding: 0.9rem 1.6rem;*/
+	/*background: var(--color-navy);*/
+	background: var(--color-panel);
 	color: var(--color-panel-light);
-	border: 1px solid var(--color-ink);
-	box-shadow: var(--shadow-stamp-sm);
+	border: 2px solid var(--color-ink);
+	/*box-shadow: var(--shadow-stamp-sm);*/
 	cursor: pointer;
 	transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
@@ -62,4 +65,10 @@
 	box-shadow: var(--shadow-stamp-sm-hover);
 	transform: translateY(-1px);
 	outline: none;
+}
+
+.card-loss-menu-img{
+	width: 7em;
+	display: block;
+	margin: 0 auto;
 }

@@ -16,6 +16,7 @@
 	<link rel="stylesheet" href="/static/styles/game/hud.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/summary-panel.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/radial-menu.css?v=1">
+	<link rel="stylesheet" href="/static/styles/game/menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/action-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/target-menu.css?v=1">
 	<link rel="stylesheet" href="/static/styles/game/contest-menu.css?v=1">
@@ -76,11 +77,12 @@
 		     #action-menu-wedges at open time, not hardcoded here, since
 		     each one's disabled/owned state depends on live GameState.
 		     ============================================================ -->
-		<div id="action-menu" class="radial-menu hidden" role="menu" aria-label="Choose your action">
-			<div class="radial-menu-hub">
-				<span id="action-menu-hint" class="radial-menu-hint"></span>
+
+		<div class="action-menu-group">
+			<div id="action-menu" class="action-menu hidden corner-brackets" role="menu" aria-label="Choose your action">
+				<div class="action-menu-title">Choose Action</div>
+				<div id="action-menu-sections" class="menu-sections"></div>
 			</div>
-			<div id="action-menu-wedges" class="radial-menu-wedges"></div>
 		</div>
 
 		<!-- ============================================================
@@ -114,11 +116,11 @@
 		     has been "picked" yet to back out of; Pass/Contest/Block are
 		     each a final response. See ui/contest-menu.js.
 		     ============================================================ -->
-		<div id="contest-menu" class="radial-menu hidden" role="menu" aria-label="Respond to the declared action">
-			<div class="radial-menu-hub">
-				<span id="contest-menu-hint" class="radial-menu-hint"></span>
+
+		<div class="contest-menu-group">
+			<div id="contest-menu" class="contest-menu hidden" role="menu" aria-label="Respond to the declared action">
+				<div id="contest-menu-sections" class="menu-sections"></div>
 			</div>
-			<div id="contest-menu-wedges" class="radial-menu-wedges"></div>
 		</div>
 
 		<!-- ============================================================

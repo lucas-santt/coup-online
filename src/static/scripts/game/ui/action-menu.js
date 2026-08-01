@@ -10,13 +10,13 @@ import DeclareCardMenu from './declare-card-menu.js';
 const ACTIONS = ['income', 'foreign_aid', 'coup', 'tax', 'assassinate', 'steal', 'exchange'];
 
 const ACTION_ICONS = {
-	income: 'income.png',
-	foreign_aid: 'external-aid.png',
-	coup: 'coup.png',
-	tax: 'tax.png',
-	assassinate: 'assassinate.png',
-	steal: 'extort.png',
-	exchange: 'exchange.png',
+	income: 'neutral_icon_trim.png', //'income.png',
+	foreign_aid: 'neutral_icon_trim.png', //'external-aid.png',
+	coup: 'neutral_icon_trim.png', //'coup.png',
+	tax: 'duke_icon_trim.png', //'tax.png',
+	assassinate: 'assassin_icon_trim.png', //'assassinate.png',
+	steal: 'captain_icon_trim.png', //'extort.png',
+	exchange: 'ambassador_icon_trim.png', //'exchange.png',
 };
 
 const ActionMenu = (() => {
@@ -35,13 +35,14 @@ const ActionMenu = (() => {
 	function init() {
 		els = {
 			menu: document.getElementById('action-menu'),
-			wedges: document.getElementById('action-menu-wedges'),
-			hint: document.getElementById('action-menu-hint'),
+			//wedges: document.getElementById('action-menu-wedges'),
+			sections: document.getElementById('action-menu-sections'),
+			//hint: document.getElementById('action-menu-hint_'),
 		};
 		isTouch = window.matchMedia('(hover: none)').matches;
 		els.menu.classList.toggle('is-touch', isTouch);
-		bindTouchTooltips(els.menu);
-		bindPointerTooltips(els.menu);
+		//bindTouchTooltips(els.menu);
+		//bindPointerTooltips(els.menu);
 		TargetMenu.init({ onBack: reopenAfterBack, onChooseTarget: handleTargetSelected });
 		DeclareCardMenu.init({ onBack: reopenAfterBack });
 		GameState.subscribe(render);
@@ -65,18 +66,18 @@ const ActionMenu = (() => {
 	}
 
 	function open(state, me) {
-		els.hint.textContent = 'Choose Your Action';
-		els.wedges.innerHTML = ACTIONS.map((action) => wedgeMarkup(action, state, me)).join('');
+		//els.hint.textContent = 'Choose Your Action!';
 
-		const wedgeEls = Array.from(els.wedges.querySelectorAll('.radial-wedge'));
-		layoutWedges(els.wedges, wedgeEls);
-		wedgeEls.forEach((el) => {
-			el.addEventListener('click', () => handleChoose(el.dataset.action, state));
-		});
+		els.sections.innerHTML = getSections(state, me)
+
+		const options = Array.from(els.sections.querySelectorAll('.menu-option'))
+		for (let option of options){
+			option.addEventListener('click', () => handleChoose(option.dataset.action, state));
+		}
 
 		els.menu.classList.remove('hidden');
 		if (!isOpen) {
-			unbindKeys = bindRadialKeys(els.wedges);
+			//unbindKeys = bindRadialKeys(els.wedges);
 		}
 		isOpen = true;
 	}
@@ -84,10 +85,110 @@ const ActionMenu = (() => {
 	function close() {
 		if (!isOpen) return;
 		els.menu.classList.add('hidden');
-		els.wedges.innerHTML = '';
+		els.sections.innerHTML = '';
 		unbindKeys?.();
 		unbindKeys = null;
 		isOpen = false;
+	}
+
+	function getSections(state, me){
+		let sections = {
+			cards: `<div class="section-title">Your Cards</div>`,
+			bluff: `<div class="section-title">Bluff</div>`,
+			neutral: `<div class="section-title">Neutral</div>`,
+		};
+
+		for (let action of ACTIONS){
+
+			const claim = ACTION_CLAIMS[action] || null;
+			const affordable = isAffordable(action, me, state);
+			const reason = affordable ? '' : disabledReason(action, me, state);
+			const owned = claim ? (state.yourHand || []).includes(claim) : null;
+
+			const section_info = getSectionInfo(action, state)
+
+			const icon = ACTION_ICONS[action]
+				? `<img class="menu-icon menu-icon-img" src="/static/assets/img/game/action-icons/${escapeAttr(ACTION_ICONS[action])}" alt="" aria-hidden="true">`
+				: '';
+
+			const option = `
+				<button type="button"
+						class="menu-option ${claim ? claim.toLowerCase() : "neutral"}-card${affordable ? '' : ' is-disabled'}"
+						data-action="${escapeAttr(action)}"
+						aria-disabled="${affordable ? 'false' : 'true'}"
+						role="menuitem">
+					
+					<div>${icon}</div>
+					<div class="menu-vertical-line-white"></div>
+					<div class="menu-option-main">
+						<div class="menu-option-name">${section_info.name}</div>
+						<div class="menu-option-desc">${section_info.desc}</div>
+					</div>
+					<div class="menu-option-extra">
+						${section_info?.cost ? '<div>'+section_info?.cost+'</div>' : ''}
+						${section_info?.blocked_by ? '<div>'+section_info?.blocked_by+'</div>' : ''}
+					</div>
+				</button>
+			`;
+
+			switch (owned){
+				case true:	// Has card
+					sections.cards += option;
+					break;
+				case false: // Bluff card
+					sections.bluff += option;
+					break;
+				case null:	// Neutral card
+					sections.neutral += option;
+					break;
+			}
+		}
+
+		return `
+			<div class="menu-cards-section">${sections.cards}</div>
+			<div class="menu-vertical-line"></div>
+			<div class="menu-bluff-section">${sections.bluff}</div>
+			<div class="menu-vertical-line"></div>
+			<div class="menu-neutral-section">${sections.neutral}</div>
+		`
+	}
+
+	function getSectionInfo(action, state){
+		return {
+			"exchange": {
+				name: "Ambassador",
+				desc: "Draw Cards",
+			},
+			"steal": {
+				name: "Captain",
+				desc: "Steal Coins",
+				blocked_by: "Blocked by: Captain & Ambassador",
+			},
+			"tax": {
+				name: "Duke",
+				desc: "Tax Coins",
+			},
+			"assassinate": {
+				name: "Assassin",
+				desc: "Assassinate",
+				cost: `Requires ${state.settings.assassinateCost} coins`,
+				blocked_by: "Blocked by: Contessa",
+			},
+			"income": {
+				name: "Icome",
+				desc: "Take 1 Coin",
+			},
+			"foreign_aid": {
+				name: "Foreign Aid",
+				desc: "Take 2 Coin",
+				blocked_by: "Blocked by: Duke",
+			},
+			"coup": {
+				name: "Coup",
+				desc: "Coup A Player",
+				cost: `Requires ${state.settings.coupCost} coins`,
+			},
+		}[action];
 	}
 
 	function wedgeMarkup(action, state, me) {
@@ -149,8 +250,8 @@ const ActionMenu = (() => {
 	}
 
 	function handleChoose(action, state) {
-		const wedge = els.wedges.querySelector(`.radial-wedge[data-action="${action}"]`);
-		if (wedge?.getAttribute('aria-disabled') === 'true') return;
+		const option = els.sections.querySelector(`.menu-option[data-action="${action}"]`);
+		if (option?.getAttribute('aria-disabled') === 'true') return;
 
 		if (!TARGETED_ACTIONS.includes(action)) {
 			submit(action, null);

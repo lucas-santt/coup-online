@@ -44,3 +44,63 @@
 		margin: -12px 0 0 -12px;
 	}
 }
+
+/* CONTEST MENU */
+
+.contest-menu-group {
+	position: fixed;
+	right: 20vw;
+	bottom: -1vh;
+	z-index: 35;
+}
+
+.contest-menu {
+	background-color: #E4D4BC;
+	border: medium solid white;
+	border-radius: 0.5vw;
+	width: 15vw;
+	padding-bottom: 1vh;
+	place-items: center;
+}
+
+.contest-menu .menu-sections * {
+	margin: .6vh .6vw;
+}
+
+.contest-menu .menu-option {
+	border: none;
+
+	width: 12vw;
+	border-radius: 1vw;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: white;
+}
+
+/* TEXT */
+
+.contest-menu-title {
+	font-size: calc((2vh + 2vw) / 2);
+}
+
+.contest-menu .section-title {
+	font-size: calc((2vh + 2vw) / 2);
+	font-weight: bold;
+}
+
+.contest-menu .menu-option-name {
+	font-size: calc((1.5vh + 1.5vw) / 2);
+}
+
+.contest-menu .menu-option-desc {
+	font-size: calc((2vh + 2vw) / 2);
+	font-weight: bold;
+}
+
+/* ICONS */
+
+.contest-menu .menu-icon {
+	width: calc((2vh + 2vw) / 2);;
+}

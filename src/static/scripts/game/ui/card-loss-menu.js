@@ -59,7 +59,7 @@ const CardLossMenu = (() => {
 	function cardMarkup(card) {
 		return `
 			<button type="button" class="card-loss-option" data-card="${escapeAttr(card)}">
-				${escapeHtml(card)}
+				<img class="card-loss-menu-img" src="/static/assets/img/game/Card-${escapeHtml(card)}_v2.0.png" alt="${escapeHtml(card)}">
 			</button>`;
 	}
 

@@ -47,11 +47,13 @@
 
 .exchange-card {
 	min-height: 150px;
-	padding: 0.8rem;
-	background: var(--color-panel-light);
+	width: 8em;
+	height: 12em;
+	/*padding: 0.8rem;*/
+	background: var(--color-panel);
 	color: var(--color-ink);
 	border: 2px solid var(--color-ink);
-	box-shadow: var(--shadow-stamp-sm);
+	/*box-shadow: var(--shadow-stamp-sm);*/
 	cursor: pointer;
 	transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
@@ -66,8 +68,8 @@
 .exchange-card.is-selected {
 	background: var(--color-navy);
 	color: var(--color-panel-light);
-	outline: 3px solid var(--color-orange);
-	outline-offset: -8px;
+	/*outline: 3px solid var(--color-orange);*/
+	/*outline-offset: -4px;*/
 }
 
 .exchange-card-name {
@@ -76,6 +78,12 @@
 	font-size: 0.85rem;
 	letter-spacing: 1px;
 	line-height: 1.15;
+}
+
+.exchange-menu-img{
+	width: 7em;
+	display: block;
+	margin: 0 auto;
 }
 
 #exchange-confirm {

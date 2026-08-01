@@ -44,7 +44,7 @@ export const ASSETS = {
         textures: [
             '/static/assets/img/game/Card-Back.png',
             '/static/assets/img/game/Card-Ambassador_v2.0.png',
-            '/static/assets/img/game/Card-Assasin_v2.0.png',
+            '/static/assets/img/game/Card-Assassin_v2.0.png',
             '/static/assets/img/game/Card-Captain_v2.0.png',
             '/static/assets/img/game/Card-Contessa_v2.0.png',
 			'/static/assets/img/game/Card-Duke_v2.0.png',
@@ -78,7 +78,7 @@ export const OBJ = {
         textures: [
             '/static/assets/img/game/Card-Back.png',
             '/static/assets/img/game/Card-Ambassador_v2.0.png',
-            '/static/assets/img/game/Card-Assasin_v2.0.png',
+            '/static/assets/img/game/Card-Assassin_v2.0.png',
             '/static/assets/img/game/Card-Captain_v2.0.png',
             '/static/assets/img/game/Card-Contessa_v2.0.png',
 			'/static/assets/img/game/Card-Duke_v2.0.png',

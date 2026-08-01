@@ -98,7 +98,7 @@ export const TARGETED_ACTIONS = ['coup', 'assassinate', 'steal'];
 // /static/assets/img/game/ for that wedge's art to actually resolve.
 const CARD_ART_FILENAMES = {
 	Ambassador: 'Card-Ambassador_v2.0.png',
-	Assassin: 'Card-Assasin_v2.0.png', // sic -- matches the existing asset's spelling
+	Assassin: 'Card-Assassin_v2.0.png',
 	Captain: 'Card-Captain_v2.0.png',
 	Contessa: 'Card-Contessa_v2.0.png',
 	Duke: 'Card-Duke_v2.0.png',
