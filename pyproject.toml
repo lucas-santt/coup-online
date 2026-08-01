@@ -28,5 +28,8 @@ dev = [
 [tool.fastapi]
 entrypoint = "backend.main:app"
 
+[tool.vercel]
+entrypoint = "src.backend.main:app"
+
 [tool.setuptools.packages.find]
 where = ["src"]
